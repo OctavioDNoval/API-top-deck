@@ -1,5 +1,6 @@
-package org.example.topdeckapi.src.DTOs.DTO;
+package org.example.topdeckapi.src.DTOs.CreateDTO;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,13 +8,25 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class DireccionDTO {
-    private Long id_direccion;
-    private UsuarioDTO usuarioDTO;
+public class CreateDireccionDTO {
+    @NotBlank
+    private Integer id_usuario;
+
+    @NotBlank
     private String ciudad;
+
+    @NotBlank
     private String provincia;
+
+    @NotBlank
     private String pais;
+
+    @NotBlank
     private String codigo_postal;
+
+    @NotBlank
     private String direccion;
+
+    @NotBlank
     private String altura;
 }

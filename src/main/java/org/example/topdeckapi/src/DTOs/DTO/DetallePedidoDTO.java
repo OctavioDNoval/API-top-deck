@@ -11,6 +11,6 @@ public class DetallePedidoDTO {
     private long id_detalle_pedido;
     private int cantidad;
     private double precio_unitario;
-    private Integer id_pedido;
-    private Integer id_Producto;
+    private long id_pedido;
+    private long id_Producto;
 }
