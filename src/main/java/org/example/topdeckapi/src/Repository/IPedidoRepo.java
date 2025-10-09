@@ -1,4 +1,7 @@
 package org.example.topdeckapi.src.Repository;
 
-public interface IPedidoRepo {
+import org.example.topdeckapi.src.model.Pedido;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface IPedidoRepo extends JpaRepository<Pedido,Long> {
 }

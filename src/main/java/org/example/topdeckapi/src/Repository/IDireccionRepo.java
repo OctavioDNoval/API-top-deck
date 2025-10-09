@@ -1,4 +1,7 @@
 package org.example.topdeckapi.src.Repository;
 
-public interface IDireccionRepo {
+import org.example.topdeckapi.src.model.Direccion;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface IDireccionRepo extends JpaRepository<Direccion,Long> {
 }
