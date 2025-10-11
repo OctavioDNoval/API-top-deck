@@ -23,10 +23,10 @@ public class Producto {
     private String descripcion;
 
     @Column (name = "precio")
-    private float precio;
+    private Float precio;
 
     @Column(name = "stock")
-    private int stock;
+    private Integer stock;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_categoria")
