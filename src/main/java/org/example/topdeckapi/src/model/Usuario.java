@@ -29,4 +29,11 @@ public class Usuario {
     @Column(name = "telefono")
     private String telefono;
 
+
+    public Usuario(String nombre, String email, String password, String telefono) {
+        this.nombre = nombre;
+        this.email = email;
+        this.password = password;
+        this.telefono = telefono;
+    }
 }

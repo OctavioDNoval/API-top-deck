@@ -14,6 +14,9 @@ public class CreateUsuarioDTO {
     private String nombre;
 
     @NotBlank
+    private String password;
+
+    @NotBlank
     private String email;
 
     private String telefono;
