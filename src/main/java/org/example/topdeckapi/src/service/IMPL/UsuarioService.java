@@ -5,7 +5,6 @@ import org.example.topdeckapi.src.DTOs.CreateDTO.CreateUsuarioDTO;
 import org.example.topdeckapi.src.DTOs.DTO.UsuarioDTO;
 import org.example.topdeckapi.src.DTOs.UpdateDTO.UpdateUsuarioDTO;
 import org.example.topdeckapi.src.Repository.IUsuarioRepo;
-import org.example.topdeckapi.src.model.Producto;
 import org.example.topdeckapi.src.model.Usuario;
 import org.example.topdeckapi.src.service.Interface.IUsuarioService;
 import org.springframework.stereotype.Service;
