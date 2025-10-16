@@ -35,8 +35,15 @@ public class Pedido {
     * - Scale: tendra hasta dos decimales
     * */
     @Column(name = "total", precision = 10, scale = 2, nullable = false)
-    private BigDecimal total;
+    private Double total;
 
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DetallePedido> detalles = new ArrayList<>();
+
+    public Pedido(Usuario usuario, Date fechaPedido, Double total, List<DetallePedido> detalles) {
+        this.usuario = usuario;
+        this.fechaPedido = fechaPedido;
+        this.total = total;
+        this.detalles = detalles;
+    }
 }

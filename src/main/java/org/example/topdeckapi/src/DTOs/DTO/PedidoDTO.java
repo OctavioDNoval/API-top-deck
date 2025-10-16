@@ -16,6 +16,6 @@ public class PedidoDTO {
     private long id_pedido;
     private UsuarioDTO usuario;
     private Date fecha_pedido;
-    private double precio;
+    private Double precio;
     private List<DetallePedido> detalles = new ArrayList<>();
 }
