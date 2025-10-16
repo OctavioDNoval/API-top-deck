@@ -3,8 +3,10 @@ package org.example.topdeckapi.src.service.IMPL;
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreatePedidoDTO;
 import org.example.topdeckapi.src.DTOs.DTO.PedidoDTO;
+import org.example.topdeckapi.src.DTOs.DTO.UsuarioDTO;
 import org.example.topdeckapi.src.Repository.IPedidoRepo;
 import org.example.topdeckapi.src.model.Pedido;
+import org.example.topdeckapi.src.model.Usuario;
 import org.example.topdeckapi.src.service.Interface.IPedidoService;
 import org.springframework.stereotype.Service;
 
@@ -29,8 +31,13 @@ public class PedidoService implements IPedidoService {
     }
 
     protected Pedido convertCreateDTOToEntity(CreatePedidoDTO p) {
+        Usuario u = usuarioService.buscarPorId(p.getUsuarioDTO().getId_usuario());
+
         return new Pedido(
-                p.
+                u,
+                p.getFecha_pedido(),
+                p.getPrecio(),
+                p.getDetalles()
         );
     }
 

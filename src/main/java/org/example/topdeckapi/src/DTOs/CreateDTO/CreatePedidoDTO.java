@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.example.topdeckapi.src.DTOs.DTO.DetallePedidoDTO;
+import org.example.topdeckapi.src.DTOs.DTO.UsuarioDTO;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -15,7 +16,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CreatePedidoDTO {
-    private long id_usuario;
+    private UsuarioDTO usuarioDTO;
     @NotBlank
     private Date fecha_pedido;
 
