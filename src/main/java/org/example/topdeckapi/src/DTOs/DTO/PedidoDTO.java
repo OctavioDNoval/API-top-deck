@@ -13,9 +13,9 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PedidoDTO {
-    private long id_pedido;
+    private Long id_pedido;
     private UsuarioDTO usuario;
     private Date fecha_pedido;
     private Double precio;
-    private List<DetallePedido> detalles = new ArrayList<>();
+    private List<DetallePedidoDTO> detalles = new ArrayList<>();
 }

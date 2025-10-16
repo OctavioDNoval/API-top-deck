@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.example.topdeckapi.src.DTOs.DTO.DireccionDTO;
+
 
 @Data
 @AllArgsConstructor
@@ -21,5 +21,5 @@ public class CreateUsuarioDTO {
 
     private String telefono;
 
-    private DireccionDTO direccion;
+    private CreateDireccionDTO direccion;
 }

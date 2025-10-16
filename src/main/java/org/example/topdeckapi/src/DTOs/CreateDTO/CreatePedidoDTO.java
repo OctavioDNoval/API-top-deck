@@ -5,9 +5,6 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.example.topdeckapi.src.DTOs.DTO.DetallePedidoDTO;
-import org.example.topdeckapi.src.DTOs.DTO.UsuarioDTO;
-
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -16,12 +13,12 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CreatePedidoDTO {
-    private UsuarioDTO usuarioDTO;
+    private Long id_usuario;
     @NotBlank
     private Date fecha_pedido;
 
     @Size(min = 0)
     private double precio;
 
-    private List<DetallePedidoDTO> detalles = new ArrayList<>();
+    private List<CreateDetallePedidoDTO> detalles = new ArrayList<>();
 }

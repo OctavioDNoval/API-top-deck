@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
-import java.util.List;
+
 
 @Data
 @NoArgsConstructor
@@ -14,5 +14,5 @@ import java.util.List;
 public class UpdatePedidoDTO {
     private Date fecha_pedido;
     @Min(value = 0)
-    private double precio;
+    private Double precio;
 }
