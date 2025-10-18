@@ -16,13 +16,13 @@ public class DetallePedido {
     @Id
     @GeneratedValue (strategy = GenerationType.IDENTITY)
     @Column(name= "id_detalle")
-    private int idDetallePedido;
+    private Long idDetallePedido;
 
     @Column(name = "cantidad")
-    private int cantidad;
+    private Integer cantidad;
 
     @Column(name = "precio_unitario")
-    private double precioUnitario;
+    private Double precioUnitario;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_producto", nullable = false)

@@ -36,6 +36,12 @@ public class UsuarioService implements IUsuarioService {
         );
     }
 
+    protected Usuario convertToEntity(UsuarioDTO dto){
+        return new Usuario(
+
+        )
+    }
+
     public List<UsuarioDTO> findAll(){
         return usuarioRepo.findAll().stream()
                 .map(this::convertToDto)

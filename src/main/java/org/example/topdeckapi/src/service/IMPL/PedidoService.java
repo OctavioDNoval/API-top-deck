@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 public class PedidoService implements IPedidoService {
     private final IPedidoRepo pedidoRepo;
     private final UsuarioService usuarioService;
+    private final DetallePedidoService detallePedidoService;
 
     protected PedidoDTO convertToDTO(Pedido p) {
         return new PedidoDTO(
@@ -26,12 +27,15 @@ public class PedidoService implements IPedidoService {
                 usuarioService.convertToDto(p.getUsuario()),
                 p.getFechaPedido(),
                 p.getTotal(),
-                p.getDetalles()
+                p.getDetalles().stream()
+                        .map(detallePedidoService::convertEntityToDTO)
+                        .collect(Collectors.toList())
         );
     }
 
     protected Pedido convertCreateDTOToEntity(CreatePedidoDTO p) {
-        Usuario u = usuarioService.buscarPorId(p.getUsuarioDTO().getId_usuario());
+        Usuario u = usuarioService.buscarPorId(p.getUsuarioDTO().getId_usuario())
+                .orElse(new UsuarioDTO());
 
         return new Pedido(
                 u,
