@@ -34,8 +34,10 @@ public class PedidoService implements IPedidoService {
     }
 
     protected Pedido convertCreateDTOToEntity(CreatePedidoDTO p) {
-        Usuario u = usuarioService.buscarPorId(p.getUsuarioDTO().getId_usuario())
+        UsuarioDTO usuarioDTO = usuarioService.buscarPorId(p.getUsuarioDTO().getId_usuario())
                 .orElse(new UsuarioDTO());
+
+        Usuario u = usuarioService.convertToEntity(usuarioDTO);
 
         return new Pedido(
                 u,

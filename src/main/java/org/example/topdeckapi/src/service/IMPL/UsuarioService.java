@@ -38,8 +38,11 @@ public class UsuarioService implements IUsuarioService {
 
     protected Usuario convertToEntity(UsuarioDTO dto){
         return new Usuario(
-
-        )
+                dto.getTelefono(),
+                dto.getEmail(),
+                dto.getNombre(),
+                dto.getId_usuario()
+        );
     }
 
     public List<UsuarioDTO> findAll(){
