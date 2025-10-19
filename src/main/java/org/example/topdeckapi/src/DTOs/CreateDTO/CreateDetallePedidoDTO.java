@@ -13,15 +13,15 @@ import org.antlr.v4.runtime.misc.NotNull;
 public class CreateDetallePedidoDTO {
     @NotBlank
     @Size(min = 0)
-    private int cantidad;
+    private Integer cantidad;
 
     @NotBlank
     @Size(min = 0)
-    private double precio_unitario;
+    private Double precio_unitario;
 
     @NotBlank
-    private long id_pedido;
+    private Long id_pedido;
 
     @NotBlank
-    private long id_Producto;
+    private Long id_Producto;
 }

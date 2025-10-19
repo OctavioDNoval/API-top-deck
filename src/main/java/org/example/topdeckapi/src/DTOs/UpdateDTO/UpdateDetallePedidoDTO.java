@@ -1,7 +1,15 @@
 package org.example.topdeckapi.src.DTOs.UpdateDTO;
 
+import jakarta.validation.constraints.Positive;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class UpdateDetallePedidoDTO {
-    private String nombre;
-    private String email;
-    private String telefono;
+    @Positive
+    private Integer cantidad;
+
 }

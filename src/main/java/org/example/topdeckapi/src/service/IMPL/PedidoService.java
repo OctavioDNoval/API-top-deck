@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreatePedidoDTO;
 import org.example.topdeckapi.src.DTOs.DTO.PedidoDTO;
 import org.example.topdeckapi.src.DTOs.DTO.UsuarioDTO;
+import org.example.topdeckapi.src.DTOs.UpdateDTO.UpdatePedidoDTO;
 import org.example.topdeckapi.src.Exception.UsuarioNotFoundException;
 import org.example.topdeckapi.src.Repository.IPedidoRepo;
 import org.example.topdeckapi.src.model.DetallePedido;
@@ -68,9 +69,35 @@ public class PedidoService implements IPedidoService {
                 .map(this::convertToDTO);
     }
 
+    public Optional<Pedido> getEntityById(Long id){
+        return pedidoRepo.findById(id);
+    }
+
     public Pedido guardar(CreatePedidoDTO newPedido){
         Pedido entidad = convertCreateDTOToEntity(newPedido);
         return pedidoRepo.save(entidad);
     }
 
+    public Optional<PedidoDTO> actualizarPedido(UpdatePedidoDTO dto, Long id){
+        return pedidoRepo.findById(id)
+                .map(p->{
+                    if(dto.getFecha_pedido()!=null){
+                        p.setFechaPedido(dto.getFecha_pedido());
+                    }
+                    if(dto.getPrecio()!=null){
+                        p.setTotal(dto.getPrecio());
+                    }
+                    Pedido pedidoActualizado = pedidoRepo.save(p);
+                    return convertToDTO(pedidoActualizado);
+                });
+    }
+
+    public boolean delete(Long id){
+        if (pedidoRepo.existsById(id)) {
+            pedidoRepo.deleteById(id);
+            return true;
+        }else{
+            return false;
+        }
+    }
 }
