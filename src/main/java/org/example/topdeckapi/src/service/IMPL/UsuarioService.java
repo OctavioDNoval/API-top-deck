@@ -62,6 +62,10 @@ public class UsuarioService implements IUsuarioService {
                 .map(this::convertToDto);
     }
 
+    protected Optional<Usuario> buscarEntidadPorId(Long id){
+        return usuarioRepo.findById(id);
+    }
+
     public Optional<UsuarioDTO> actualizarUsuario(UpdateUsuarioDTO dto, Long id){
         return usuarioRepo.findById(id)
                 .map(u ->{

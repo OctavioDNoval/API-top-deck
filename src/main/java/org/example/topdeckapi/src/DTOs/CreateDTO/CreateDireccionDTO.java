@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CreateDireccionDTO {
     @NotBlank
-    private Integer id_usuario;
+    private Long id_usuario;
 
     @NotBlank
     private String ciudad;

@@ -32,4 +32,8 @@ public class Direccion {
 
     @Column(name = "codigo_postal")
     private String codigoPostal;
+
+    private String direccion;
+
+    private String altura;
 }
