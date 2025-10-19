@@ -31,4 +31,10 @@ public class DetallePedido {
     @ManyToOne (fetch = FetchType.LAZY)
     @JoinColumn (name = "id_pedido", nullable = false)
     private Pedido pedido;
+
+    /*
+    * Las relaciones Many To One, One To Many siempre
+    * deben apuntar a una entidad y no a una clase de java
+    * como por ejenmplo Long o Integer
+    * */
 }
