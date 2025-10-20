@@ -11,6 +11,7 @@ import org.example.topdeckapi.src.model.DetallePedido;
 import org.example.topdeckapi.src.model.Pedido;
 import org.example.topdeckapi.src.model.Usuario;
 import org.example.topdeckapi.src.service.Interface.IPedidoService;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -19,11 +20,16 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class PedidoService implements IPedidoService {
     private final IPedidoRepo pedidoRepo;
     private final UsuarioService usuarioService;
     private final DetallePedidoService detallePedidoService;
+
+    public PedidoService(IPedidoRepo pedidoRepo, UsuarioService usuarioService, @Lazy DetallePedidoService detallePedidoService) {
+        this.pedidoRepo = pedidoRepo;
+        this.usuarioService = usuarioService;
+        this.detallePedidoService = detallePedidoService;
+    }
 
     protected PedidoDTO convertToDTO(Pedido p) {
         return new PedidoDTO(

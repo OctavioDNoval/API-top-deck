@@ -34,7 +34,7 @@ public class Pedido {
     * - Precision: El digito sera de hasta 10 digitos
     * - Scale: tendra hasta dos decimales
     * */
-    @Column(name = "total", precision = 10, scale = 2, nullable = false)
+    @Column(name = "total", nullable = false)
     private Double total;
 
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
