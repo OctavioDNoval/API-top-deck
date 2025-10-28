@@ -81,3 +81,11 @@ temp/
 # Runtime data
 **/hs_err_pid*
 **/replay_pid*
+
+# Spring Boot properties / yml
+/src/main/resources/application.properties
+/src/main/resources/application.yml
+
+# Si tenés perfiles específicos
+/src/main/resources/application-*.properties
+/src/main/resources/application-*.yml
