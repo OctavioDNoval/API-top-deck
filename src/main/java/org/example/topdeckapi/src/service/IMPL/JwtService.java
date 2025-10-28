@@ -12,8 +12,7 @@ import org.springframework.stereotype.Service;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+
 
 @Service
 public class JwtService {
@@ -63,6 +62,6 @@ public class JwtService {
         String email = extractEmail(token);
         return email!=null
                 && email.equals(userDetails.getUsername())
-                && isTokenExpired(token);
+                && !isTokenExpired(token);
     }
 }

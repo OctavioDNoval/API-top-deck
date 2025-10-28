@@ -56,7 +56,7 @@ public class UsuarioService implements IUsuarioService {
                 .collect(Collectors.toList());
     }
 
-    public UsuarioDTO guardar (CreateUsuarioDTO newUsuario){
+    public Usuario guardar (CreateUsuarioDTO newUsuario){
         Usuario u = new  Usuario();
             u.setNombre(newUsuario.getNombre());
             u.setEmail(newUsuario.getEmail());
@@ -64,7 +64,7 @@ public class UsuarioService implements IUsuarioService {
             u.setTelefono(newUsuario.getTelefono());
             u.setRol(ROL.USER);
         Usuario usuarioCargado = usuarioRepo.save(u);
-        return convertToDto(usuarioCargado);
+        return usuarioCargado;
     }
 
     public Optional<UsuarioDTO> buscarPorId(Long id){
