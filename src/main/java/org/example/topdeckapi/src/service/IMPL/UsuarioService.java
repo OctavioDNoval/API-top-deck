@@ -4,9 +4,11 @@ import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreateUsuarioDTO;
 import org.example.topdeckapi.src.DTOs.DTO.UsuarioDTO;
 import org.example.topdeckapi.src.DTOs.UpdateDTO.UpdateUsuarioDTO;
+import org.example.topdeckapi.src.Enumerados.ROL;
 import org.example.topdeckapi.src.Repository.IUsuarioRepo;
 import org.example.topdeckapi.src.model.Usuario;
 import org.example.topdeckapi.src.service.Interface.IUsuarioService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,13 +19,15 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UsuarioService implements IUsuarioService {
     private final IUsuarioRepo usuarioRepo;
+    private final PasswordEncoder passwordEncoder;
 
     protected UsuarioDTO convertToDto(Usuario u){
         return new UsuarioDTO(
                 u.getIdUsuario(),
                 u.getNombre(),
                 u.getEmail(),
-                u.getTelefono()
+                u.getTelefono(),
+                u.getRol()
         );
     }
 
@@ -41,7 +45,8 @@ public class UsuarioService implements IUsuarioService {
                 dto.getTelefono(),
                 dto.getEmail(),
                 dto.getNombre(),
-                dto.getId_usuario()
+                dto.getId_usuario(),
+                dto.getRol()
         );
     }
 
@@ -52,7 +57,12 @@ public class UsuarioService implements IUsuarioService {
     }
 
     public UsuarioDTO guardar (CreateUsuarioDTO newUsuario){
-        Usuario u= createUsuarioDTOToEntity(newUsuario);
+        Usuario u = new  Usuario();
+            u.setNombre(newUsuario.getNombre());
+            u.setEmail(newUsuario.getEmail());
+            u.setPassword(passwordEncoder.encode(newUsuario.getPassword()));
+            u.setTelefono(newUsuario.getTelefono());
+            u.setRol(ROL.USER);
         Usuario usuarioCargado = usuarioRepo.save(u);
         return convertToDto(usuarioCargado);
     }
