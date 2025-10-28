@@ -89,3 +89,5 @@ temp/
 # Si tenés perfiles específicos
 /src/main/resources/application-*.properties
 /src/main/resources/application-*.yml
+src/main/resources/application.properties
+target/classes/application.properties
