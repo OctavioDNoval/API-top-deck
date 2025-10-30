@@ -2,6 +2,7 @@ package org.example.topdeckapi.src.service.IMPL;
 
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreateUsuarioDTO;
+import org.example.topdeckapi.src.DTOs.DTO.UsuarioDTO;
 import org.example.topdeckapi.src.DTOs.auth.AuthResponse;
 import org.example.topdeckapi.src.DTOs.auth.LoginRequest;
 import org.example.topdeckapi.src.Enumerados.ROL;
@@ -32,7 +33,8 @@ public class AuthService {
                         .roles(ROL.USER.name())
                         .build()
         );
-        return new AuthResponse(token);
+        UsuarioDTO uDTO = usuarioService.convertToDto(u);
+        return new AuthResponse(token,uDTO);
     }
 
     public AuthResponse login (LoginRequest request){
@@ -50,6 +52,8 @@ public class AuthService {
                         .build()
         );
 
-        return new AuthResponse(token);
+        UsuarioDTO uDTO = usuarioService.convertToDto(u);
+
+        return new AuthResponse(token,uDTO);
     }
 }
