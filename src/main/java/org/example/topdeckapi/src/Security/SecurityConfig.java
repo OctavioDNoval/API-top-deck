@@ -1,7 +1,6 @@
 package org.example.topdeckapi.src.Security;
 
 import lombok.RequiredArgsConstructor;
-import org.example.topdeckapi.src.Enumerados.ROL;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -45,12 +44,12 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/carrito/user/**",
                                 "/user/**"
-                        ).authenticated()
+                        ).hasAnyRole("USER", "ADMIN")
                         .requestMatchers(
                                 "/products/admin/**",
                                 "/category/admin/**",
                                 "/user/admin/**"
-                        ).hasRole(ROL.ADMIN.name())
+                        ).hasRole("ADMIN")
                         .anyRequest().authenticated()
                 );
 

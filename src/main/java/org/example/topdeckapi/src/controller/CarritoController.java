@@ -1,6 +1,7 @@
 package org.example.topdeckapi.src.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.example.topdeckapi.src.DTOs.DTO.DetalleCarritoDTO;
 import org.example.topdeckapi.src.model.Carrito;
 import org.example.topdeckapi.src.model.DetalleCarrito;
 import org.example.topdeckapi.src.service.IMPL.CarritoService;
@@ -24,17 +25,17 @@ public class CarritoController {
     }
 
     @GetMapping("/user/{idCarrito}/detalles")
-    public ResponseEntity<List<DetalleCarrito>> getDetalleCarrito(@PathVariable("idCarrito") Long idCarrito){
-        List<DetalleCarrito> detalles = carritoService.obtenerDetalleCarrito(idCarrito);
+    public ResponseEntity<List<DetalleCarritoDTO>> getDetalleCarrito(@PathVariable("idCarrito") Long idCarrito){
+        List<DetalleCarritoDTO> detalles = carritoService.obtenerDetalleCarrito(idCarrito);
         return ResponseEntity.ok(detalles);
     }
 
     @PostMapping("/user/{idCarrito}/save")
-    public ResponseEntity<DetalleCarrito> agregarDetalle (
+    public ResponseEntity<DetalleCarritoDTO> agregarDetalle (
             @PathVariable("idCarrito") Long idCarrito,
             @RequestParam Long idProducto,
             @RequestParam int cantidad){
-        DetalleCarrito detalle = carritoService.agregarAlCarrito(idProducto, idCarrito, cantidad);
+        DetalleCarritoDTO detalle = carritoService.agregarAlCarrito(idProducto, idCarrito, cantidad);
         return ResponseEntity.status(HttpStatus.CREATED).body(detalle);
     }
 

@@ -5,13 +5,17 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.example.topdeckapi.src.Enumerados.ROL;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 
 @Service
@@ -26,9 +30,17 @@ public class JwtService {
     }
 
     public String generateToken(UserDetails userDetails) {
-        
+        Map<String, Object> claims = new HashMap<>();
+
+        String role = userDetails.getAuthorities().stream()
+                        .findFirst()
+                        .map(GrantedAuthority::getAuthority)
+                                .orElse("ROLE_USER");
+
+        claims.put("role", role);
 
         return Jwts.builder()
+                .setClaims(claims)
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis()+expiration))
@@ -49,6 +61,16 @@ public class JwtService {
             return extractAllClaims(token).getSubject();
         }catch(JwtException | IllegalArgumentException e){
             return null;
+        }
+    }
+
+    public String extractRole(String token) {
+        try{
+            Claims claims = extractAllClaims(token);
+            String role = claims.get("role", String.class);
+            return role.startsWith("ROLE_") ? role : "ROLE_" + role;
+        }catch(Exception e){
+            return "ROLE_USER";
         }
     }
 
