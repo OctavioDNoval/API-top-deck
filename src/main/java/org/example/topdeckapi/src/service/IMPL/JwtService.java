@@ -26,6 +26,8 @@ public class JwtService {
     }
 
     public String generateToken(UserDetails userDetails) {
+        
+
         return Jwts.builder()
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
@@ -63,5 +65,10 @@ public class JwtService {
         return email!=null
                 && email.equals(userDetails.getUsername())
                 && !isTokenExpired(token);
+    }
+
+    public boolean isTokenValid(String token) {
+        String email = extractEmail(token);
+        return email!=null && !isTokenExpired(token);
     }
 }

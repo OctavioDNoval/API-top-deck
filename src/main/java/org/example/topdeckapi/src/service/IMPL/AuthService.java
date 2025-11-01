@@ -7,7 +7,9 @@ import org.example.topdeckapi.src.DTOs.auth.AuthResponse;
 import org.example.topdeckapi.src.DTOs.auth.LoginRequest;
 import org.example.topdeckapi.src.Enumerados.ROL;
 import org.example.topdeckapi.src.Exception.UsuarioNotFoundException;
+import org.example.topdeckapi.src.Repository.ICarritoRepository;
 import org.example.topdeckapi.src.Repository.IUsuarioRepo;
+import org.example.topdeckapi.src.model.Carrito;
 import org.example.topdeckapi.src.model.Usuario;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,6 +22,7 @@ public class AuthService {
     private final IUsuarioRepo usuarioRepo;
     private final PasswordEncoder encoder;
     private final JwtService jwtService;
+    private final ICarritoRepository  carritoRepo;
 
 
     public AuthResponse register (CreateUsuarioDTO dto){
@@ -33,6 +36,11 @@ public class AuthService {
                         .roles(ROL.USER.name())
                         .build()
         );
+
+        Carrito nuevoCarrito = new Carrito();
+        nuevoCarrito.setUsuario(u);
+        carritoRepo.save(nuevoCarrito);
+
         UsuarioDTO uDTO = usuarioService.convertToDto(u);
         return new AuthResponse(token,uDTO);
     }

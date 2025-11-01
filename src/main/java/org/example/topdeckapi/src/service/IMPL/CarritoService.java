@@ -14,6 +14,7 @@ import org.example.topdeckapi.src.service.Interface.ICarritoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+
 import java.util.List;
 
 
@@ -40,7 +41,11 @@ public class CarritoService implements ICarritoService {
         Usuario usuario = usuarioService.convertToEntity(usuarioDTO);
 
         return carritoRepository.findByUsuario(usuario)
-                .orElseThrow(()-> new UsuarioNotFoundException("Usuario no encontrado"));
+                .orElseGet(()->{
+                    Carrito nuevoCarrito = new Carrito();
+                    nuevoCarrito.setUsuario(usuario);
+                    return carritoRepository.save(nuevoCarrito);
+                });
     }
 
     public List<DetalleCarrito> obtenerDetalleCarrito(Long idCarrito){
