@@ -90,7 +90,11 @@ public class JwtService {
     }
 
     public boolean isTokenValid(String token) {
-        String email = extractEmail(token);
-        return email!=null && !isTokenExpired(token);
+        try {
+            String email = extractEmail(token);
+            return email != null && !isTokenExpired(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
     }
 }

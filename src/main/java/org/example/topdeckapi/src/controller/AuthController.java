@@ -29,16 +29,17 @@ public class AuthController {
 
     @GetMapping("/validate/start")
     public ResponseEntity<?> validate(@RequestHeader("Authorization") String token){
-        String cleanToken = token.replace("Bearer ", "").trim();
-        try{
-            if (jwtService.isTokenValid(token)){
-                return ResponseEntity.ok(token);
-            }else{
+        try {
+            String cleanToken = token.replace("Bearer ", "").trim();
+
+            if (jwtService.isTokenValid(cleanToken)) {
+                return ResponseEntity.ok(cleanToken); // Devuelve el token limpio
+            } else {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
-        }catch(Exception e){
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("Token Expirado o invalido");
+                    .body("Token inválido: " + e.getMessage());
         }
     }
 }

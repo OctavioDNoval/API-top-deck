@@ -2,6 +2,7 @@ package org.example.topdeckapi.src.controller;
 
 import jakarta.servlet.ServletRequest;
 import jakarta.validation.Valid;
+import org.example.topdeckapi.src.DTOs.CreateDTO.CreateProductDTO;
 import org.example.topdeckapi.src.model.Producto;
 import org.example.topdeckapi.src.service.IMPL.ProductoService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,8 +36,8 @@ public class ProductoController {
 
     @PostMapping("/admin/post")
     @ResponseStatus(HttpStatus.CREATED)
-    public Producto post(@RequestBody@Valid Producto producto){
-        return productoService.guardar(producto);
+    public Producto post(@RequestBody@Valid CreateProductDTO producto){
+        return  productoService.guardar(producto);
     }
 
     @GetMapping("/public/{id}")
