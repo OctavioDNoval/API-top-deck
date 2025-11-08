@@ -1,6 +1,8 @@
 package org.example.topdeckapi.src.service.IMPL;
 
 import lombok.RequiredArgsConstructor;
+import org.example.topdeckapi.src.DTOs.CreateDTO.CreateCategoriaDTO;
+import org.example.topdeckapi.src.DTOs.UpdateDTO.UpdateCategoriaDTO;
 import org.example.topdeckapi.src.Repository.ICategoriasRepo;
 import org.example.topdeckapi.src.model.Categoria;
 import org.example.topdeckapi.src.service.Interface.ICategoriaService;
@@ -22,14 +24,17 @@ public class CategoriaService implements ICategoriaService {
         return categoriasRepo.findById(idCategoria);
     }
 
-    public Categoria guardar(Categoria categoria) {
+    public Categoria guardar(CreateCategoriaDTO newCategoria) {
+        Categoria categoria = new Categoria();
+        categoria.setNombre(newCategoria.getNombre());
+
         return categoriasRepo.save(categoria);
     }
 
-    public Optional<Categoria> actualizar(Categoria categoria, Long idCategoria) {
+    public Optional<Categoria> actualizar(UpdateCategoriaDTO categoria, Long idCategoria) {
         return categoriasRepo.findById(idCategoria)
                 .map(c->{
-                    if(categoria.getNombre() != null && categoria.getNombre().trim().isEmpty()){
+                    if(categoria.getNombre() != null && !categoria.getNombre().trim().isEmpty()){
                         c.setNombre(categoria.getNombre());
                     }
                     return categoriasRepo.save(c);

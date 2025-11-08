@@ -43,7 +43,7 @@ public class UsuarioController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PatchMapping("/{id}")
+    @PatchMapping("/admin/{id}")
     public ResponseEntity<UsuarioDTO>  update(@PathVariable("id") Long id, @RequestBody @Valid UpdateUsuarioDTO dto){
         return usuarioService.actualizarUsuario(dto, id)
                 .map(ResponseEntity::ok)

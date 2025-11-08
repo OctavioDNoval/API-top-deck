@@ -1,5 +1,7 @@
 package org.example.topdeckapi.src.controller;
 
+import org.example.topdeckapi.src.DTOs.CreateDTO.CreateCategoriaDTO;
+import org.example.topdeckapi.src.DTOs.UpdateDTO.UpdateCategoriaDTO;
 import org.example.topdeckapi.src.model.Categoria;
 import org.example.topdeckapi.src.service.IMPL.CategoriaService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +36,7 @@ public class CategoriaController {
     }
 
     @PatchMapping("/admin/edit/{id}")
-    public ResponseEntity<Categoria> edit(@PathVariable("id") Long id, @RequestBody Categoria newCategoria){
+    public ResponseEntity<Categoria> edit(@PathVariable("id") Long id, @RequestBody UpdateCategoriaDTO newCategoria){
         return categoriaService.actualizar(newCategoria,id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -42,7 +44,7 @@ public class CategoriaController {
 
     @PostMapping("/admin/new")
     @ResponseStatus(HttpStatus.CREATED)
-    public Categoria save(@RequestBody Categoria newCategoria){
+    public Categoria save(@RequestBody CreateCategoriaDTO newCategoria){
         return categoriaService.guardar(newCategoria);
     }
 
