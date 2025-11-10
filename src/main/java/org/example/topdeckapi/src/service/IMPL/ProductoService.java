@@ -31,6 +31,7 @@ public class ProductoService implements IProductoService {
         newProducto.setImg_url(producto.getImg_url());
         newProducto.setStock(producto.getStock());
 
+
         return productoRepo.save(newProducto);
     }
 
@@ -56,6 +57,7 @@ public class ProductoService implements IProductoService {
                     if(newProducto.getStock()!=null){
                         p.setStock(newProducto.getStock());
                     }
+
                     return productoRepo.save(p);
                 });
     }

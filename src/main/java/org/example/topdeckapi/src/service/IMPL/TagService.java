@@ -1,0 +1,54 @@
+package org.example.topdeckapi.src.service.IMPL;
+
+import org.example.topdeckapi.src.DTOs.CreateDTO.CreateTagDTO;
+import org.example.topdeckapi.src.DTOs.DTO.TagDTO;
+import org.example.topdeckapi.src.Repository.ITagRepository;
+import org.example.topdeckapi.src.model.Tag;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class TagService {
+    private final ITagRepository tagRepository;
+
+    @Autowired
+    public TagService(ITagRepository tagRepository) {
+        this.tagRepository = tagRepository;
+    }
+
+    protected TagDTO convertToDTO(Tag tag) {
+        TagDTO tagDTO = new TagDTO();
+        tagDTO.setIdTag(tag.getIdTag());
+        tagDTO.setNombre(tag.getNombre());
+        tagDTO.setImg_url(tag.getImg_url());
+        return tagDTO;
+    }
+
+    public List<TagDTO> getAllTags() {
+        return tagRepository.findAll()
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public TagDTO save(CreateTagDTO dto) {
+        Tag tag = new Tag();
+        tag.setNombre(dto.getNombre());
+        tag.setImg_url(dto.getImg_url());
+
+        Tag tagGuardado = tagRepository.save(tag);
+        return convertToDTO(tagGuardado);
+    }
+
+    public boolean delete(Long id) {
+        if(tagRepository.existsById(id)) {
+            tagRepository.deleteById(id);
+            return true;
+        }else {
+            return false;
+        }
+    }
+}

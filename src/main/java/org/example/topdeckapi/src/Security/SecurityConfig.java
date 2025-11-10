@@ -40,7 +40,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/auth/**",
                                 "/products/public/**",
-                                "/category/public/**")
+                                "/category/public/**",
+                                "/tags/public/**")
                         .permitAll()
                         .requestMatchers(
                                 "/carrito/user/**",
@@ -49,7 +50,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/products/admin/**",
                                 "/category/admin/**",
-                                "/user/admin/**"
+                                "/user/admin/**",
+                                "tags/admin/**"
                         ).hasRole("ADMIN")
                         .anyRequest().authenticated()
                 );

@@ -36,4 +36,5 @@ public class Producto {
 
     @Column(name = "img_url")
     private String img_url;
+
 }
