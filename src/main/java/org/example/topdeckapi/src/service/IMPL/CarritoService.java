@@ -43,12 +43,7 @@ public class CarritoService implements ICarritoService {
         dto.setCantidad(dc.getCantidad());
 
         Producto p = dc.getProducto();
-        ProductoDTO pDto = new ProductoDTO();
-        pDto.setIdProducto(p.getProductoId());
-        pDto.setNombre(p.getNombre());
-        pDto.setPrecio(p.getPrecio());
-        pDto.setDescripcion(p.getDescripcion());
-        pDto.setImg_url(p.getImg_url());
+        ProductoDTO pDto = productoService.convertToDTO(p);
 
         dto.setProductoDTO(pDto);
 
@@ -82,6 +77,7 @@ public class CarritoService implements ICarritoService {
 
     public DetalleCarritoDTO agregarAlCarrito (Long id_producto, Long id_carrito, int cantidad){
         Producto producto = productoService.buscarPorId(id_producto)
+                .map(productoService::convertToEntity)
                 .orElseThrow(()-> new ProductNotFoundException("Producto no encontrado"));
 
         Carrito carrito = carritoRepository.findById(id_carrito)

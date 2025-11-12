@@ -21,5 +21,6 @@ public class CreateProductDTO {
     @NotNull
     private Long id_categoria;
     private String img_url;
+    private Long id_tag;
 
 }

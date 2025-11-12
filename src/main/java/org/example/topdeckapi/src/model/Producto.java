@@ -37,4 +37,8 @@ public class Producto {
     @Column(name = "img_url")
     private String img_url;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_tag")
+    private Tag tag;
+
 }

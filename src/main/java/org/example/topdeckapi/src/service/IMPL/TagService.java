@@ -27,6 +27,14 @@ public class TagService {
         return tagDTO;
     }
 
+    protected Tag convertToEntity(TagDTO tagDTO) {
+        Tag tag = new Tag();
+        tag.setIdTag(tagDTO.getIdTag());
+        tag.setNombre(tagDTO.getNombre());
+        tag.setImg_url(tagDTO.getImg_url());
+        return tag;
+    }
+
     public List<TagDTO> getAllTags() {
         return tagRepository.findAll()
                 .stream()

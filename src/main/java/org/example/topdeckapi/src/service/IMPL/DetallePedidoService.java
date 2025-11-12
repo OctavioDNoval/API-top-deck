@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreateDetallePedidoDTO;
 import org.example.topdeckapi.src.DTOs.DTO.DetallePedidoDTO;
 import org.example.topdeckapi.src.DTOs.DTO.PedidoDTO;
+import org.example.topdeckapi.src.DTOs.DTO.ProductoDTO;
 import org.example.topdeckapi.src.DTOs.UpdateDTO.UpdateDetallePedidoDTO;
 import org.example.topdeckapi.src.Exception.PedidoNotFoundException;
 import org.example.topdeckapi.src.Exception.ProductNotFoundException;
@@ -42,8 +43,10 @@ public class DetallePedidoService implements IDetallePedidoService{
     protected DetallePedido convertDTOToEntity(DetallePedidoDTO dto, Pedido p){
         if(dto == null) return null;
 
-        Optional<Producto> prod = productoService.buscarPorId(dto.getId_producto());
-        Producto producto = prod.orElseThrow(()-> new ProductNotFoundException("Producto no encontrado"));
+        Optional<ProductoDTO> prod = productoService.buscarPorId(dto.getId_producto());
+        Producto producto = prod
+                .map(productoService::convertToEntity)
+                .orElseThrow(()-> new ProductNotFoundException("Producto no encontrado"));
 
         DetallePedido dp = new DetallePedido();
         dp.setIdDetallePedido(dto.getId_detalle_pedido());
@@ -58,6 +61,7 @@ public class DetallePedidoService implements IDetallePedidoService{
         if (dto == null) return null;
 
         Producto producto = productoService.buscarPorId(dto.getId_Producto())
+                .map(productoService::convertToEntity)
                 .orElseThrow(()-> new ProductNotFoundException("Producto "+ dto.getId_Producto() +"no encontrado"));
 
         DetallePedido dp = new DetallePedido();
