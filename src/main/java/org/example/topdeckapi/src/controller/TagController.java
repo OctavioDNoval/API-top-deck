@@ -4,6 +4,7 @@ import jakarta.servlet.ServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreateTagDTO;
 import org.example.topdeckapi.src.DTOs.DTO.TagDTO;
+import org.example.topdeckapi.src.model.Tag;
 import org.example.topdeckapi.src.service.IMPL.TagService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.support.ResourceTransactionManager;
@@ -25,6 +26,13 @@ public class TagController {
     @PostMapping("/admin/post")
     public ResponseEntity<TagDTO> addTag(@RequestBody CreateTagDTO dto, ServletResponse servletResponse) {
         return ResponseEntity.ok(tagService.save(dto));
+    }
+
+    @PatchMapping("/admin/edit/{id}")
+    public ResponseEntity<TagDTO> editTag(@PathVariable Long id, @RequestBody Tag newTag) {
+        return tagService.actualizarTag(id,newTag)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/admin/delete/{id}")

@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -49,6 +50,22 @@ public class TagService {
 
         Tag tagGuardado = tagRepository.save(tag);
         return convertToDTO(tagGuardado);
+    }
+
+    public Optional<TagDTO> actualizarTag(Long id, Tag newTag) {
+        return tagRepository.findById(id)
+                .map(t -> {
+                    if((newTag.getNombre()!=null) && (!newTag.getNombre().isEmpty())) {
+                        t.setNombre(newTag.getNombre());
+                    }
+                    if(newTag.getImg_url()!=null){
+                        t.setImg_url(newTag.getImg_url());
+                    }
+
+                    Tag tagGuardado = tagRepository.save(t);
+
+                    return convertToDTO(tagGuardado);
+                });
     }
 
     public boolean delete(Long id) {

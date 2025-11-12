@@ -110,6 +110,9 @@ public class ProductoService implements IProductoService {
                     if(newProducto.getTag()!=null){
                         p.setTag(newProducto.getTag());
                     }
+                    if(newProducto.getImg_url()!=null){
+                        p.setImg_url(newProducto.getImg_url());
+                    }
 
                     Producto productoGuardado = productoRepo.save(p);
 
