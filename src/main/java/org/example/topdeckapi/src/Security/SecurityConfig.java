@@ -51,7 +51,8 @@ public class SecurityConfig {
                                 "/products/admin/**",
                                 "/category/admin/**",
                                 "/user/admin/**",
-                                "tags/admin/**"
+                                "/tags/admin/**",
+                                "/audit/admin/**"
                         ).hasRole("ADMIN")
                         .anyRequest().authenticated()
                 );
