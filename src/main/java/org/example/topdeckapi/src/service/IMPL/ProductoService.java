@@ -1,16 +1,18 @@
 package org.example.topdeckapi.src.service.IMPL;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreateProductDTO;
 import org.example.topdeckapi.src.DTOs.DTO.ProductoDTO;
 import org.example.topdeckapi.src.Repository.ICategoriasRepo;
 import org.example.topdeckapi.src.Repository.IProductoRepo;
 import org.example.topdeckapi.src.Repository.ITagRepository;
+import org.example.topdeckapi.src.Security.AuditUtils;
 import org.example.topdeckapi.src.model.Categoria;
 import org.example.topdeckapi.src.model.Producto;
 import org.example.topdeckapi.src.model.Tag;
 import org.example.topdeckapi.src.service.Interface.IProductoService;
-import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,7 +25,7 @@ public class ProductoService implements IProductoService {
     private final IProductoRepo productoRepo;
     private final ICategoriasRepo  categoriasRepo;
     private final ITagRepository tagRepository;
-    private final TagService tagService;
+    private final AuditUtils  auditUtils;
 
     protected ProductoDTO convertToDTO(Producto p) {
         ProductoDTO productoDTO = new ProductoDTO();
@@ -71,6 +73,7 @@ public class ProductoService implements IProductoService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     public Producto guardar(CreateProductDTO producto) {
         Producto newProducto = new Producto();
         newProducto.setNombre(producto.getNombre());
@@ -81,6 +84,8 @@ public class ProductoService implements IProductoService {
         newProducto.setStock(producto.getStock());
         newProducto.setTag(tagRepository.findById(producto.getId_tag()).orElse(null));
 
+        auditUtils.setCurrentUserForAudit();
+
         return productoRepo.save(newProducto);
     }
 
@@ -89,6 +94,7 @@ public class ProductoService implements IProductoService {
                 .map(this::convertToDTO);
     }
 
+    @Transactional
     public Optional<ProductoDTO> actualizarProducto(long id, Producto newProducto) {
         return productoRepo.findById(id)
                 .map(p-> {
@@ -116,12 +122,16 @@ public class ProductoService implements IProductoService {
 
                     Producto productoGuardado = productoRepo.save(p);
 
+                    auditUtils.setCurrentUserForAudit();
+
                     return convertToDTO(productoGuardado);
                 });
     }
 
+    @Transactional
     public boolean borrarProducto(long id) {
         if (productoRepo.existsById(id)) {
+            auditUtils.setCurrentUserForAudit();
             productoRepo.deleteById(id);
             return true;
         }else{

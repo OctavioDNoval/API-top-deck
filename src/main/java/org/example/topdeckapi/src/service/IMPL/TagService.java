@@ -1,8 +1,11 @@
 package org.example.topdeckapi.src.service.IMPL;
 
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreateTagDTO;
 import org.example.topdeckapi.src.DTOs.DTO.TagDTO;
 import org.example.topdeckapi.src.Repository.ITagRepository;
+import org.example.topdeckapi.src.Security.AuditUtils;
 import org.example.topdeckapi.src.model.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -12,13 +15,15 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class TagService {
     private final ITagRepository tagRepository;
 
-    @Autowired
-    public TagService(ITagRepository tagRepository) {
-        this.tagRepository = tagRepository;
-    }
+
+    private final AuditUtils auditUtils;
+
+
+
 
     protected TagDTO convertToDTO(Tag tag) {
         TagDTO tagDTO = new TagDTO();
@@ -43,15 +48,20 @@ public class TagService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     public TagDTO save(CreateTagDTO dto) {
         Tag tag = new Tag();
         tag.setNombre(dto.getNombre());
         tag.setImg_url(dto.getImg_url());
 
         Tag tagGuardado = tagRepository.save(tag);
+
+        auditUtils.setCurrentUserForAudit();
+
         return convertToDTO(tagGuardado);
     }
 
+    @Transactional
     public Optional<TagDTO> actualizarTag(Long id, Tag newTag) {
         return tagRepository.findById(id)
                 .map(t -> {
@@ -64,12 +74,16 @@ public class TagService {
 
                     Tag tagGuardado = tagRepository.save(t);
 
+                    auditUtils.setCurrentUserForAudit();
+
                     return convertToDTO(tagGuardado);
                 });
     }
 
+    @Transactional
     public boolean delete(Long id) {
         if(tagRepository.existsById(id)) {
+            auditUtils.setCurrentUserForAudit();
             tagRepository.deleteById(id);
             return true;
         }else {
