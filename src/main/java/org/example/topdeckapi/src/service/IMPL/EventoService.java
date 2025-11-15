@@ -22,8 +22,8 @@ public class EventoService {
         dto.setIdEvento(evento.getIdEvento());
         dto.setNombreEvento(evento.getNombreEvento());
         dto.setUbicacion(evento.getUbicacion());
-        dto.setFecha(evento.getFecha());
-        dto.setHora(evento.getHora());
+        dto.setFecha(evento.getFecha().toString());
+        dto.setHora(evento.getHora().toString());
         dto.setPrecioEntrada(evento.getPrecioEntrada());
         dto.setEstado(evento.getEstado());
 
