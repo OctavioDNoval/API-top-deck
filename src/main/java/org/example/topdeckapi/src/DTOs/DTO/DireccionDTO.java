@@ -16,4 +16,5 @@ public class DireccionDTO {
     private String codigo_postal;
     private String direccion;
     private String altura;
+    private String piso;
 }

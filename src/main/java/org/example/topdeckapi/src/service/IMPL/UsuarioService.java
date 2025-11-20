@@ -2,6 +2,7 @@ package org.example.topdeckapi.src.service.IMPL;
 
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreateUsuarioDTO;
+import org.example.topdeckapi.src.DTOs.CreateDTO.CreateUsuarioSinContraseniaDTO;
 import org.example.topdeckapi.src.DTOs.DTO.UsuarioDTO;
 import org.example.topdeckapi.src.DTOs.UpdateDTO.UpdateUsuarioDTO;
 import org.example.topdeckapi.src.Enumerados.ROL;
@@ -40,6 +41,15 @@ public class UsuarioService implements IUsuarioService {
         );
     }
 
+    protected Usuario createUsuarioDTOtoEntity(CreateUsuarioSinContraseniaDTO dto){
+        Usuario usuario = new Usuario();
+        usuario.setNombre(dto.getNombreCompleto());
+        usuario.setEmail(dto.getEmail());
+        usuario.setRol(ROL.GUESS);
+
+        return usuario;
+    }
+
     protected Usuario convertToEntity(UsuarioDTO dto){
         return new Usuario(
                 dto.getTelefono(),
@@ -64,6 +74,12 @@ public class UsuarioService implements IUsuarioService {
             u.setTelefono(newUsuario.getTelefono());
             u.setRol(ROL.USER);
         Usuario usuarioCargado = usuarioRepo.save(u);
+        return usuarioCargado;
+    }
+
+    public Usuario guardar(CreateUsuarioSinContraseniaDTO newUsuario){
+        Usuario u = createUsuarioDTOtoEntity(newUsuario);
+        Usuario  usuarioCargado = usuarioRepo.save(u);
         return usuarioCargado;
     }
 

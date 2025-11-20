@@ -42,7 +42,9 @@ public class SecurityConfig {
                                 "/products/public/**",
                                 "/category/public/**",
                                 "/tags/public/**",
-                                "/eventos/public/**")
+                                "/eventos/public/**",
+                                "/user/public/**",
+                                "/direccion/public/**")
                         .permitAll()
                         .requestMatchers(
                                 "/carrito/user/**",

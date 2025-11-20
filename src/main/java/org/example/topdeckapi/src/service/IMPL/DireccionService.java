@@ -31,7 +31,8 @@ public class DireccionService implements IDireccionService {
                 dto.getPais(),
                 dto.getCodigo_postal(),
                 dto.getDireccion(),
-                dto.getAltura()
+                dto.getAltura(),
+                dto.getPiso()
         );
     }
 
@@ -44,7 +45,8 @@ public class DireccionService implements IDireccionService {
                 d.getPais(),
                 d.getCodigoPostal(),
                 d.getDireccion(),
-                d.getAltura()
+                d.getAltura(),
+                d.getPiso()
         );
     }
 
@@ -71,6 +73,22 @@ public class DireccionService implements IDireccionService {
         direccion.setCodigoPostal(dto.getCodigo_postal());
         direccion.setDireccion(dto.getDireccion());
         direccion.setAltura(dto.getAltura());
+        direccion.setPiso(dto.getPiso());
+
+        Direccion saved = direccionRepo.save(direccion);
+        return convertToDTO(saved);
+    }
+
+    public DireccionDTO guardarSinUsuario (CreateDireccionDTO dto) {
+        Direccion direccion = new Direccion();
+        direccion.setUsuario(usuarioService.buscarEntidadPorId(dto.getId_usuario()).orElse(null));
+        direccion.setCiudad(dto.getCiudad());
+        direccion.setProvincia(dto.getProvincia());
+        direccion.setPais(dto.getPais());
+        direccion.setCodigoPostal(dto.getCodigo_postal());
+        direccion.setDireccion(dto.getDireccion());
+        direccion.setAltura(dto.getAltura());
+        direccion.setPiso(dto.getPiso());
 
         Direccion saved = direccionRepo.save(direccion);
         return convertToDTO(saved);
@@ -96,6 +114,9 @@ public class DireccionService implements IDireccionService {
                     }
                     if (dto.getAltura() != null && !dto.getAltura().isEmpty()) {
                         d.setAltura(dto.getAltura());
+                    }
+                    if (dto.getPiso() != null && !dto.getPiso().isEmpty()) {
+                        d.setPiso(dto.getPiso());
                     }
             Direccion updated = direccionRepo.save(d);
             return convertToDTO(updated);

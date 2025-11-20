@@ -1,8 +1,10 @@
 package org.example.topdeckapi.src.controller;
 
 import jakarta.validation.Valid;
+import org.example.topdeckapi.src.DTOs.CreateDTO.CreateUsuarioSinContraseniaDTO;
 import org.example.topdeckapi.src.DTOs.DTO.UsuarioDTO;
 import org.example.topdeckapi.src.DTOs.UpdateDTO.UpdateUsuarioDTO;
+import org.example.topdeckapi.src.model.Usuario;
 import org.example.topdeckapi.src.service.IMPL.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -48,6 +50,11 @@ public class UsuarioController {
         return usuarioService.actualizarUsuario(dto, id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/public/usuario/!contrasenia")
+    public ResponseEntity<Usuario> guardarUsuarioSinContrasenia(@RequestBody CreateUsuarioSinContraseniaDTO dto){
+        return ResponseEntity.ok(usuarioService.guardar(dto));
     }
 
     @DeleteMapping("/admin/delete/{id}")

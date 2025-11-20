@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CreateDireccionDTO {
-    @NotBlank
     private Long id_usuario;
 
     @NotBlank
@@ -29,4 +28,6 @@ public class CreateDireccionDTO {
 
     @NotBlank
     private String altura;
+
+    private String piso;
 }
