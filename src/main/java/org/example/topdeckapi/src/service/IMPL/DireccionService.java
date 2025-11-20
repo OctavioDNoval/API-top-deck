@@ -123,6 +123,14 @@ public class DireccionService implements IDireccionService {
         });
     }
 
+    public List<DireccionDTO> direccionesPorUsuario (Long idUsuario){
+        List<DireccionDTO> lista = direccionRepo.findByUsuario_IdUsuario(idUsuario)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+        return lista;
+    }
+
     public boolean delete(Long id) {
         if (direccionRepo.existsById(id)) {
             direccionRepo.deleteById(id);

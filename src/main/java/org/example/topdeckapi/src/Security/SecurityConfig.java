@@ -48,7 +48,8 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(
                                 "/carrito/user/**",
-                                "/user/**"
+                                "/user/**",
+                                "/direccion/user/**"
                         ).hasAnyRole("USER", "ADMIN")
                         .requestMatchers(
                                 "/products/admin/**",
