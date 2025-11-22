@@ -16,8 +16,14 @@ public class DireccionController {
     private final DireccionService direccionService;
 
     @PostMapping("/public/save/nouser")
-    public ResponseEntity<DireccionDTO> saveDireccion(@RequestBody CreateDireccionDTO dto){
+    public ResponseEntity<DireccionDTO> saveDireccionSinUsuario(@RequestBody CreateDireccionDTO dto){
         DireccionDTO direc = direccionService.guardarSinUsuario(dto);
+        return ResponseEntity.ok(direc);
+    }
+
+    @PostMapping("/public/save")
+    public ResponseEntity<DireccionDTO> saveDireccion (@RequestBody CreateDireccionDTO dto){
+        DireccionDTO direc = direccionService.guardar(dto);
         return ResponseEntity.ok(direc);
     }
 
