@@ -3,6 +3,7 @@ package org.example.topdeckapi.src.DTOs.DTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.example.topdeckapi.src.Enumerados.ESTADO_EVENTO;
 import org.example.topdeckapi.src.model.DetallePedido;
 
 import java.util.ArrayList;
@@ -18,4 +19,5 @@ public class PedidoDTO {
     private Date fecha_pedido;
     private Double total;
     private List<DetallePedidoDTO> detalles = new ArrayList<>();
+    private String estado;
 }

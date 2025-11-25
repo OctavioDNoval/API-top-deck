@@ -30,4 +30,6 @@ public class CreateDireccionDTO {
     private String altura;
 
     private String piso;
+
+    private Boolean principal;
 }

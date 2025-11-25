@@ -17,4 +17,5 @@ public class DireccionDTO {
     private String direccion;
     private String altura;
     private String piso;
+    private Boolean principal;
 }

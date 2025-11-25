@@ -28,6 +28,8 @@ public class Pedido {
     @Column(name = "fecha_pedido", nullable = false)
     private Date fechaPedido;
 
+    private String estado;
+
 
     /*
     * Aca las propiedades de column son

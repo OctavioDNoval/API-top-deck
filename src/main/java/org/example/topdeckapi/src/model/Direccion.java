@@ -38,4 +38,6 @@ public class Direccion {
     private String altura;
 
     private String piso;
+
+    private Boolean principal;
 }

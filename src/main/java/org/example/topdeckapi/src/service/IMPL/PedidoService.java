@@ -32,15 +32,18 @@ public class PedidoService implements IPedidoService {
     }
 
     protected PedidoDTO convertToDTO(Pedido p) {
-        return new PedidoDTO(
-                p.getIdPedido(),
-                usuarioService.convertToDto(p.getUsuario()),
-                p.getFechaPedido(),
-                p.getTotal(),
-                p.getDetalles().stream()
-                        .map(detallePedidoService::convertEntityToDTO)
-                        .collect(Collectors.toList())
+        PedidoDTO dto = new PedidoDTO();
+        dto.setId_pedido(p.getIdPedido());
+        dto.setEstado(p.getEstado());
+        dto.setTotal(p.getTotal());
+        dto.setUsuario(usuarioService.convertToDto(p.getUsuario()));
+        dto.setFecha_pedido(p.getFechaPedido());
+        dto.setDetalles(p.getDetalles().stream()
+                .map(detallePedidoService::convertEntityToDTO)
+                .collect(Collectors.toList())
         );
+
+        return dto;
     }
 
     protected Pedido convertCreateDTOToEntity(CreatePedidoDTO createDto) {
@@ -92,6 +95,9 @@ public class PedidoService implements IPedidoService {
                     }
                     if(dto.getPrecio()!=null){
                         p.setTotal(dto.getPrecio());
+                    }
+                    if(dto.getEstado()!=null){
+                        p.setEstado(dto.getEstado());
                     }
                     Pedido pedidoActualizado = pedidoRepo.save(p);
                     return convertToDTO(pedidoActualizado);
