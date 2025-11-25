@@ -49,6 +49,11 @@ public class CarritoController {
         }
     }
 
+    @PatchMapping("/user/detalle/actualizar/{idDetalle}")
+    public ResponseEntity<DetalleCarritoDTO> actualizarDetalle (@PathVariable Long idDetalle,@RequestParam int nuevaCantidad){
+        return ResponseEntity.ok(carritoService.actualizarCantidad(idDetalle, nuevaCantidad));
+    }
+
     @DeleteMapping("/user/{idCarrito}/empty")
     public ResponseEntity<Void> vaciarCarrito(@PathVariable("idCarrito") Long idCarrito){
         carritoService.borrarCarrito(idCarrito);

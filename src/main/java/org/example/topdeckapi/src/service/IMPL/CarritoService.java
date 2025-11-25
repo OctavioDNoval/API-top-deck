@@ -64,6 +64,16 @@ public class CarritoService implements ICarritoService {
                 });
     }
 
+    public DetalleCarritoDTO actualizarCantidad (Long idDetalle, int nuevaCantidad){
+        DetalleCarrito dc = detalleCarritoRepository.findById(idDetalle).orElse(null);
+        
+        if(dc != null ){
+            dc.setCantidad(nuevaCantidad);
+            detalleCarritoRepository.save(dc);
+        }
+        return convertToDTO(dc);
+    }
+
     public List<DetalleCarritoDTO> obtenerDetalleCarrito(Long idCarrito){
         Carrito carrito = carritoRepository.findById(idCarrito)
                 .orElseThrow(()-> new CarritoNotFoundException("Carrito no encontrado"));
