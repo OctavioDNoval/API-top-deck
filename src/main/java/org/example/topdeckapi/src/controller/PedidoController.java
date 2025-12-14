@@ -1,8 +1,10 @@
 package org.example.topdeckapi.src.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.example.topdeckapi.src.DTOs.CreateDTO.CreateDetallePedidoDTO;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreatePedidoDTO;
 import org.example.topdeckapi.src.DTOs.DTO.PedidoDTO;
+import org.example.topdeckapi.src.model.DetallePedido;
 import org.example.topdeckapi.src.model.Pedido;
 import org.example.topdeckapi.src.service.IMPL.PedidoService;
 import org.springframework.http.ResponseEntity;
@@ -26,5 +28,11 @@ public class PedidoController {
     @PostMapping("/public/newPedido")
     public ResponseEntity<Pedido> newPedido(@RequestBody CreatePedidoDTO pedidoDTO){
         return ResponseEntity.ok(pedidoService.guardar(pedidoDTO));
+    }
+
+    @PostMapping("public/{idPedido}/detalles")
+    public ResponseEntity<List<DetallePedido>> newDetallePedido(@PathVariable("idPedido") Long idPedido, @RequestBody List<CreateDetallePedidoDTO> detallePedido){
+        List<DetallePedido> lista = pedidoService.guardarDetalles(detallePedido);
+        return ResponseEntity.ok(lista);
     }
 }

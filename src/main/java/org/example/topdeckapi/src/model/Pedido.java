@@ -30,6 +30,10 @@ public class Pedido {
 
     private String estado;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_direccion")
+    private Direccion direccion;
+
 
     /*
     * Aca las propiedades de column son

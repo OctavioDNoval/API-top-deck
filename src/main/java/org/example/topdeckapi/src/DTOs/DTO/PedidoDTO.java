@@ -16,6 +16,7 @@ import java.util.List;
 public class PedidoDTO {
     private Long id_pedido;
     private UsuarioDTO usuario;
+    private DireccionDTO direccion;
     private Date fecha_pedido;
     private Double total;
     private List<DetallePedidoDTO> detalles = new ArrayList<>();

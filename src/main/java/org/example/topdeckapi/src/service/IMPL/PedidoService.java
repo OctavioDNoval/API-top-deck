@@ -1,17 +1,21 @@
 package org.example.topdeckapi.src.service.IMPL;
 
 import lombok.RequiredArgsConstructor;
+import org.example.topdeckapi.src.DTOs.CreateDTO.CreateDetallePedidoDTO;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreatePedidoDTO;
+import org.example.topdeckapi.src.DTOs.DTO.DireccionDTO;
 import org.example.topdeckapi.src.DTOs.DTO.PedidoDTO;
 import org.example.topdeckapi.src.DTOs.DTO.UsuarioDTO;
 import org.example.topdeckapi.src.DTOs.UpdateDTO.UpdatePedidoDTO;
 import org.example.topdeckapi.src.Exception.UsuarioNotFoundException;
 import org.example.topdeckapi.src.Repository.IPedidoRepo;
 import org.example.topdeckapi.src.model.DetallePedido;
+import org.example.topdeckapi.src.model.Direccion;
 import org.example.topdeckapi.src.model.Pedido;
 import org.example.topdeckapi.src.model.Usuario;
 import org.example.topdeckapi.src.service.Interface.IPedidoService;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -24,11 +28,13 @@ public class PedidoService implements IPedidoService {
     private final IPedidoRepo pedidoRepo;
     private final UsuarioService usuarioService;
     private final DetallePedidoService detallePedidoService;
+    private final DireccionService direccionService;
 
-    public PedidoService(IPedidoRepo pedidoRepo, UsuarioService usuarioService, @Lazy DetallePedidoService detallePedidoService) {
+    public PedidoService(IPedidoRepo pedidoRepo, UsuarioService usuarioService, @Lazy DetallePedidoService detallePedidoService, DireccionService direccionService) {
         this.pedidoRepo = pedidoRepo;
         this.usuarioService = usuarioService;
         this.detallePedidoService = detallePedidoService;
+        this.direccionService = direccionService;
     }
 
     protected PedidoDTO convertToDTO(Pedido p) {
@@ -36,8 +42,10 @@ public class PedidoService implements IPedidoService {
         dto.setId_pedido(p.getIdPedido());
         dto.setEstado(p.getEstado());
         dto.setTotal(p.getTotal());
+        dto.setDireccion(direccionService.convertToDTO(p.getDireccion()));
         dto.setUsuario(usuarioService.convertToDto(p.getUsuario()));
         dto.setFecha_pedido(p.getFechaPedido());
+
         dto.setDetalles(p.getDetalles().stream()
                 .map(detallePedidoService::convertEntityToDTO)
                 .collect(Collectors.toList())
@@ -52,10 +60,16 @@ public class PedidoService implements IPedidoService {
 
         Usuario u = usuarioService.convertToEntity(usuarioDTO);
 
+        DireccionDTO direccionDTO = direccionService.getById(createDto.getDireccionDTO().getId_direccion())
+                .orElseThrow(RuntimeException::new);
+
+        Direccion d = direccionService.convertToEntity(direccionDTO);
+
         Pedido p = new Pedido();
         p.setUsuario(u);
         p.setFechaPedido(createDto.getFecha_pedido());
         p.setTotal(createDto.getPrecio());
+        p.setDireccion(d);
         p.setDetalles(new ArrayList<>());
 
         List<DetallePedido> detalles = createDto.getDetalles().stream()
@@ -76,6 +90,14 @@ public class PedidoService implements IPedidoService {
     public Optional<PedidoDTO> getById(Long id){
         return pedidoRepo.findById(id)
                 .map(this::convertToDTO);
+    }
+
+    public List<DetallePedido> guardarDetalles (List<CreateDetallePedidoDTO> pedidoDTOS){
+        List<DetallePedido> detalles = new ArrayList<>();
+        pedidoDTOS.forEach(dto->{
+            detalles.add(detallePedidoService.guardar(dto));
+        });
+        return detalles;
     }
 
     public Optional<Pedido> getEntityById(Long id){
