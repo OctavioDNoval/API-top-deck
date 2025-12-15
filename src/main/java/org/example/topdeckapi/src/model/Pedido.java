@@ -51,6 +51,8 @@ public class Pedido {
 
     private String version_terminos_y_condiciones;
 
+    private Boolean terminos_aceptados = false;
+
     public Pedido(Usuario usuario, Date fechaPedido, Double total, List<DetallePedido> detalles) {
         this.usuario = usuario;
         this.fechaPedido = fechaPedido;

@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreateDetallePedidoDTO;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreatePedidoDTO;
@@ -27,6 +28,20 @@ public class PedidoController {
 
     @PostMapping("/public/newPedido")
     public ResponseEntity<Pedido> newPedido(@RequestBody CreatePedidoDTO pedidoDTO){
+
+            System.out.println("=== DEBUG - DATOS RECIBIDOS ===");
+            System.out.println("pedidoDTO completo: " + pedidoDTO);
+
+            if (pedidoDTO.getUsuarioDTO() != null) {
+                System.out.println("UsuarioDTO: " + pedidoDTO.getUsuarioDTO());
+                System.out.println("ID Usuario: " + pedidoDTO.getUsuarioDTO().getId_usuario());
+            } else {
+                System.out.println("UsuarioDTO es NULL!");
+            }
+
+
+
+
         return ResponseEntity.ok(pedidoService.guardar(pedidoDTO));
     }
 

@@ -84,6 +84,21 @@ public class DireccionService implements IDireccionService {
     }
 
     public DireccionDTO guardarSinUsuario (CreateDireccionDTO dto) {
+        Optional<Direccion> direccionExistente = direccionRepo.findByDireccionAndAlturaAndPisoAndCiudadAndProvinciaAndPaisAndCodigoPostalAndUsuario_IdUsuario(
+                dto.getDireccion(),
+                dto.getAltura(),
+                dto.getPiso(),
+                dto.getCiudad(),
+                dto.getProvincia(),
+                dto.getPais(),
+                dto.getCodigo_postal(),
+                dto.getId_usuario()
+        );
+        if (direccionExistente.isPresent()) {
+
+            return convertToDTO(direccionExistente.get());
+        }
+
         Direccion direccion = new Direccion();
         direccion.setUsuario(usuarioService.buscarEntidadPorId(dto.getId_usuario()).orElse(null));
         direccion.setCiudad(dto.getCiudad());

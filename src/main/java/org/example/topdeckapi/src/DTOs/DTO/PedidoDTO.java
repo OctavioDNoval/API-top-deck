@@ -24,4 +24,5 @@ public class PedidoDTO {
     private String estado;
     private String ip_usuario;
     private String version_terminos_y_condiciones;
+    private Boolean terminos_aceptados = false;
 }

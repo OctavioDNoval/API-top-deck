@@ -74,6 +74,7 @@ public class PedidoService implements IPedidoService {
         p.setEstado(ESTADO_PEDIDO.PENDIENTE.name());
         p.setDetalles(new ArrayList<>());
         p.setIp_usuario(createDto.getIp_usuario());
+        p.setTerminos_aceptados(createDto.getTerminos_aceptados());
         p.setVersion_terminos_y_condiciones(createDto.getVersion_terminos_y_condiciones());
 
         return p;
@@ -104,6 +105,7 @@ public class PedidoService implements IPedidoService {
 
     public Pedido guardar(CreatePedidoDTO newPedido){
         Pedido entidadPedido = convertCreateDTOToEntity(newPedido);
+        entidadPedido.setDetalles(new ArrayList<>());
         Pedido pedidoGuardado = pedidoRepo.save(entidadPedido);
         List<DetallePedido> detalles = new ArrayList<>();
 

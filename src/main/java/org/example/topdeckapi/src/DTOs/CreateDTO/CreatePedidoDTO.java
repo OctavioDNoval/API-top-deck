@@ -30,5 +30,7 @@ public class CreatePedidoDTO {
 
     private String version_terminos_y_condiciones;
 
+    private Boolean terminos_aceptados = false;
+
     private List<CreateDetallePedidoDTO> detalles = new ArrayList<>();
 }
