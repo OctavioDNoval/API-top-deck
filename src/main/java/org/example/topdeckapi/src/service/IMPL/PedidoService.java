@@ -71,8 +71,10 @@ public class PedidoService implements IPedidoService {
         p.setFechaPedido(createDto.getFecha_pedido());
         p.setTotal(createDto.getPrecio());
         p.setDireccion(d);
-        p.setEstado(ESTADO_PEDIDO.PENDIENTE);
+        p.setEstado(ESTADO_PEDIDO.PENDIENTE.name());
         p.setDetalles(new ArrayList<>());
+        p.setIp_usuario(createDto.getIp_usuario());
+        p.setVersion_terminos_y_condiciones(createDto.getVersion_terminos_y_condiciones());
 
         return p;
     }
@@ -106,6 +108,7 @@ public class PedidoService implements IPedidoService {
         List<DetallePedido> detalles = new ArrayList<>();
 
         for(CreateDetallePedidoDTO dto : newPedido.getDetalles()){
+            dto.setId_pedido(pedidoGuardado.getIdPedido());
             DetallePedido detallePedido = detallePedidoService.convertDTOToEntity(dto,entidadPedido);
             DetallePedido detalleGuardado = detallePedidoService.guardar(dto);
             detalles.add(detalleGuardado);

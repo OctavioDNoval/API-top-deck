@@ -24,7 +24,11 @@ public class CreatePedidoDTO {
     private DireccionDTO direccionDTO;
 
     @Size(min = 0)
-    private double precio;
+    private Double precio;
+
+    private String ip_usuario;
+
+    private String version_terminos_y_condiciones;
 
     private List<CreateDetallePedidoDTO> detalles = new ArrayList<>();
 }

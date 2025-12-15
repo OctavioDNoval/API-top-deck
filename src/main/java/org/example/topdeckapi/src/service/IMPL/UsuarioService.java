@@ -78,6 +78,10 @@ public class UsuarioService implements IUsuarioService {
     }
 
     public Usuario guardar(CreateUsuarioSinContraseniaDTO newUsuario){
+        Optional<Usuario> usuario = usuarioRepo.findByEmail(newUsuario.getEmail());
+        if(usuario.isPresent()){
+           return usuario.get();
+        }
         Usuario u = createUsuarioDTOtoEntity(newUsuario);
         Usuario  usuarioCargado = usuarioRepo.save(u);
         return usuarioCargado;

@@ -16,5 +16,5 @@ public class UpdatePedidoDTO {
     private Date fecha_pedido;
     @Min(value = 0)
     private Double precio;
-    private ESTADO_PEDIDO estado;
+    private String estado;
 }

@@ -29,7 +29,7 @@ public class Pedido {
     @Column(name = "fecha_pedido", nullable = false)
     private Date fechaPedido;
 
-    private ESTADO_PEDIDO estado;
+    private String estado;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_direccion")
@@ -46,6 +46,10 @@ public class Pedido {
 
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DetallePedido> detalles = new ArrayList<>();
+
+    private String ip_usuario;
+
+    private String version_terminos_y_condiciones;
 
     public Pedido(Usuario usuario, Date fechaPedido, Double total, List<DetallePedido> detalles) {
         this.usuario = usuario;

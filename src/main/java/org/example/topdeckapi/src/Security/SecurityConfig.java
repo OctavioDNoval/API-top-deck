@@ -45,7 +45,7 @@ public class SecurityConfig {
                                 "/eventos/public/**",
                                 "/user/public/**",
                                 "/direccion/public/**",
-                                "/pedidos/public/")
+                                "/pedidos/public/**")
                         .permitAll()
                         .requestMatchers(
                                 "/carrito/user/**",

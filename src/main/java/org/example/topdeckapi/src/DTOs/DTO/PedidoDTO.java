@@ -21,5 +21,7 @@ public class PedidoDTO {
     private Date fecha_pedido;
     private Double total;
     private List<DetallePedidoDTO> detalles = new ArrayList<>();
-    private ESTADO_PEDIDO estado;
+    private String estado;
+    private String ip_usuario;
+    private String version_terminos_y_condiciones;
 }
