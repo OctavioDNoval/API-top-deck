@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.example.topdeckapi.src.Enumerados.ESTADO_PEDIDO;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -28,7 +29,7 @@ public class Pedido {
     @Column(name = "fecha_pedido", nullable = false)
     private Date fechaPedido;
 
-    private String estado;
+    private ESTADO_PEDIDO estado;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_direccion")

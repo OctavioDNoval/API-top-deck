@@ -19,7 +19,6 @@ public class CreateDetallePedidoDTO {
     @Size(min = 0)
     private Double precio_unitario;
 
-    @NotBlank
     private Long id_pedido;
 
     @NotBlank

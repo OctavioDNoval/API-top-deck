@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import net.minidev.json.annotate.JsonIgnore;
 
 
 @Entity
@@ -30,6 +31,7 @@ public class DetallePedido {
 
     @ManyToOne (fetch = FetchType.LAZY)
     @JoinColumn (name = "id_pedido", nullable = false)
+    @JsonIgnore
     private Pedido pedido;
 
     /*

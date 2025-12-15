@@ -7,6 +7,7 @@ import org.example.topdeckapi.src.DTOs.DTO.DireccionDTO;
 import org.example.topdeckapi.src.DTOs.DTO.PedidoDTO;
 import org.example.topdeckapi.src.DTOs.DTO.UsuarioDTO;
 import org.example.topdeckapi.src.DTOs.UpdateDTO.UpdatePedidoDTO;
+import org.example.topdeckapi.src.Enumerados.ESTADO_PEDIDO;
 import org.example.topdeckapi.src.Exception.UsuarioNotFoundException;
 import org.example.topdeckapi.src.Repository.IPedidoRepo;
 import org.example.topdeckapi.src.model.DetallePedido;
@@ -70,13 +71,8 @@ public class PedidoService implements IPedidoService {
         p.setFechaPedido(createDto.getFecha_pedido());
         p.setTotal(createDto.getPrecio());
         p.setDireccion(d);
+        p.setEstado(ESTADO_PEDIDO.PENDIENTE);
         p.setDetalles(new ArrayList<>());
-
-        List<DetallePedido> detalles = createDto.getDetalles().stream()
-                .map(dto-> detallePedidoService.convertDTOToEntity(dto,p))
-                .collect(Collectors.toList());
-
-        p.setDetalles(detalles);
 
         return p;
     }
@@ -105,8 +101,16 @@ public class PedidoService implements IPedidoService {
     }
 
     public Pedido guardar(CreatePedidoDTO newPedido){
-        Pedido entidad = convertCreateDTOToEntity(newPedido);
-        return pedidoRepo.save(entidad);
+        Pedido entidadPedido = convertCreateDTOToEntity(newPedido);
+        Pedido pedidoGuardado = pedidoRepo.save(entidadPedido);
+        List<DetallePedido> detalles = new ArrayList<>();
+
+        for(CreateDetallePedidoDTO dto : newPedido.getDetalles()){
+            DetallePedido detallePedido = detallePedidoService.convertDTOToEntity(dto,entidadPedido);
+            DetallePedido detalleGuardado = detallePedidoService.guardar(dto);
+            detalles.add(detalleGuardado);
+        }
+        return entidadPedido;
     }
 
     public Optional<PedidoDTO> actualizarPedido(UpdatePedidoDTO dto, Long id){

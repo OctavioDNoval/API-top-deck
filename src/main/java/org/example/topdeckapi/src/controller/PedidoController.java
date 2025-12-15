@@ -30,8 +30,8 @@ public class PedidoController {
         return ResponseEntity.ok(pedidoService.guardar(pedidoDTO));
     }
 
-    @PostMapping("public/{idPedido}/detalles")
-    public ResponseEntity<List<DetallePedido>> newDetallePedido(@PathVariable("idPedido") Long idPedido, @RequestBody List<CreateDetallePedidoDTO> detallePedido){
+    @PostMapping("public/detalles")
+    public ResponseEntity<List<DetallePedido>> newDetallePedido(@RequestBody List<CreateDetallePedidoDTO> detallePedido){
         List<DetallePedido> lista = pedidoService.guardarDetalles(detallePedido);
         return ResponseEntity.ok(lista);
     }

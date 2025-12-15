@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.example.topdeckapi.src.Enumerados.ESTADO_PEDIDO;
 
 import java.util.Date;
 
@@ -15,5 +16,5 @@ public class UpdatePedidoDTO {
     private Date fecha_pedido;
     @Min(value = 0)
     private Double precio;
-    private String estado;
+    private ESTADO_PEDIDO estado;
 }

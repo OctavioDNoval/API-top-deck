@@ -26,5 +26,5 @@ public class CreatePedidoDTO {
     @Size(min = 0)
     private double precio;
 
-    private List<DetallePedidoDTO> detalles = new ArrayList<>();
+    private List<CreateDetallePedidoDTO> detalles = new ArrayList<>();
 }
