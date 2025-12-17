@@ -9,6 +9,7 @@ import org.example.topdeckapi.src.DTOs.UpdateDTO.UpdateDetallePedidoDTO;
 import org.example.topdeckapi.src.Exception.PedidoNotFoundException;
 import org.example.topdeckapi.src.Exception.ProductNotFoundException;
 import org.example.topdeckapi.src.Repository.IDetallePedidoRepo;
+import org.example.topdeckapi.src.Repository.IPedidoRepo;
 import org.example.topdeckapi.src.model.DetallePedido;
 import org.example.topdeckapi.src.model.Pedido;
 import org.example.topdeckapi.src.model.Producto;
@@ -23,8 +24,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DetallePedidoService implements IDetallePedidoService{
     private final IDetallePedidoRepo detallePedidoRepo;
+    private final IPedidoRepo pedidoRepo;
     private final ProductoService productoService;
-    private final PedidoService pedidoService;
 
 
     protected DetallePedidoDTO convertEntityToDTO (DetallePedido dp){
@@ -85,7 +86,7 @@ public class DetallePedidoService implements IDetallePedidoService{
     }
 
     public DetallePedido guardar(CreateDetallePedidoDTO dto){
-        Pedido p = pedidoService.getEntityById(dto.getId_pedido())
+        Pedido p = pedidoRepo.findById(dto.getId_pedido())
                 .orElseThrow(()-> new PedidoNotFoundException("Pedido con id:"+ dto.getId_pedido()+" no encontrado"));
 
         DetallePedido entidad = convertDTOToEntity(dto,p);

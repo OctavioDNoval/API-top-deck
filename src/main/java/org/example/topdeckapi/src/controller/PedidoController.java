@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreateDetallePedidoDTO;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreatePedidoDTO;
+import org.example.topdeckapi.src.DTOs.DTO.DetallePedidoDTO;
 import org.example.topdeckapi.src.DTOs.DTO.PedidoDTO;
 import org.example.topdeckapi.src.model.DetallePedido;
 import org.example.topdeckapi.src.model.Pedido;
@@ -26,10 +27,14 @@ public class PedidoController {
         return ResponseEntity.ok(pedidoDTOS);
     }
 
+    @GetMapping("/admin/{idPedido}/getDetalles")
+    public ResponseEntity<List<DetallePedidoDTO>> getDetallesPedido(@PathVariable Long idPedido){
+        return ResponseEntity.ok(pedidoService.getByPedidoId(idPedido));
+
+    }
+
     @PostMapping("/public/newPedido")
     public ResponseEntity<Pedido> newPedido(@RequestBody CreatePedidoDTO pedidoDTO){
-
-            System.out.println("=== DEBUG - DATOS RECIBIDOS ===");
             System.out.println("pedidoDTO completo: " + pedidoDTO);
 
             if (pedidoDTO.getUsuarioDTO() != null) {

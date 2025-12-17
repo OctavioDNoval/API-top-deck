@@ -3,12 +3,15 @@ package org.example.topdeckapi.src.service.IMPL;
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreateDetallePedidoDTO;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreatePedidoDTO;
+import org.example.topdeckapi.src.DTOs.DTO.DetallePedidoDTO;
 import org.example.topdeckapi.src.DTOs.DTO.DireccionDTO;
 import org.example.topdeckapi.src.DTOs.DTO.PedidoDTO;
 import org.example.topdeckapi.src.DTOs.DTO.UsuarioDTO;
 import org.example.topdeckapi.src.DTOs.UpdateDTO.UpdatePedidoDTO;
 import org.example.topdeckapi.src.Enumerados.ESTADO_PEDIDO;
+import org.example.topdeckapi.src.Exception.PedidoNotFoundException;
 import org.example.topdeckapi.src.Exception.UsuarioNotFoundException;
+import org.example.topdeckapi.src.Repository.IDetallePedidoRepo;
 import org.example.topdeckapi.src.Repository.IPedidoRepo;
 import org.example.topdeckapi.src.model.DetallePedido;
 import org.example.topdeckapi.src.model.Direccion;
@@ -27,12 +30,14 @@ import java.util.stream.Collectors;
 @Service
 public class PedidoService implements IPedidoService {
     private final IPedidoRepo pedidoRepo;
+    private final IDetallePedidoRepo  detallePedidoRepo;
     private final UsuarioService usuarioService;
     private final DetallePedidoService detallePedidoService;
     private final DireccionService direccionService;
 
-    public PedidoService(IPedidoRepo pedidoRepo, UsuarioService usuarioService, @Lazy DetallePedidoService detallePedidoService, DireccionService direccionService) {
+    public PedidoService(IPedidoRepo pedidoRepo, IDetallePedidoRepo detallePedidoRepo, UsuarioService usuarioService, DetallePedidoService detallePedidoService, DireccionService direccionService) {
         this.pedidoRepo = pedidoRepo;
+        this.detallePedidoRepo = detallePedidoRepo;
         this.usuarioService = usuarioService;
         this.detallePedidoService = detallePedidoService;
         this.direccionService = direccionService;
@@ -78,6 +83,16 @@ public class PedidoService implements IPedidoService {
         p.setVersion_terminos_y_condiciones(createDto.getVersion_terminos_y_condiciones());
 
         return p;
+    }
+
+    public List<DetallePedidoDTO> getByPedidoId(Long idPedido){
+        Pedido p = pedidoRepo.findById(idPedido)
+                .orElseThrow(()-> new PedidoNotFoundException("Pedido no encontrado"));
+
+        List<DetallePedido> detalles = detallePedidoRepo.findByPedido(p);
+        return detalles.stream()
+                .map(detallePedidoService::convertEntityToDTO)
+                .collect(Collectors.toList());
     }
 
     public List<PedidoDTO> getAll(){
