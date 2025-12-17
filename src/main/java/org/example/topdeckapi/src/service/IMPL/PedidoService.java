@@ -3,10 +3,7 @@ package org.example.topdeckapi.src.service.IMPL;
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreateDetallePedidoDTO;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreatePedidoDTO;
-import org.example.topdeckapi.src.DTOs.DTO.DetallePedidoDTO;
-import org.example.topdeckapi.src.DTOs.DTO.DireccionDTO;
-import org.example.topdeckapi.src.DTOs.DTO.PedidoDTO;
-import org.example.topdeckapi.src.DTOs.DTO.UsuarioDTO;
+import org.example.topdeckapi.src.DTOs.DTO.*;
 import org.example.topdeckapi.src.DTOs.UpdateDTO.UpdatePedidoDTO;
 import org.example.topdeckapi.src.Enumerados.ESTADO_PEDIDO;
 import org.example.topdeckapi.src.Exception.PedidoNotFoundException;
@@ -85,13 +82,13 @@ public class PedidoService implements IPedidoService {
         return p;
     }
 
-    public List<DetallePedidoDTO> getByPedidoId(Long idPedido){
+    public List<DetallePedidoDTOCompleto> getByPedidoId(Long idPedido){
         Pedido p = pedidoRepo.findById(idPedido)
                 .orElseThrow(()-> new PedidoNotFoundException("Pedido no encontrado"));
 
         List<DetallePedido> detalles = detallePedidoRepo.findByPedido(p);
         return detalles.stream()
-                .map(detallePedidoService::convertEntityToDTO)
+                .map(detallePedidoService::convertEntityToDTOCompleto)
                 .collect(Collectors.toList());
     }
 

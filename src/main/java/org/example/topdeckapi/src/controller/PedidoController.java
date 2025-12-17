@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreateDetallePedidoDTO;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreatePedidoDTO;
 import org.example.topdeckapi.src.DTOs.DTO.DetallePedidoDTO;
+import org.example.topdeckapi.src.DTOs.DTO.DetallePedidoDTOCompleto;
 import org.example.topdeckapi.src.DTOs.DTO.PedidoDTO;
 import org.example.topdeckapi.src.model.DetallePedido;
 import org.example.topdeckapi.src.model.Pedido;
@@ -28,9 +29,8 @@ public class PedidoController {
     }
 
     @GetMapping("/admin/{idPedido}/getDetalles")
-    public ResponseEntity<List<DetallePedidoDTO>> getDetallesPedido(@PathVariable Long idPedido){
+    public ResponseEntity<List<DetallePedidoDTOCompleto>> getDetallesPedido(@PathVariable Long idPedido){
         return ResponseEntity.ok(pedidoService.getByPedidoId(idPedido));
-
     }
 
     @PostMapping("/public/newPedido")

@@ -3,6 +3,7 @@ package org.example.topdeckapi.src.service.IMPL;
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreateDetallePedidoDTO;
 import org.example.topdeckapi.src.DTOs.DTO.DetallePedidoDTO;
+import org.example.topdeckapi.src.DTOs.DTO.DetallePedidoDTOCompleto;
 import org.example.topdeckapi.src.DTOs.DTO.PedidoDTO;
 import org.example.topdeckapi.src.DTOs.DTO.ProductoDTO;
 import org.example.topdeckapi.src.DTOs.UpdateDTO.UpdateDetallePedidoDTO;
@@ -36,9 +37,22 @@ public class DetallePedidoService implements IDetallePedidoService{
                 dp.getIdDetallePedido(),
                 dp.getCantidad(),
                 dp.getPrecioUnitario(),
-                idProducto,
-                idPedido
+                idPedido,
+                idProducto
         );
+    }
+
+    protected DetallePedidoDTOCompleto  convertEntityToDTOCompleto (DetallePedido dp){
+        DetallePedidoDTOCompleto dpDTO = new DetallePedidoDTOCompleto();
+
+        ProductoDTO productoDTO = productoService.convertToDTO(dp.getProducto());
+        dpDTO.setId_detalle_pedido(dp.getIdDetallePedido());
+        dpDTO.setCantidad(dp.getCantidad());
+        dpDTO.setId_pedido(dpDTO.getId_pedido());
+        dpDTO.setPrecio_unitario(dp.getPrecioUnitario());
+        dpDTO.setProducto(productoDTO);
+
+        return dpDTO;
     }
 
     protected DetallePedido convertDTOToEntity(DetallePedidoDTO dto, Pedido p){
