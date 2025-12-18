@@ -1,6 +1,5 @@
 package org.example.topdeckapi.src.service.IMPL;
 
-import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreateDetallePedidoDTO;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreatePedidoDTO;
 import org.example.topdeckapi.src.DTOs.DTO.*;
@@ -15,8 +14,6 @@ import org.example.topdeckapi.src.model.Direccion;
 import org.example.topdeckapi.src.model.Pedido;
 import org.example.topdeckapi.src.model.Usuario;
 import org.example.topdeckapi.src.service.Interface.IPedidoService;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -142,6 +139,15 @@ public class PedidoService implements IPedidoService {
                     if(dto.getEstado()!=null){
                         p.setEstado(dto.getEstado());
                     }
+                    Pedido pedidoActualizado = pedidoRepo.save(p);
+                    return convertToDTO(pedidoActualizado);
+                });
+    }
+
+    public Optional<PedidoDTO> actualizarEstado(Long idPedido,String nuevoEstado){
+        return pedidoRepo.findById(idPedido)
+                .map(p->{
+                    p.setEstado(nuevoEstado);
                     Pedido pedidoActualizado = pedidoRepo.save(p);
                     return convertToDTO(pedidoActualizado);
                 });

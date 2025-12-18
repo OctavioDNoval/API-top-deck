@@ -2,6 +2,7 @@ package org.example.topdeckapi.src.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreateDetallePedidoDTO;
 import org.example.topdeckapi.src.DTOs.CreateDTO.CreatePedidoDTO;
 import org.example.topdeckapi.src.DTOs.DTO.DetallePedidoDTO;
@@ -44,9 +45,6 @@ public class PedidoController {
                 System.out.println("UsuarioDTO es NULL!");
             }
 
-
-
-
         return ResponseEntity.ok(pedidoService.guardar(pedidoDTO));
     }
 
@@ -54,5 +52,12 @@ public class PedidoController {
     public ResponseEntity<List<DetallePedido>> newDetallePedido(@RequestBody List<CreateDetallePedidoDTO> detallePedido){
         List<DetallePedido> lista = pedidoService.guardarDetalles(detallePedido);
         return ResponseEntity.ok(lista);
+    }
+
+    @PatchMapping("/admin/{idPedido}/new-state")
+    public ResponseEntity<PedidoDTO> actualizarEstadoPedido(@PathVariable Long idPedido, @RequestParam String newEstado) {
+        return pedidoService.actualizarEstado(idPedido,newEstado)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }
