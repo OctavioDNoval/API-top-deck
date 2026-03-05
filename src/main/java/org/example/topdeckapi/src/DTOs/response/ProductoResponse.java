@@ -14,8 +14,8 @@ public class ProductoResponse {
     private Long idProducto;
     private String nombreProducto;
     private String descripcion;
-    private Integer Stock;
     private Double precio;
+    private Integer stock;
     private String imgUrl;
     private Integer descuento;
 

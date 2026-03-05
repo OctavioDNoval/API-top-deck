@@ -16,5 +16,6 @@ public class UsuarioResponse {
     private String email;
     private String telefono;
     private ROL rol;
+    private String versionTerminosYCondicionesAceptados;
     private Boolean terminosAceptados;
 }

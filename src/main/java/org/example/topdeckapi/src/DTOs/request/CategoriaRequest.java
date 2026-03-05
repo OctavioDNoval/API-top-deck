@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class CategioriaRequest {
+public class CategoriaRequest {
     private String nombre;
 }

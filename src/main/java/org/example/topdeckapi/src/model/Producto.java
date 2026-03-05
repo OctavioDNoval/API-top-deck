@@ -15,7 +15,7 @@ public class Producto {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_producto")
-    private Long productoId;
+    private Long idProducto;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_categoria")
@@ -39,7 +39,7 @@ public class Producto {
     private Integer stock;
 
     @Column(name = "img_url")
-    private String img_url;
+    private String imgUrl;
 
     @Column(name = "descuento")
     private Integer descuento; //el descuento se mide en entero como 30% o 50%, no en 0.5
