@@ -14,9 +14,10 @@ public class Tag {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idTag;
+
     @Column(name = "nombre")
     private String nombre;
 
     @Column(name="img_url")
-    private String img_url;
+    private String imgUrl;
 }

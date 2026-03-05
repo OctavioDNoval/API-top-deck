@@ -6,9 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.example.topdeckapi.src.Enumerados.ESTADO_PEDIDO;
 
-import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 @Data
@@ -26,34 +25,25 @@ public class Pedido {
     @JoinColumn(name = "id_usuario", nullable = false)
     private Usuario usuario;
 
-    @Column(name = "fecha_pedido", nullable = false)
-    private Date fechaPedido;
-
-    private String estado;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_direccion")
     private Direccion direccion;
 
+    @Column(name = "fecha_pedido", nullable = false)
+    private LocalDateTime fechaPedido;
 
-    /*
-    * Aca las propiedades de column son
-    * - Precision: El digito sera de hasta 10 digitos
-    * - Scale: tendra hasta dos decimales
-    * */
+    private ESTADO_PEDIDO estado;
+
     @Column(name = "total", nullable = false)
     private Double total;
 
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DetallePedido> detalles = new ArrayList<>();
 
-    private String ip_usuario;
+    @Column(name = "ip_usuario")
+    private String ipUsuario;
 
-    private String version_terminos_y_condiciones;
-
-    private Boolean terminos_aceptados = false;
-
-    public Pedido(Usuario usuario, Date fechaPedido, Double total, List<DetallePedido> detalles) {
+    public Pedido(Usuario usuario, LocalDateTime fechaPedido, Double total, List<DetallePedido> detalles) {
         this.usuario = usuario;
         this.fechaPedido = fechaPedido;
         this.total = total;

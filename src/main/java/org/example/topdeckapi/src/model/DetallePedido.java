@@ -16,14 +16,8 @@ import net.minidev.json.annotate.JsonIgnore;
 public class DetallePedido {
     @Id
     @GeneratedValue (strategy = GenerationType.IDENTITY)
-    @Column(name= "id_detalle")
+    @Column(name= "id_detalle_pedido")
     private Long idDetallePedido;
-
-    @Column(name = "cantidad")
-    private Integer cantidad;
-
-    @Column(name = "precio_unitario")
-    private Double precioUnitario;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_producto", nullable = false)
@@ -33,6 +27,15 @@ public class DetallePedido {
     @JoinColumn (name = "id_pedido", nullable = false)
     @JsonIgnore
     private Pedido pedido;
+
+    @Column(name = "cantidad")
+    private Integer cantidad;
+
+    @Column(name = "precio_unitario")
+    private Double precioUnitario;
+
+    @Column(name = "subtotal")
+    private Double subTotal;
 
     /*
     * Las relaciones Many To One, One To Many siempre

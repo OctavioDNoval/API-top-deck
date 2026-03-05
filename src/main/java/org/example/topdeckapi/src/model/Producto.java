@@ -17,6 +17,15 @@ public class Producto {
     @Column(name = "id_producto")
     private Long productoId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_categoria")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private Categoria categoria;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_tag")
+    private Tag tag;
+
     @Column(name = "nombre")
     private String nombre;
 
@@ -29,16 +38,10 @@ public class Producto {
     @Column(name = "stock")
     private Integer stock;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_categoria")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-    private Categoria categoria;
-
     @Column(name = "img_url")
     private String img_url;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_tag")
-    private Tag tag;
+    @Column(name = "descuento")
+    private Integer descuento; //el descuento se mide en entero como 30% o 50%, no en 0.5
 
 }

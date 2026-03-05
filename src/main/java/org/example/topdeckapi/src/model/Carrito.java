@@ -22,5 +22,9 @@ public class Carrito {
     @JoinColumn( name = "id_usuario", nullable = false)
     private Usuario usuario;
 
-    private LocalDateTime fecha_creacion = LocalDateTime.now();
+    @Column(name = "session_id")
+    private String sessionId;
+
+    @Column(name = "fecha_creacion9")
+    private LocalDateTime fechaCreacion;
 }

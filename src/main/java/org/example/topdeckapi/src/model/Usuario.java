@@ -1,7 +1,10 @@
 package org.example.topdeckapi.src.model;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -22,10 +25,14 @@ public class Usuario {
     @Column(name = "nombre")
     private String nombre;
 
-    @Column(name = "email")
+    @Column(name = "email", nullable = false, unique = true)
+    @Email(message = "El email debe tener formato valido")
     private String email;
 
-    @Column(name = "password")
+    @NotBlank
+    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @Column(name = "password", nullable = false)
     private String password;
 
     @Column(name = "telefono")
@@ -33,6 +40,15 @@ public class Usuario {
 
     @Enumerated(EnumType.STRING)
     private ROL rol;
+
+    @Column(name = "ip_usuario")
+    private String ipUsuario;
+
+    @Column(name = "version_terminos_y_condiciones_aceptadas")
+    private String versionTerminosYCondicionesAceptados;
+
+    @Column(name = "terminos_aceptados")
+    private Boolean terminosAceptados;
 
     public Usuario(String nombre, String email, String password, String telefono, ROL rol) {
         this.nombre = nombre;

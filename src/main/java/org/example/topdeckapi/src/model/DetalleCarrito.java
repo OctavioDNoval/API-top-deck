@@ -14,7 +14,7 @@ public class DetalleCarrito {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_detalle_carrito")
-    private Long id_detalle_carrito;
+    private Long idDetalleCarrito;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_carrito", nullable = false)
