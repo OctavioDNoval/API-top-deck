@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 
 @Entity
@@ -22,5 +24,12 @@ public class Carrito {
     @JoinColumn( name = "id_usuario", nullable = false)
     private Usuario usuario;
 
-    private LocalDateTime fecha_creacion = LocalDateTime.now();
+    @Column(name = "session_id")
+    private String sessionId;
+
+    @Column(name = "fecha_creacion")
+    private LocalDateTime fechaCreacion;
+
+    @OneToMany(mappedBy = "carrito", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DetalleCarrito> detalles = new ArrayList<>();
 }

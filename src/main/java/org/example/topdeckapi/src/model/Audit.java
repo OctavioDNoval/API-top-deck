@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Entity
 @Data
@@ -22,14 +22,11 @@ public class Audit {
     private String nombreUsuario;
 
     @Column(name = "fecha_audit")
-    private Date fechaAudit;
+    private LocalDateTime fechaAudit;
 
     @Column(name = "accion")
     private String accion;
 
     @Column(name = "tabla")
     private String tabla;
-
-    @Column(name = "nombre_entidad")
-    private String nombreEntidad;
 }
