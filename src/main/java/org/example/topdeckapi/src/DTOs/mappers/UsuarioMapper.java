@@ -18,5 +18,6 @@ public interface UsuarioMapper {
     @Mapping(target = "idUsuario", ignore = true)
     @Mapping(target = "versionTerminosYCondicionesAceptados", ignore = true)
     @Mapping(target = "rol", constant = "GUESS")
+    @Mapping(target = "password", ignore = true)
     Usuario toEntity(UsuarioRequest usuarioRequest);
 }

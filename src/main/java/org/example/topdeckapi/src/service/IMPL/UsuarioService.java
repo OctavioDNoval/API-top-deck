@@ -1,116 +1,139 @@
 package org.example.topdeckapi.src.service.IMPL;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.example.topdeckapi.src.DTOs.CreateDTO.CreateUsuarioDTO;
-import org.example.topdeckapi.src.DTOs.CreateDTO.CreateUsuarioSinContraseniaDTO;
-import org.example.topdeckapi.src.DTOs.DTO.UsuarioDTO;
-import org.example.topdeckapi.src.DTOs.UpdateDTO.UpdateUsuarioDTO;
+import lombok.extern.slf4j.Slf4j;
+
+import org.example.topdeckapi.src.DTOs.mappers.UsuarioMapper;
+import org.example.topdeckapi.src.DTOs.request.UsuarioRequest;
+import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
+import org.example.topdeckapi.src.DTOs.response.UsuarioResponse;
 import org.example.topdeckapi.src.Enumerados.ROL;
 import org.example.topdeckapi.src.Repository.IUsuarioRepo;
 import org.example.topdeckapi.src.model.Usuario;
 import org.example.topdeckapi.src.service.Interface.IUsuarioService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
+@Slf4j
 public class UsuarioService implements IUsuarioService {
     private final IUsuarioRepo usuarioRepo;
     private final PasswordEncoder passwordEncoder;
+    private final UsuarioMapper usuarioMapper;
 
-    protected UsuarioDTO convertToDto(Usuario u){
-        return new UsuarioDTO(
-                u.getIdUsuario(),
-                u.getNombre(),
-                u.getEmail(),
-                u.getTelefono(),
-                u.getRol()
+    //METODOS PARA OBTENER DATOS PAGINADOS Y DATOS PRECISOS
+
+    private Sort buildSort (String sortBy, String direction){
+        Map<String,String> mapeoCampos = Map.of(
+                "idUsuario", "idUsuario",
+                "nombre", "nombre",
+                "email","email"
         );
+
+        String campoReal = mapeoCampos.getOrDefault(sortBy,"idUsuario");
+        Sort.Direction dir = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        return Sort.by(dir, campoReal);
     }
 
-    protected Usuario createUsuarioDTOToEntity(CreateUsuarioDTO dto){
-        return new Usuario(
-                dto.getNombre(),
-                dto.getEmail(),
-                dto.getPassword(),
-                dto.getTelefono()
-        );
-    }
-
-    protected Usuario createUsuarioDTOtoEntity(CreateUsuarioSinContraseniaDTO dto){
-        Usuario usuario = new Usuario();
-        usuario.setNombre(dto.getNombreCompleto());
-        usuario.setEmail(dto.getEmail());
-        usuario.setRol(ROL.GUESS);
-
-        return usuario;
-    }
-
-    protected Usuario convertToEntity(UsuarioDTO dto){
-        return new Usuario(
-                dto.getTelefono(),
-                dto.getEmail(),
-                dto.getNombre(),
-                dto.getId_usuario(),
-                dto.getRol()
-        );
-    }
-
-    public List<UsuarioDTO> findAll(){
-        return usuarioRepo.findAll().stream()
-                .map(this::convertToDto)
+    private PaginacionResponse<UsuarioResponse> getUsuarioResponsePaginacionResponse(Integer pagina, Integer tamanio, Page<Usuario> paginaUsuarios) {
+        List<UsuarioResponse> contenido = paginaUsuarios.getContent()
+                .stream()
+                .map(usuarioMapper::toResponse)
                 .collect(Collectors.toList());
+
+        return PaginacionResponse.<UsuarioResponse>builder()
+                .contenido(contenido)
+                .pagina(pagina)
+                .tamanio(tamanio)
+                .totalElementos(paginaUsuarios.getTotalElements())
+                .totalPaginas(paginaUsuarios.getTotalPages())
+                .last(paginaUsuarios.isLast())
+                .first(paginaUsuarios.isFirst())
+                .build();
     }
 
-    public Usuario guardar (CreateUsuarioDTO newUsuario){
-        Usuario u = new  Usuario();
-            u.setNombre(newUsuario.getNombre());
-            u.setEmail(newUsuario.getEmail());
-            u.setPassword(passwordEncoder.encode(newUsuario.getPassword()));
-            u.setTelefono(newUsuario.getTelefono());
-            u.setRol(ROL.USER);
-        Usuario usuarioCargado = usuarioRepo.save(u);
-        return usuarioCargado;
+    public PaginacionResponse<UsuarioResponse> obtenerPaginados (Integer pagina, Integer tamanio, String sortBy, String direction) {
+        Sort sort = buildSort (sortBy, direction);
+        Pageable pageable = PageRequest.of(pagina - 1, tamanio, sort);
+        Page<Usuario> paginaUsuarios = usuarioRepo.findAll(pageable);
+        return getUsuarioResponsePaginacionResponse(pagina,tamanio,paginaUsuarios);
     }
 
-    public Usuario guardar(CreateUsuarioSinContraseniaDTO newUsuario){
-        Optional<Usuario> usuario = usuarioRepo.findByEmail(newUsuario.getEmail());
-        if(usuario.isPresent()){
-           return usuario.get();
+    public PaginacionResponse<UsuarioResponse> obtenerPaginadosConFiltro(Integer pagina, Integer tamanio, String sortBy, String direction, String filtro) {
+        Sort sort = buildSort (sortBy, direction);
+        Pageable pageable = PageRequest.of(pagina - 1, tamanio, sort);
+        Page<Usuario> paginaUsuarios = usuarioRepo.findBySearch(filtro, pageable);
+        return getUsuarioResponsePaginacionResponse(pagina,tamanio,paginaUsuarios);
+    }
+
+    public UsuarioResponse obtenerPorId(Long id){
+        if(usuarioRepo.existsById(id)){
+            return usuarioMapper.toResponse(usuarioRepo.findById(id).orElseThrow(
+                    () -> new RuntimeException("Usuario no encontrado")
+            ));
+        }else{
+            throw new RuntimeException("Usuario no encontrado");
         }
-        Usuario u = createUsuarioDTOtoEntity(newUsuario);
-        Usuario  usuarioCargado = usuarioRepo.save(u);
-        return usuarioCargado;
     }
 
-    public Optional<UsuarioDTO> buscarPorId(Long id){
-        return usuarioRepo.findById(id)
-                .map(this::convertToDto);
+    public Usuario obtenerUsuarioAutenticado(){
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+        return usuarioRepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
     }
 
-    protected Optional<Usuario> buscarEntidadPorId(Long id){
-        return usuarioRepo.findById(id);
+    //METODOS PARA CREAR DATOS
+    //refaccionado 👌
+    public UsuarioResponse guardar (UsuarioRequest newUsuario){
+        if(usuarioRepo.existsByEmail(newUsuario.getEmail())){
+            throw new RuntimeException("El email ya existe en el sistema");
+        }
+
+        Usuario usuario = usuarioMapper.toEntity(newUsuario);
+        usuario.setPassword(passwordEncoder.encode(newUsuario.getPassword()));
+        Usuario usuarioGuardado = usuarioRepo.save(usuario);
+        return usuarioMapper.toResponse(usuario);
     }
 
-    public Optional<UsuarioDTO> actualizarUsuario(UpdateUsuarioDTO dto, Long id){
-        return usuarioRepo.findById(id)
-                .map(u ->{
-                    if((dto.getNombre()!=null)  &&  (!dto.getNombre().trim().isEmpty())){
-                        u.setNombre(dto.getNombre());
-                    }
-                    if((dto.getEmail()!=null)  &&  (!dto.getEmail().trim().isEmpty())){
-                        u.setEmail(dto.getEmail());
-                    }
-                    if((dto.getTelefono()!=null)  &&  (!dto.getTelefono().trim().isEmpty())){
-                        u.setTelefono(dto.getTelefono());
-                    }
-                    Usuario usuarioActualizado = usuarioRepo.save(u);
-                    return convertToDto(usuarioActualizado);
-                });
+    public UsuarioResponse actualizarUsuario(UsuarioRequest request, Long id){
+        Usuario usuario = usuarioRepo.findById(id).orElseThrow(
+                ()-> new RuntimeException("Usuario no encontrado")
+        );
+
+        if(request.getEmail() != null
+            && usuarioRepo.existsByEmail(request.getEmail())){
+            throw new RuntimeException("El email ya existe en el sistema");
+        }
+
+        Usuario usuarioActualizado = usuarioMapper.toEntity(request);
+        usuarioActualizado.setIdUsuario(id);
+        usuarioActualizado.setNombre(request.getNombre());
+        usuarioActualizado.setEmail(request.getEmail());
+        usuarioActualizado.setTerminosAceptados(request.getTerminosAceptados());
+        usuarioActualizado.setVersionTerminosYCondicionesAceptados(request.getVersionTerminosYCondicionesAceptadas());
+        if(request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
+            usuarioActualizado.setPassword(passwordEncoder.encode(request.getPassword()));
+        }else{
+            usuarioActualizado.setPassword(usuario.getPassword());
+        }
+
+        Usuario usuarioGuardado = usuarioRepo.save(usuarioActualizado);
+        return usuarioMapper.toResponse(usuarioGuardado);
     }
 
     public boolean deleteUsuario(Long id){

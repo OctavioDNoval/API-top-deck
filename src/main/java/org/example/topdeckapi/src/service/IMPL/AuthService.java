@@ -5,6 +5,9 @@ import org.example.topdeckapi.src.DTOs.CreateDTO.CreateUsuarioDTO;
 import org.example.topdeckapi.src.DTOs.DTO.UsuarioDTO;
 import org.example.topdeckapi.src.DTOs.auth.AuthResponse;
 import org.example.topdeckapi.src.DTOs.auth.LoginRequest;
+import org.example.topdeckapi.src.DTOs.mappers.UsuarioMapper;
+import org.example.topdeckapi.src.DTOs.request.UsuarioRequest;
+import org.example.topdeckapi.src.DTOs.response.UsuarioResponse;
 import org.example.topdeckapi.src.Enumerados.ROL;
 import org.example.topdeckapi.src.Exception.UsuarioNotFoundException;
 import org.example.topdeckapi.src.Repository.ICarritoRepository;
@@ -23,13 +26,14 @@ public class AuthService {
     private final PasswordEncoder encoder;
     private final JwtService jwtService;
     private final ICarritoRepository  carritoRepo;
+    private final UsuarioMapper usuarioMapper;
 
 
-    public AuthResponse register (CreateUsuarioDTO dto){
+    public AuthResponse register (UsuarioRequest dto){
         if(usuarioRepo.existsByEmail(dto.getEmail())){
             throw new UsuarioNotFoundException("El usuario ya existe");
         }
-        Usuario u = usuarioService.guardar(dto);
+        Usuario u = usuarioService.guardar(usuarioMapper.toEntity(dto) );
         String token = jwtService.generateToken(
                 User.withUsername(u.getEmail())
                         .password(u.getPassword())
@@ -41,7 +45,7 @@ public class AuthService {
         nuevoCarrito.setUsuario(u);
         carritoRepo.save(nuevoCarrito);
 
-        UsuarioDTO uDTO = usuarioService.convertToDto(u);
+        UsuarioResponse uDTO = usuarioMapper.toResponse(u);
         return new AuthResponse(token,uDTO);
     }
 
@@ -60,7 +64,7 @@ public class AuthService {
                         .build()
         );
 
-        UsuarioDTO uDTO = usuarioService.convertToDto(u);
+        UsuarioResponse uDTO = usuarioMapper.toResponse(u);
 
         return new AuthResponse(token,uDTO);
     }

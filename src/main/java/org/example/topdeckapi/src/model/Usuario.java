@@ -50,26 +50,4 @@ public class Usuario {
     @Column(name = "terminos_aceptados")
     private Boolean terminosAceptados;
 
-    public Usuario(String nombre, String email, String password, String telefono, ROL rol) {
-        this.nombre = nombre;
-        this.email = email;
-        this.password = password;
-        this.telefono = telefono;
-        this.rol = rol;
-    }
-
-    public Usuario(String telefono, String email, String nombre, Long idUsuario, ROL rol) {
-        this.telefono = telefono;
-        this.email = email;
-        this.nombre = nombre;
-        this.idUsuario = idUsuario;
-        this.rol = rol;
-    }
-
-    public Usuario(@NotBlank String nombre, @NotBlank String email, @NotBlank String password, String telefono) {
-        this.nombre = nombre;
-        this.email = email;
-        this.password = password;
-        this.telefono = telefono;
-    }
 }
