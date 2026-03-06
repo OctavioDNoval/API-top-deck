@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -18,6 +19,7 @@ public class DetalleCarrito {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_carrito", nullable = false)
+    @JsonIgnore
     private Carrito carrito;
 
     @ManyToOne(fetch = FetchType.LAZY)

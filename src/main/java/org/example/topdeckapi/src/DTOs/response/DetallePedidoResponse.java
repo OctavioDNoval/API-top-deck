@@ -15,6 +15,8 @@ public class DetallePedidoResponse {
     private Double precioUnitario;
     private Double subTotal;
 
+    private Long idPedido;
+
     //Datos resumidos del producto
     private Long idProducto;
     private String nombreProducto;
