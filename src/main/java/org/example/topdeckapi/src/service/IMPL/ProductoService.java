@@ -2,8 +2,12 @@ package org.example.topdeckapi.src.service.IMPL;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.example.topdeckapi.src.DTOs.CreateDTO.CreateProductDTO;
-import org.example.topdeckapi.src.DTOs.DTO.ProductoDTO;
+
+
+import org.example.topdeckapi.src.DTOs.mappers.ProductoMapper;
+import org.example.topdeckapi.src.DTOs.request.ProductoRequest;
+import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
+import org.example.topdeckapi.src.DTOs.response.ProductoResponse;
 import org.example.topdeckapi.src.Repository.ICategoriasRepo;
 import org.example.topdeckapi.src.Repository.IProductoRepo;
 import org.example.topdeckapi.src.Repository.ITagRepository;
@@ -12,124 +16,113 @@ import org.example.topdeckapi.src.model.Categoria;
 import org.example.topdeckapi.src.model.Producto;
 import org.example.topdeckapi.src.model.Tag;
 import org.example.topdeckapi.src.service.Interface.IProductoService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ProductoService implements IProductoService {
     private final IProductoRepo productoRepo;
     private final ICategoriasRepo  categoriasRepo;
     private final ITagRepository tagRepository;
     private final AuditUtils  auditUtils;
+    private final PaginacionService paginationService;
+    private final ProductoMapper productoMapper;
 
-    protected ProductoDTO convertToDTO(Producto p) {
-        ProductoDTO productoDTO = new ProductoDTO();
-        productoDTO.setIdProducto(p.getProductoId());
-        productoDTO.setNombre(p.getNombre());
-        productoDTO.setDescripcion(p.getDescripcion());
-        productoDTO.setStock(p.getStock());
-        productoDTO.setPrecio(p.getPrecio());
-        productoDTO.setImg_url(p.getImg_url());
-        productoDTO.setCategoriaId(p.getCategoria().getIdCategoria());
-        productoDTO.setCategoriaNombre(p.getCategoria().getNombre());
-        productoDTO.setTagId(p.getTag().getIdTag());
-        productoDTO.setTagNombre(p.getTag().getNombre());
+    private Sort buildSort(String sortBy, String direction){
+        Map<String,String> mapeoCampos = Map.of(
+                "nombre", "nombre",
+                "precio", "precio",
+                "idProducto", "idProducto"
+        );
 
-        return productoDTO;
+        String campoReal = mapeoCampos.getOrDefault(sortBy, "idProducto");
+        Sort.Direction dir = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        return Sort.by(dir, campoReal);
     }
 
-    protected Producto convertToEntity(ProductoDTO p) {
-        Producto producto = new Producto();
-        producto.setProductoId(p.getIdProducto());
-        producto.setNombre(p.getNombre());
-        producto.setDescripcion(p.getDescripcion());
-        producto.setPrecio(p.getPrecio());
-        producto.setImg_url(p.getImg_url());
-        producto.setStock(p.getStock());
-
-        Categoria c = new Categoria();
-        c.setNombre(p.getCategoriaNombre());
-        c.setIdCategoria(p.getCategoriaId());
-        producto.setCategoria(c);
-
-        Tag t = new Tag();
-        t.setNombre(p.getTagNombre());
-        t.setIdTag(p.getTagId());
-
-        producto.setTag(t);
-
-        return producto;
+    public PaginacionResponse<ProductoResponse> obtenerPaginados(Integer pagina, Integer tamanio, String sortBy, String direction){
+        Sort sort = buildSort(sortBy, direction);
+        Pageable pageable = PageRequest.of(pagina - 1, tamanio, sort);
+        Page<Producto> paginaProducto = productoRepo.findAll(pageable);
+        return paginationService.crearPaginacionResponse(paginaProducto,pagina,tamanio,productoMapper::toResponse);
     }
 
-    public List<ProductoDTO> findAll() {
-        return productoRepo.findAll()
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+    public PaginacionResponse<ProductoResponse> obtenerPaginadosConFiltro(Integer pagina, Integer tamanio, String sortBy, String direction, String filter){
+        Sort sort = buildSort(sortBy, direction);
+        Pageable pageable = PageRequest.of(pagina - 1, tamanio, sort);
+        Page<Producto> paginaProducto = productoRepo.findBySearch(filter, pageable);
+        return  paginationService.crearPaginacionResponse(paginaProducto,pagina,tamanio,productoMapper::toResponse);
     }
 
-    @Transactional
-    public Producto guardar(CreateProductDTO producto) {
-        Producto newProducto = new Producto();
-        newProducto.setNombre(producto.getNombre());
-        newProducto.setDescripcion(producto.getDescripcion());
-        newProducto.setPrecio(producto.getPrecio());
-        newProducto.setCategoria(categoriasRepo.findById(producto.getId_categoria()).orElse(null));
-        newProducto.setImg_url(producto.getImg_url());
-        newProducto.setStock(producto.getStock());
-        newProducto.setTag(tagRepository.findById(producto.getId_tag()).orElse(null));
-
+    public ProductoResponse guardar(ProductoRequest producto) {
+        if(productoRepo.existsByNombre(producto.getNombre())){
+            throw new RuntimeException("El producto ya existe");
+        }
+        Producto nuevoProducto = productoMapper.toEntity(producto);
+        Producto productoGuardado = productoRepo.save(nuevoProducto);
         auditUtils.setCurrentUserForAudit();
+        return productoMapper.toResponse(productoGuardado);
 
-        return productoRepo.save(newProducto);
     }
 
-    public Optional<ProductoDTO> buscarPorId(long id) {
-        return productoRepo.findById(id)
-                .map(this::convertToDTO);
+    public ProductoResponse buscarPorId(Long id) {
+        return productoMapper.toResponse(productoRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("No existe el producto")));
     }
 
-    @Transactional
-    public Optional<ProductoDTO> actualizarProducto(long id, Producto newProducto) {
-        return productoRepo.findById(id)
-                .map(p-> {
-                    if((newProducto.getNombre()!=null) && (!newProducto.getNombre().isEmpty())) {
-                        p.setNombre(newProducto.getNombre());
-                    }
-                    if((newProducto.getDescripcion()!=null) && (!newProducto.getDescripcion().isEmpty())) {
-                        p.setDescripcion(newProducto.getDescripcion());
-                    }
-                    if(newProducto.getPrecio()!=null){
-                        p.setPrecio(newProducto.getPrecio());
-                    }
-                    if (newProducto.getCategoria()!=null){
-                        p.setCategoria(newProducto.getCategoria());
-                    }
-                    if(newProducto.getStock()!=null){
-                        p.setStock(newProducto.getStock());
-                    }
-                    if(newProducto.getTag()!=null){
-                        p.setTag(newProducto.getTag());
-                    }
-                    if(newProducto.getImg_url()!=null){
-                        p.setImg_url(newProducto.getImg_url());
-                    }
+    public ProductoResponse actualizarProducto(Long id, ProductoRequest newProducto) {
+        Producto p = productoRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("No existe el producto"));
 
-                    Producto productoGuardado = productoRepo.save(p);
+        if(newProducto.getNombre() != null && !newProducto.getNombre().trim().isEmpty()){
+            String nuevoNombre = newProducto.getNombre().trim();
+            if(!p.getNombre().equals(nuevoNombre)) {
+                if(productoRepo.existsByNombre(nuevoNombre)) {
+                    throw new RuntimeException("Ya existe un producto con el nombre: " + nuevoNombre);
+                }
+                p.setNombre(nuevoNombre);
+            }
+        }
+        if(newProducto.getIdCategoria() != null &&
+                !p.getCategoria().getIdCategoria().equals(newProducto.getIdCategoria())){
+            Categoria categoria = categoriasRepo.findById(newProducto.getIdCategoria())
+                    .orElseThrow(() -> new RuntimeException("No existe la categoría"));
+            p.setCategoria(categoria);
+        }
+        if(newProducto.getIdTag() != null &&
+                !p.getTag().getIdTag().equals(newProducto.getIdTag())){
+            Tag tag = tagRepository.findById(newProducto.getIdTag())
+                    .orElseThrow(() -> new RuntimeException("No existe el tag"));
+            p.setTag(tag);
+        }
+        Optional.ofNullable(newProducto.getDescripcion())
+                .ifPresent(desc -> p.setDescripcion(desc.trim()));
 
-                    auditUtils.setCurrentUserForAudit();
+        Optional.ofNullable(newProducto.getStock())
+                .ifPresent(p::setStock);
 
-                    return convertToDTO(productoGuardado);
-                });
+        Optional.ofNullable(newProducto.getPrecio())
+                .ifPresent(p::setPrecio);
+
+        Optional.ofNullable(newProducto.getImgUrl())
+                .ifPresent(img -> p.setImgUrl(img.trim()));
+
+        Optional.ofNullable(newProducto.getDescuento())
+                .ifPresent(p::setDescuento);
+
+        Producto productoActualizado = productoRepo.save(p);
+        return productoMapper.toResponse(productoActualizado);
     }
 
-    @Transactional
-    public boolean borrarProducto(long id) {
+    public boolean borrarProducto(Long id) {
         if (productoRepo.existsById(id)) {
             auditUtils.setCurrentUserForAudit();
             productoRepo.deleteById(id);

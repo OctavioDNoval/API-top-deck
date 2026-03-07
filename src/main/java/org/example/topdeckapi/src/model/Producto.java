@@ -33,7 +33,7 @@ public class Producto {
     private String descripcion;
 
     @Column (name = "precio")
-    private Float precio;
+    private Double precio;
 
     @Column(name = "stock")
     private Integer stock;
