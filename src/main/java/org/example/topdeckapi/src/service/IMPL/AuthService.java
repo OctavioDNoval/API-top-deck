@@ -1,8 +1,6 @@
 package org.example.topdeckapi.src.service.IMPL;
 
 import lombok.RequiredArgsConstructor;
-import org.example.topdeckapi.src.DTOs.CreateDTO.CreateUsuarioDTO;
-import org.example.topdeckapi.src.DTOs.DTO.UsuarioDTO;
 import org.example.topdeckapi.src.DTOs.auth.AuthResponse;
 import org.example.topdeckapi.src.DTOs.auth.LoginRequest;
 import org.example.topdeckapi.src.DTOs.mappers.UsuarioMapper;
@@ -15,13 +13,16 @@ import org.example.topdeckapi.src.Repository.IUsuarioRepo;
 import org.example.topdeckapi.src.model.Carrito;
 import org.example.topdeckapi.src.model.Usuario;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
-    private final UsuarioService usuarioService;
+
     private final IUsuarioRepo usuarioRepo;
     private final PasswordEncoder encoder;
     private final JwtService jwtService;
@@ -33,20 +34,27 @@ public class AuthService {
         if(usuarioRepo.existsByEmail(dto.getEmail())){
             throw new UsuarioNotFoundException("El usuario ya existe");
         }
-        Usuario u = usuarioService.guardar(usuarioMapper.toEntity(dto) );
-        String token = jwtService.generateToken(
-                User.withUsername(u.getEmail())
-                        .password(u.getPassword())
-                        .roles(ROL.USER.name())
-                        .build()
-        );
+        Usuario u = usuarioMapper.toEntity(dto);
+        u.setPassword(encoder.encode(dto.getPassword()));
+        if (u.getRol() == null){
+            u.setRol(ROL.USER);
+        }
+        Usuario usuarioGuardado = usuarioRepo.save(u);
 
         Carrito nuevoCarrito = new Carrito();
-        nuevoCarrito.setUsuario(u);
+        nuevoCarrito.setUsuario(usuarioGuardado);
+        nuevoCarrito.setFechaCreacion(LocalDateTime.now());
         carritoRepo.save(nuevoCarrito);
 
-        UsuarioResponse uDTO = usuarioMapper.toResponse(u);
-        return new AuthResponse(token,uDTO);
+        UserDetails userDetails = User.withUsername(usuarioGuardado.getEmail())
+                .password("")
+                .roles(usuarioGuardado.getRol().name())
+                .build();
+
+        String token = jwtService.generateToken(userDetails);
+
+        UsuarioResponse uResponse = usuarioMapper.toResponse(usuarioGuardado);
+        return new AuthResponse(token,uResponse);
     }
 
     public AuthResponse login (LoginRequest request){

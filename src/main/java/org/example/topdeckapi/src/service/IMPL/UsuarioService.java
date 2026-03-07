@@ -8,7 +8,6 @@ import org.example.topdeckapi.src.DTOs.mappers.UsuarioMapper;
 import org.example.topdeckapi.src.DTOs.request.UsuarioRequest;
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
 import org.example.topdeckapi.src.DTOs.response.UsuarioResponse;
-import org.example.topdeckapi.src.Enumerados.ROL;
 import org.example.topdeckapi.src.Repository.IUsuarioRepo;
 import org.example.topdeckapi.src.model.Usuario;
 import org.example.topdeckapi.src.service.Interface.IUsuarioService;
@@ -21,10 +20,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +32,7 @@ public class UsuarioService implements IUsuarioService {
     private final IUsuarioRepo usuarioRepo;
     private final PasswordEncoder passwordEncoder;
     private final UsuarioMapper usuarioMapper;
+    private final PaginacionService paginacionService;
 
     //METODOS PARA OBTENER DATOS PAGINADOS Y DATOS PRECISOS
 
@@ -49,35 +48,19 @@ public class UsuarioService implements IUsuarioService {
         return Sort.by(dir, campoReal);
     }
 
-    private PaginacionResponse<UsuarioResponse> getUsuarioResponsePaginacionResponse(Integer pagina, Integer tamanio, Page<Usuario> paginaUsuarios) {
-        List<UsuarioResponse> contenido = paginaUsuarios.getContent()
-                .stream()
-                .map(usuarioMapper::toResponse)
-                .collect(Collectors.toList());
-
-        return PaginacionResponse.<UsuarioResponse>builder()
-                .contenido(contenido)
-                .pagina(pagina)
-                .tamanio(tamanio)
-                .totalElementos(paginaUsuarios.getTotalElements())
-                .totalPaginas(paginaUsuarios.getTotalPages())
-                .last(paginaUsuarios.isLast())
-                .first(paginaUsuarios.isFirst())
-                .build();
-    }
 
     public PaginacionResponse<UsuarioResponse> obtenerPaginados (Integer pagina, Integer tamanio, String sortBy, String direction) {
         Sort sort = buildSort (sortBy, direction);
         Pageable pageable = PageRequest.of(pagina - 1, tamanio, sort);
         Page<Usuario> paginaUsuarios = usuarioRepo.findAll(pageable);
-        return getUsuarioResponsePaginacionResponse(pagina,tamanio,paginaUsuarios);
+        return paginacionService.crearPaginacionResponse(paginaUsuarios,tamanio,pagina, usuarioMapper::toResponse);
     }
 
     public PaginacionResponse<UsuarioResponse> obtenerPaginadosConFiltro(Integer pagina, Integer tamanio, String sortBy, String direction, String filtro) {
         Sort sort = buildSort (sortBy, direction);
         Pageable pageable = PageRequest.of(pagina - 1, tamanio, sort);
         Page<Usuario> paginaUsuarios = usuarioRepo.findBySearch(filtro, pageable);
-        return getUsuarioResponsePaginacionResponse(pagina,tamanio,paginaUsuarios);
+        return paginacionService.crearPaginacionResponse(paginaUsuarios,tamanio,pagina, usuarioMapper::toResponse);
     }
 
     public UsuarioResponse obtenerPorId(Long id){

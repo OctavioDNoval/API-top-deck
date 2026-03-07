@@ -2,85 +2,62 @@ package org.example.topdeckapi.src.service.IMPL;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.example.topdeckapi.src.DTOs.CreateDTO.CreateTagDTO;
-import org.example.topdeckapi.src.DTOs.DTO.TagDTO;
+import org.example.topdeckapi.src.DTOs.mappers.TagMapper;
+import org.example.topdeckapi.src.DTOs.request.TagRequest;
+import org.example.topdeckapi.src.DTOs.response.TagResponse;
 import org.example.topdeckapi.src.Repository.ITagRepository;
 import org.example.topdeckapi.src.Security.AuditUtils;
 import org.example.topdeckapi.src.model.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class TagService {
     private final ITagRepository tagRepository;
-
-
     private final AuditUtils auditUtils;
+    private final TagMapper tagMapper;
 
-
-
-
-    protected TagDTO convertToDTO(Tag tag) {
-        TagDTO tagDTO = new TagDTO();
-        tagDTO.setIdTag(tag.getIdTag());
-        tagDTO.setNombre(tag.getNombre());
-        tagDTO.setImg_url(tag.getImg_url());
-        return tagDTO;
-    }
-
-    protected Tag convertToEntity(TagDTO tagDTO) {
-        Tag tag = new Tag();
-        tag.setIdTag(tagDTO.getIdTag());
-        tag.setNombre(tagDTO.getNombre());
-        tag.setImg_url(tagDTO.getImg_url());
-        return tag;
-    }
-
-    public List<TagDTO> getAllTags() {
+    public List<TagResponse> getAllTags() {
         return tagRepository.findAll()
                 .stream()
-                .map(this::convertToDTO)
+                .map(tagMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
-    @Transactional
-    public TagDTO save(CreateTagDTO dto) {
+    public TagResponse save(TagRequest request) {
+        if(tagRepository.existsByNombre(request.getNombre())){
+            throw new RuntimeException("El nombre existe en el sistema");
+        }
+
         Tag tag = new Tag();
-        tag.setNombre(dto.getNombre());
-        tag.setImg_url(dto.getImg_url());
-
+        tag.setNombre(request.getNombre());
+        tag.setImgUrl(request.getImgUrl());
         Tag tagGuardado = tagRepository.save(tag);
-
         auditUtils.setCurrentUserForAudit();
 
-        return convertToDTO(tagGuardado);
+        return tagMapper.toResponse(tagGuardado);
     }
 
-    @Transactional
-    public Optional<TagDTO> actualizarTag(Long id, Tag newTag) {
-        return tagRepository.findById(id)
-                .map(t -> {
-                    if((newTag.getNombre()!=null) && (!newTag.getNombre().isEmpty())) {
-                        t.setNombre(newTag.getNombre());
-                    }
-                    if(newTag.getImg_url()!=null){
-                        t.setImg_url(newTag.getImg_url());
-                    }
-
-                    Tag tagGuardado = tagRepository.save(t);
-
-                    auditUtils.setCurrentUserForAudit();
-
-                    return convertToDTO(tagGuardado);
-                });
+    public TagResponse actualizarTag(Long id, Tag newTag) {
+        Tag tag = tagRepository.findById(id).orElseThrow(() -> new RuntimeException("Tag not found"));
+        if(tagRepository.existsByNombre(newTag.getNombre())){
+            throw new RuntimeException("El nombre existe en el sistema");
+        }
+        tag.setNombre(newTag.getNombre());
+        if(newTag.getImgUrl() != null){
+            tag.setImgUrl(newTag.getImgUrl());
+        }
+        Tag tagGuardado = tagRepository.save(tag);
+        auditUtils.setCurrentUserForAudit();
+        return tagMapper.toResponse(tagGuardado);
     }
 
-    @Transactional
+
     public boolean delete(Long id) {
         if(tagRepository.existsById(id)) {
             auditUtils.setCurrentUserForAudit();
