@@ -1,126 +1,48 @@
 package org.example.topdeckapi.src.service.IMPL;
 
 import lombok.RequiredArgsConstructor;
-import org.example.topdeckapi.src.DTOs.CreateDTO.CreateDetallePedidoDTO;
-import org.example.topdeckapi.src.DTOs.DTO.DetallePedidoDTO;
-import org.example.topdeckapi.src.DTOs.DTO.DetallePedidoDTOCompleto;
-import org.example.topdeckapi.src.DTOs.DTO.PedidoDTO;
-import org.example.topdeckapi.src.DTOs.DTO.ProductoDTO;
-import org.example.topdeckapi.src.DTOs.UpdateDTO.UpdateDetallePedidoDTO;
 import org.example.topdeckapi.src.DTOs.mappers.DetallePedidoMapper;
 import org.example.topdeckapi.src.DTOs.request.DetallePedidoRequest;
 import org.example.topdeckapi.src.DTOs.response.DetallePedidoResponse;
 import org.example.topdeckapi.src.Exception.PedidoNotFoundException;
-import org.example.topdeckapi.src.Exception.ProductNotFoundException;
 import org.example.topdeckapi.src.Repository.IDetallePedidoRepo;
 import org.example.topdeckapi.src.Repository.IPedidoRepo;
 import org.example.topdeckapi.src.model.DetallePedido;
 import org.example.topdeckapi.src.model.Pedido;
-import org.example.topdeckapi.src.model.Producto;
 import org.example.topdeckapi.src.service.Interface.IDetallePedidoService;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class DetallePedidoService implements IDetallePedidoService{
     private final IDetallePedidoRepo detallePedidoRepo;
     private final IPedidoRepo pedidoRepo;
-    private final ProductoService productoService;
     private final DetallePedidoMapper detallePedidoMapper;
 
-
-    protected DetallePedidoDTO convertEntityToDTO (DetallePedido dp){
-        Long idProducto = dp.getProducto() != null ? dp.getProducto().getProductoId() : null;
-        Long idPedido = dp.getPedido() != null ? dp.getPedido().getIdPedido() : null;
-
-        return new DetallePedidoDTO(
-                dp.getIdDetallePedido(),
-                dp.getCantidad(),
-                dp.getPrecioUnitario(),
-                idPedido,
-                idProducto
-        );
-    }
-
-    protected DetallePedidoDTOCompleto  convertEntityToDTOCompleto (DetallePedido dp){
-        DetallePedidoDTOCompleto dpDTO = new DetallePedidoDTOCompleto();
-
-        ProductoDTO productoDTO = productoService.convertToDTO(dp.getProducto());
-        dpDTO.setId_detalle_pedido(dp.getIdDetallePedido());
-        dpDTO.setCantidad(dp.getCantidad());
-        dpDTO.setId_pedido(dpDTO.getId_pedido());
-        dpDTO.setPrecio_unitario(dp.getPrecioUnitario());
-        dpDTO.setProducto(productoDTO);
-
-        return dpDTO;
-    }
-
-    protected DetallePedido convertDTOToEntity(DetallePedidoDTO dto, Pedido p){
-        if(dto == null) return null;
-
-        Optional<ProductoDTO> prod = productoService.buscarPorId(dto.getId_producto());
-        Producto producto = prod
-                .map(productoService::convertToEntity)
-                .orElseThrow(()-> new ProductNotFoundException("Producto no encontrado"));
-
-        DetallePedido dp = new DetallePedido();
-        dp.setIdDetallePedido(dto.getId_detalle_pedido());
-        dp.setCantidad(dto.getCantidad());
-        dp.setPrecioUnitario(dto.getPrecio_unitario());
-        dp.setProducto(producto);
-        dp.setPedido(p);
-        return dp;
-    }
-
-    protected DetallePedido convertDTOToEntity(CreateDetallePedidoDTO dto, Pedido p){
-        if (dto == null) return null;
-
-        Producto producto = productoService.buscarPorId(dto.getId_Producto())
-                .map(productoService::convertToEntity)
-                .orElseThrow(()-> new ProductNotFoundException("Producto "+ dto.getId_Producto() +"no encontrado"));
-
-        DetallePedido dp = new DetallePedido();
-        dp.setCantidad(dto.getCantidad());
-        dp.setPrecioUnitario(dto.getPrecio_unitario());
-        dp.setProducto(producto);
-        dp.setPedido(p);
-
-        return dp;
-    }
-
-    public List<DetallePedidoDTO> getAll(){
-        return detallePedidoRepo.findAll().stream()
-                .map(this::convertEntityToDTO)
-                .collect(Collectors.toList());
-    }
-
-    public Optional<DetallePedidoDTO> getById(Long id){
+    public DetallePedidoResponse getById(Long id){
         return detallePedidoRepo.findById(id)
-                .map(this::convertEntityToDTO);
+                .map(detallePedidoMapper::toResponse)
+                .orElseThrow(()-> new RuntimeException("Detalle pedido No encontrado"));
     }
 
     public DetallePedidoResponse guardar(DetallePedidoRequest dp){
         Pedido p = pedidoRepo.findById(dp.getIdPedido())
                 .orElseThrow(()-> new PedidoNotFoundException("Pedido con id:"+ dp.getIdPedido()+" no encontrado"));
-
-        DetallePedido detallePedidoGuardado = detallePedidoRepo.save(detallePedidoMapper.toEntity(dp));
+        DetallePedido d = detallePedidoMapper.toEntity(dp);
+        d.setPedido(p);
+        DetallePedido detallePedidoGuardado = detallePedidoRepo.save(d);
         return detallePedidoMapper.toResponse(detallePedidoGuardado);
     }
 
-    public Optional<DetallePedidoDTO> actualizarDetallePedido(UpdateDetallePedidoDTO dto, Long id){
-        return detallePedidoRepo.findById(id)
-                .map(dp->{
-                    if(dto.getCantidad()!= null){
-                        dp.setCantidad(dto.getCantidad());
-                    }
+    public DetallePedidoResponse actualizarDetallePedido(DetallePedidoRequest dto, Long id){
+        DetallePedido dp = detallePedidoRepo.findById(id)
+                .orElseThrow(()-> new PedidoNotFoundException("Detalle pedido no encontrado"));
 
-                    DetallePedido dpActualizado = detallePedidoRepo.save(dp);
-                    return convertEntityToDTO(dpActualizado);
-                });
+        dp.setCantidad(dto.getCantidad());
+        return detallePedidoMapper.toResponse(
+                detallePedidoRepo.save(dp)
+        );
     }
 
     public boolean delete(Long id){
