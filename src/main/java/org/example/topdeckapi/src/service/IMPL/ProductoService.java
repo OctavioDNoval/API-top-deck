@@ -118,6 +118,7 @@ public class ProductoService implements IProductoService {
         Optional.ofNullable(newProducto.getDescuento())
                 .ifPresent(p::setDescuento);
 
+        auditUtils.setCurrentUserForAudit();
         Producto productoActualizado = productoRepo.save(p);
         return productoMapper.toResponse(productoActualizado);
     }

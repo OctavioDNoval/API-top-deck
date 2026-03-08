@@ -7,6 +7,9 @@ import org.example.topdeckapi.src.DTOs.DTO.DetallePedidoDTOCompleto;
 import org.example.topdeckapi.src.DTOs.DTO.PedidoDTO;
 import org.example.topdeckapi.src.DTOs.DTO.ProductoDTO;
 import org.example.topdeckapi.src.DTOs.UpdateDTO.UpdateDetallePedidoDTO;
+import org.example.topdeckapi.src.DTOs.mappers.DetallePedidoMapper;
+import org.example.topdeckapi.src.DTOs.request.DetallePedidoRequest;
+import org.example.topdeckapi.src.DTOs.response.DetallePedidoResponse;
 import org.example.topdeckapi.src.Exception.PedidoNotFoundException;
 import org.example.topdeckapi.src.Exception.ProductNotFoundException;
 import org.example.topdeckapi.src.Repository.IDetallePedidoRepo;
@@ -27,6 +30,7 @@ public class DetallePedidoService implements IDetallePedidoService{
     private final IDetallePedidoRepo detallePedidoRepo;
     private final IPedidoRepo pedidoRepo;
     private final ProductoService productoService;
+    private final DetallePedidoMapper detallePedidoMapper;
 
 
     protected DetallePedidoDTO convertEntityToDTO (DetallePedido dp){
@@ -99,12 +103,12 @@ public class DetallePedidoService implements IDetallePedidoService{
                 .map(this::convertEntityToDTO);
     }
 
-    public DetallePedido guardar(CreateDetallePedidoDTO dto){
-        Pedido p = pedidoRepo.findById(dto.getId_pedido())
-                .orElseThrow(()-> new PedidoNotFoundException("Pedido con id:"+ dto.getId_pedido()+" no encontrado"));
+    public DetallePedidoResponse guardar(DetallePedidoRequest dp){
+        Pedido p = pedidoRepo.findById(dp.getIdPedido())
+                .orElseThrow(()-> new PedidoNotFoundException("Pedido con id:"+ dp.getIdPedido()+" no encontrado"));
 
-        DetallePedido entidad = convertDTOToEntity(dto,p);
-        return detallePedidoRepo.save(entidad);
+        DetallePedido detallePedidoGuardado = detallePedidoRepo.save(detallePedidoMapper.toEntity(dp));
+        return detallePedidoMapper.toResponse(detallePedidoGuardado);
     }
 
     public Optional<DetallePedidoDTO> actualizarDetallePedido(UpdateDetallePedidoDTO dto, Long id){

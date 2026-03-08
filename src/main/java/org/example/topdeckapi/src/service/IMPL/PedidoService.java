@@ -1,156 +1,129 @@
 package org.example.topdeckapi.src.service.IMPL;
 
-import org.example.topdeckapi.src.DTOs.CreateDTO.CreateDetallePedidoDTO;
-import org.example.topdeckapi.src.DTOs.CreateDTO.CreatePedidoDTO;
+import lombok.RequiredArgsConstructor;
+
 import org.example.topdeckapi.src.DTOs.DTO.*;
-import org.example.topdeckapi.src.DTOs.UpdateDTO.UpdatePedidoDTO;
+import org.example.topdeckapi.src.DTOs.mappers.PedidoMapper;
+import org.example.topdeckapi.src.DTOs.request.PedidoRequest;
+import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
+import org.example.topdeckapi.src.DTOs.response.PedidoResponse;
 import org.example.topdeckapi.src.Enumerados.ESTADO_PEDIDO;
 import org.example.topdeckapi.src.Exception.PedidoNotFoundException;
-import org.example.topdeckapi.src.Exception.UsuarioNotFoundException;
-import org.example.topdeckapi.src.Repository.IDetallePedidoRepo;
-import org.example.topdeckapi.src.Repository.IPedidoRepo;
-import org.example.topdeckapi.src.model.DetallePedido;
-import org.example.topdeckapi.src.model.Direccion;
-import org.example.topdeckapi.src.model.Pedido;
-import org.example.topdeckapi.src.model.Usuario;
+import org.example.topdeckapi.src.Repository.*;
+import org.example.topdeckapi.src.model.*;
 import org.example.topdeckapi.src.service.Interface.IPedidoService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
+
+import java.time.LocalDateTime;
+
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class PedidoService implements IPedidoService {
+    private final PaginacionService paginacionService;
     private final IPedidoRepo pedidoRepo;
     private final IDetallePedidoRepo  detallePedidoRepo;
-    private final UsuarioService usuarioService;
-    private final DetallePedidoService detallePedidoService;
-    private final DireccionService direccionService;
+    private final PedidoMapper pedidoMapper;
+    private final IUsuarioRepo usuarioRepo;
+    private final IDireccionRepo direccionRepo;
+    private final IProductoRepo productoRepo;
 
-    public PedidoService(IPedidoRepo pedidoRepo, IDetallePedidoRepo detallePedidoRepo, UsuarioService usuarioService, DetallePedidoService detallePedidoService, DireccionService direccionService) {
-        this.pedidoRepo = pedidoRepo;
-        this.detallePedidoRepo = detallePedidoRepo;
-        this.usuarioService = usuarioService;
-        this.detallePedidoService = detallePedidoService;
-        this.direccionService = direccionService;
-    }
-
-    protected PedidoDTO convertToDTO(Pedido p) {
-        PedidoDTO dto = new PedidoDTO();
-        dto.setId_pedido(p.getIdPedido());
-        dto.setEstado(p.getEstado());
-        dto.setTotal(p.getTotal());
-        dto.setDireccion(direccionService.convertToDTO(p.getDireccion()));
-        dto.setUsuario(usuarioService.convertToDto(p.getUsuario()));
-        dto.setFecha_pedido(p.getFechaPedido());
-
-        dto.setDetalles(p.getDetalles().stream()
-                .map(detallePedidoService::convertEntityToDTO)
-                .collect(Collectors.toList())
+    private Sort buildSort (String sortBy, String direction){
+        Map<String,String> mapeoCampos = Map.of(
+                "idPedido", "idPedido",
+                "estado", "estado",
+                "total","total",
+                "fechaPedido", "fechaPedido"
         );
 
-        return dto;
+        String campoReal = mapeoCampos.getOrDefault(sortBy,"idUsuario");
+        Sort.Direction dir = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        return Sort.by(dir, campoReal);
     }
 
-    protected Pedido convertCreateDTOToEntity(CreatePedidoDTO createDto) {
-        UsuarioDTO usuarioDTO = usuarioService.buscarPorId(createDto.getUsuarioDTO().getId_usuario())
-                .orElseThrow(()-> new UsuarioNotFoundException("Usuario con el id "+ createDto.getUsuarioDTO().getId_usuario() +" no encontrado"));
-
-        Usuario u = usuarioService.convertToEntity(usuarioDTO);
-
-        DireccionDTO direccionDTO = direccionService.getById(createDto.getDireccionDTO().getId_direccion())
-                .orElseThrow(RuntimeException::new);
-
-        Direccion d = direccionService.convertToEntity(direccionDTO);
-
-        Pedido p = new Pedido();
-        p.setUsuario(u);
-        p.setFechaPedido(createDto.getFecha_pedido());
-        p.setTotal(createDto.getPrecio());
-        p.setDireccion(d);
-        p.setEstado(ESTADO_PEDIDO.PENDIENTE.name());
-        p.setDetalles(new ArrayList<>());
-        p.setIp_usuario(createDto.getIp_usuario());
-        p.setTerminos_aceptados(createDto.getTerminos_aceptados());
-        p.setVersion_terminos_y_condiciones(createDto.getVersion_terminos_y_condiciones());
-
-        return p;
+    public PaginacionResponse<PedidoResponse> obtenerPaginados(Integer pagina, Integer tamanio, String sortBy, String direction){
+        Sort sort = buildSort(sortBy, direction);
+        Pageable pageable = PageRequest.of(pagina - 1, tamanio, sort);
+        Page<Pedido> paginaPedido = pedidoRepo.findAll(pageable);
+        return paginacionService.crearPaginacionResponse(paginaPedido,pagina,tamanio,pedidoMapper::toResponse);
     }
 
-    public List<DetallePedidoDTOCompleto> getByPedidoId(Long idPedido){
-        Pedido p = pedidoRepo.findById(idPedido)
+    public PaginacionResponse<PedidoResponse> obtenerPaginadosConFiltro(Integer pagina, Integer tamanio, String sortBy, String direction, String filtro){
+        Sort sort = buildSort(sortBy, direction);
+        Pageable pageable = PageRequest.of(pagina - 1, tamanio, sort);
+        Page<Pedido> paginaPedido = pedidoRepo.findBySearch(filtro,pageable);
+        return paginacionService.crearPaginacionResponse(paginaPedido,pagina,tamanio,pedidoMapper::toResponse);
+    }
+
+    public PedidoResponse getEntityById(Long id){
+        Pedido p = pedidoRepo.findById(id)
+                .orElseThrow(()-> new PedidoNotFoundException("Pedido no encontrado"));
+        return pedidoMapper.toResponse(p);
+    }
+
+    public PedidoResponse guardar(PedidoRequest newPedido){
+        Pedido pedido = new Pedido();
+        Usuario usuarioAsociado = usuarioRepo.findById(newPedido.getIdUsuario())
+                .orElseThrow(()-> new RuntimeException("Usuario asociado al pedido no encontrado"));
+
+        Direccion direccionAsociada = direccionRepo.findById(newPedido.getIdDireccion())
+                .orElseThrow(()-> new RuntimeException("Direccion asociada al pedido no encontrada"));
+
+        pedido.setIpUsuario(newPedido.getIpUsuario());
+        pedido.setFechaPedido(LocalDateTime.now());
+        pedido.setEstado(ESTADO_PEDIDO.PENDIENTE);
+        pedido.setUsuario(usuarioAsociado);
+        pedido.setDireccion(direccionAsociada);
+        Pedido pedidoGuardado = pedidoRepo.save(pedido);
+
+        List<DetallePedido> detalles = newPedido.getDetalles().stream()
+                .map(dp->{
+                    Producto producto = productoRepo.findById(dp.getIdProducto())
+                            .orElseThrow(()-> new RuntimeException("Producto no encontrado"));
+
+                    return DetallePedido.builder()
+                            .pedido(pedidoGuardado)
+                            .producto(producto)
+                            .cantidad(dp.getCantidad())
+                            .precioUnitario(dp.getPrecioUnitario())
+                            .subTotal(dp.getPrecioUnitario()*dp.getCantidad())
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        double total = detalles.stream()
+                .mapToDouble(DetallePedido::getSubTotal)
+                .sum();
+
+        List<DetallePedido> detallePedidosGuardado = detallePedidoRepo.saveAll(detalles);
+
+        pedidoGuardado.setDetalles(detallePedidosGuardado);
+        pedidoGuardado.setTotal(total);
+        return pedidoMapper.toResponse(pedidoRepo.save(pedido));
+    }
+
+    public PedidoResponse actualizarEstado(Long idPedido,String nuevoEstado){
+        Pedido pedido = pedidoRepo.findById(idPedido)
                 .orElseThrow(()-> new PedidoNotFoundException("Pedido no encontrado"));
 
-        List<DetallePedido> detalles = detallePedidoRepo.findByPedido(p);
-        return detalles.stream()
-                .map(detallePedidoService::convertEntityToDTOCompleto)
-                .collect(Collectors.toList());
-    }
-
-    public List<PedidoDTO> getAll(){
-        return pedidoRepo.findAll().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
-    public Optional<PedidoDTO> getById(Long id){
-        return pedidoRepo.findById(id)
-                .map(this::convertToDTO);
-    }
-
-    public List<DetallePedido> guardarDetalles (List<CreateDetallePedidoDTO> pedidoDTOS){
-        List<DetallePedido> detalles = new ArrayList<>();
-        pedidoDTOS.forEach(dto->{
-            detalles.add(detallePedidoService.guardar(dto));
-        });
-        return detalles;
-    }
-
-    public Optional<Pedido> getEntityById(Long id){
-        return pedidoRepo.findById(id);
-    }
-
-    public Pedido guardar(CreatePedidoDTO newPedido){
-        Pedido entidadPedido = convertCreateDTOToEntity(newPedido);
-        entidadPedido.setDetalles(new ArrayList<>());
-        Pedido pedidoGuardado = pedidoRepo.save(entidadPedido);
-        List<DetallePedido> detalles = new ArrayList<>();
-
-        for(CreateDetallePedidoDTO dto : newPedido.getDetalles()){
-            dto.setId_pedido(pedidoGuardado.getIdPedido());
-            DetallePedido detallePedido = detallePedidoService.convertDTOToEntity(dto,entidadPedido);
-            DetallePedido detalleGuardado = detallePedidoService.guardar(dto);
-            detalles.add(detalleGuardado);
+        try{
+            ESTADO_PEDIDO estado = ESTADO_PEDIDO.valueOf(nuevoEstado.toUpperCase());
+            pedido.setEstado(estado);
+        }catch (Exception e){
+            throw new IllegalArgumentException("No es un valor permitido (" + nuevoEstado + ")\n" +
+                                                "los valores permitidos son PENDIENTE, CONFIRMADO, RECHAZADO"
+            );
         }
-        return entidadPedido;
-    }
-
-    public Optional<PedidoDTO> actualizarPedido(UpdatePedidoDTO dto, Long id){
-        return pedidoRepo.findById(id)
-                .map(p->{
-                    if(dto.getFecha_pedido()!=null){
-                        p.setFechaPedido(dto.getFecha_pedido());
-                    }
-                    if(dto.getPrecio()!=null){
-                        p.setTotal(dto.getPrecio());
-                    }
-                    if(dto.getEstado()!=null){
-                        p.setEstado(dto.getEstado());
-                    }
-                    Pedido pedidoActualizado = pedidoRepo.save(p);
-                    return convertToDTO(pedidoActualizado);
-                });
-    }
-
-    public Optional<PedidoDTO> actualizarEstado(Long idPedido,String nuevoEstado){
-        return pedidoRepo.findById(idPedido)
-                .map(p->{
-                    p.setEstado(nuevoEstado);
-                    Pedido pedidoActualizado = pedidoRepo.save(p);
-                    return convertToDTO(pedidoActualizado);
-                });
+        Pedido pedidoActualizado = pedidoRepo.save(pedido);
+        return pedidoMapper.toResponse(pedidoActualizado);
     }
 
     public boolean delete(Long id){

@@ -3,6 +3,7 @@ package org.example.topdeckapi.src.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.minidev.json.annotate.JsonIgnore;
@@ -13,6 +14,7 @@ import net.minidev.json.annotate.JsonIgnore;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "detallepedido")
+@Builder
 public class DetallePedido {
     @Id
     @GeneratedValue (strategy = GenerationType.IDENTITY)
