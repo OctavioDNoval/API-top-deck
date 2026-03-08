@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.service.IMPL;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 import org.example.topdeckapi.src.DTOs.DTO.*;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class PedidoService implements IPedidoService {
     private final PaginacionService paginacionService;
     private final IPedidoRepo pedidoRepo;

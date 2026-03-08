@@ -2,6 +2,7 @@ package org.example.topdeckapi.src.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.example.topdeckapi.src.Enumerados.ESTADO_EVENTO;
@@ -34,7 +35,7 @@ public class Evento {
     private LocalTime hora;
 
     @Column(name = "precio_entrada")
-    private Integer precioEntrada;
+    private Double precioEntrada;
 
     @Column(name = "estado")
     @Enumerated(EnumType.STRING)
