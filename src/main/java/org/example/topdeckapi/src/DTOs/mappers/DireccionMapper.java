@@ -6,6 +6,7 @@ import org.example.topdeckapi.src.model.Direccion;
 import org.example.topdeckapi.src.model.Usuario;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
 
 @Mapper(componentModel = "spring", uses = {UsuarioMapper.class})
@@ -18,6 +19,10 @@ public interface DireccionMapper {
     @Mapping(target = "idDireccion", ignore = true)
     @Mapping(target = "usuario", source = "idUsuario", qualifiedByName = "idToUsuario")
     Direccion toEntity(DireccionRequest direccionRequest);
+
+    @Mapping(target = "idDireccion", ignore = true)
+    @Mapping(target = "usuario", ignore = true)
+    void updateEntity(@MappingTarget Direccion direccion, DireccionRequest request);
 
     @Named("idToUsuario")
     default Usuario idToUsuario( Long idUsuario) {

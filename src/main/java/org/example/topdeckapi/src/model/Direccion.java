@@ -3,6 +3,7 @@ package org.example.topdeckapi.src.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -11,6 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "direccion")
+@Builder
 public class Direccion {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
