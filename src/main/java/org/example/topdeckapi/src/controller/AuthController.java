@@ -27,8 +27,6 @@ public class AuthController {
         return ResponseEntity.ok(authService.register(dto));
     }
 
-
-
     @GetMapping("/validate/start")
     public ResponseEntity<?> validate(@RequestHeader("Authorization") String token){
         try {

@@ -10,8 +10,6 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface UsuarioMapper {
 
-    @Mapping(target = "password", ignore = true)
-    @Mapping(target = "ipUsuario", ignore = true)
     UsuarioResponse toResponse(Usuario usuario);
 
     @Mapping(target = "ipUsuario", ignore = true)

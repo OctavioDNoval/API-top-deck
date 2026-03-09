@@ -67,6 +67,14 @@ public class ProductoService implements IProductoService {
             throw new RuntimeException("El producto ya existe");
         }
         Producto nuevoProducto = productoMapper.toEntity(producto);
+        Tag tag= tagRepository.findById(producto.getIdTag())
+                .orElseThrow(() -> new RuntimeException("El tag no existe"));
+
+        Categoria categoria = categoriasRepo.findById(producto.getIdCategoria())
+                .orElseThrow(() -> new RuntimeException("El categoria no existe"));
+
+        nuevoProducto.setCategoria(categoria);
+        nuevoProducto.setTag(tag);
         Producto productoGuardado = productoRepo.save(nuevoProducto);
         auditUtils.setCurrentUserForAudit();
         return productoMapper.toResponse(productoGuardado);

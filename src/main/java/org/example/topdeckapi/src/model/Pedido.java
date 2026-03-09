@@ -32,6 +32,7 @@ public class Pedido {
     @Column(name = "fecha_pedido", nullable = false)
     private LocalDateTime fechaPedido;
 
+    @Enumerated(EnumType.STRING)
     private ESTADO_PEDIDO estado;
 
     @Column(name = "total", nullable = false)
@@ -43,10 +44,4 @@ public class Pedido {
     @Column(name = "ip_usuario")
     private String ipUsuario;
 
-    public Pedido(Usuario usuario, LocalDateTime fechaPedido, Double total, List<DetallePedido> detalles) {
-        this.usuario = usuario;
-        this.fechaPedido = fechaPedido;
-        this.total = total;
-        this.detalles = detalles;
-    }
 }

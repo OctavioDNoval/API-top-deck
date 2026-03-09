@@ -18,25 +18,10 @@ public interface ProductoMapper {
     @Mapping(source = "nombre", target = "nombreProducto")
     ProductoResponse toResponse(Producto producto);
 
-    @Mapping(target="categoria", source = "idCategoria", qualifiedByName = "idToCategoria")
-    @Mapping(target = "tag", source = "idTag", qualifiedByName = "idToTag")
+    @Mapping(target="categoria", ignore = true)
+    @Mapping(target = "tag", ignore =true)
+    @Mapping(target = "idProducto", ignore = true)
     Producto toEntity(ProductoRequest productoRequest);
 
-    @Named("idToTag")
-    default Tag idToTag(Long id) {
-        if (id == null) return null;
 
-        Tag tag = new Tag();
-        tag.setIdTag(id);
-        return tag;
-    }
-
-    @Named("idToCategoria")
-    default Categoria idToCategoria(Long id){
-        if(id==null) return null;
-
-        Categoria categoria = new Categoria();
-        categoria.setIdCategoria(id);
-        return categoria;
-    }
 }
