@@ -1,9 +1,8 @@
 package org.example.topdeckapi.src.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.example.topdeckapi.src.DTOs.DTO.DetalleCarritoDTO;
-import org.example.topdeckapi.src.model.Carrito;
-import org.example.topdeckapi.src.model.DetalleCarrito;
+import org.example.topdeckapi.src.DTOs.response.CarritoResponse;
+import org.example.topdeckapi.src.DTOs.response.DetalleCarritoResponse;
 import org.example.topdeckapi.src.service.IMPL.CarritoService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,23 +18,23 @@ public class CarritoController {
     private final CarritoService carritoService;
 
     @GetMapping("/usuario/{id}")
-    public ResponseEntity<Carrito> getCarritoByUser(@PathVariable("id") Long idUsuario){
-        Carrito carrito = carritoService.obtenerCarritoPorUsuario(idUsuario);
+    public ResponseEntity<CarritoResponse> getCarritoByUser(@PathVariable("id") Long idUsuario){
+        CarritoResponse carrito = carritoService.obtenerCarritoPorUsuario(idUsuario);
         return ResponseEntity.ok(carrito);
     }
 
     @GetMapping("/user/{idCarrito}/detalles")
-    public ResponseEntity<List<DetalleCarritoDTO>> getDetalleCarrito(@PathVariable("idCarrito") Long idCarrito){
-        List<DetalleCarritoDTO> detalles = carritoService.obtenerDetalleCarrito(idCarrito);
+    public ResponseEntity<List<DetalleCarritoResponse>> getDetalleCarrito(@PathVariable("idCarrito") Long idCarrito){
+        List<DetalleCarritoResponse> detalles = carritoService.obtenerDetalleCarrito(idCarrito);
         return ResponseEntity.ok(detalles);
     }
 
     @PostMapping("/user/{idCarrito}/save")
-    public ResponseEntity<DetalleCarritoDTO> agregarDetalle (
+    public ResponseEntity<DetalleCarritoResponse> agregarDetalle (
             @PathVariable("idCarrito") Long idCarrito,
             @RequestParam Long idProducto,
             @RequestParam int cantidad){
-        DetalleCarritoDTO detalle = carritoService.agregarAlCarrito(idProducto, idCarrito, cantidad);
+        DetalleCarritoResponse detalle = carritoService.agregarAlCarrito(idProducto, idCarrito, cantidad);
         return ResponseEntity.status(HttpStatus.CREATED).body(detalle);
     }
 
@@ -50,7 +49,7 @@ public class CarritoController {
     }
 
     @PatchMapping("/user/detalle/actualizar/{idDetalle}")
-    public ResponseEntity<DetalleCarritoDTO> actualizarDetalle (@PathVariable Long idDetalle,@RequestParam int nuevaCantidad){
+    public ResponseEntity<DetalleCarritoResponse> actualizarDetalle (@PathVariable Long idDetalle,@RequestParam int nuevaCantidad){
         return ResponseEntity.ok(carritoService.actualizarCantidad(idDetalle, nuevaCantidad));
     }
 

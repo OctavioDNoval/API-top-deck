@@ -43,7 +43,7 @@ public class TagService {
         return tagMapper.toResponse(tagGuardado);
     }
 
-    public TagResponse actualizarTag(Long id, Tag newTag) {
+    public TagResponse actualizarTag(Long id, TagRequest newTag) {
         Tag tag = tagRepository.findById(id).orElseThrow(() -> new RuntimeException("Tag not found"));
         if(tagRepository.existsByNombre(newTag.getNombre())){
             throw new RuntimeException("El nombre existe en el sistema");

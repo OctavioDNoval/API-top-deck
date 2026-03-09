@@ -3,7 +3,7 @@ package org.example.topdeckapi.src.service.IMPL;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
-import org.example.topdeckapi.src.DTOs.DTO.*;
+
 import org.example.topdeckapi.src.DTOs.mappers.PedidoMapper;
 import org.example.topdeckapi.src.DTOs.request.PedidoRequest;
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
@@ -65,7 +65,7 @@ public class PedidoService implements IPedidoService {
         return paginacionService.crearPaginacionResponse(paginaPedido,pagina,tamanio,pedidoMapper::toResponse);
     }
 
-    public PedidoResponse getEntityById(Long id){
+    public PedidoResponse getById(Long id){
         Pedido p = pedidoRepo.findById(id)
                 .orElseThrow(()-> new PedidoNotFoundException("Pedido no encontrado"));
         return pedidoMapper.toResponse(p);

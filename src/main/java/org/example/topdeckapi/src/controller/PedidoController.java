@@ -1,63 +1,64 @@
 package org.example.topdeckapi.src.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.Response;
-import org.example.topdeckapi.src.DTOs.CreateDTO.CreateDetallePedidoDTO;
-import org.example.topdeckapi.src.DTOs.CreateDTO.CreatePedidoDTO;
-import org.example.topdeckapi.src.DTOs.DTO.DetallePedidoDTO;
-import org.example.topdeckapi.src.DTOs.DTO.DetallePedidoDTOCompleto;
-import org.example.topdeckapi.src.DTOs.DTO.PedidoDTO;
-import org.example.topdeckapi.src.model.DetallePedido;
-import org.example.topdeckapi.src.model.Pedido;
+import lombok.extern.slf4j.Slf4j;
+import org.example.topdeckapi.src.DTOs.request.PedidoRequest;
+import org.example.topdeckapi.src.DTOs.response.DetallePedidoResponse;
+import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
+import org.example.topdeckapi.src.DTOs.response.PedidoResponse;
+import org.example.topdeckapi.src.service.IMPL.DetallePedidoService;
 import org.example.topdeckapi.src.service.IMPL.PedidoService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/pedidos")
+@Slf4j
 public class PedidoController {
     private final PedidoService pedidoService;
+    private final DetallePedidoService detallePedidoService;
 
-    @GetMapping("/admin/getAll")
-    public ResponseEntity<List<PedidoDTO>> listarPedidos(){
-        List<PedidoDTO> pedidoDTOS = pedidoService.getAll();
-        return ResponseEntity.ok(pedidoDTOS);
+    @GetMapping("/admin/obtenerPaginados")
+    public ResponseEntity<PaginacionResponse<PedidoResponse>> obtenerPedidosPaginados(
+            @RequestParam(defaultValue = "1") Integer pagina,
+            @RequestParam(defaultValue = "15") Integer tamanio,
+            @RequestParam(defaultValue = "idPedido") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction,
+            @RequestParam(defaultValue = "") String filter
+    ){
+        PaginacionResponse<PedidoResponse> paginacionResponse;
+        if(filter == null || filter.trim().isEmpty()){
+            paginacionResponse = pedidoService.obtenerPaginados(pagina, tamanio, sortBy, direction);
+        }else{
+            paginacionResponse = pedidoService.obtenerPaginadosConFiltro(pagina, tamanio, sortBy, direction, filter);
+        }
+        return ResponseEntity.ok(paginacionResponse);
     }
 
     @GetMapping("/admin/{idPedido}/getDetalles")
-    public ResponseEntity<List<DetallePedidoDTOCompleto>> getDetallesPedido(@PathVariable Long idPedido){
-        return ResponseEntity.ok(pedidoService.getByPedidoId(idPedido));
+    public ResponseEntity<List<DetallePedidoResponse>> getDetallesPedido(@PathVariable Long idPedido){
+        return ResponseEntity.ok(detallePedidoService.obtenerDetallesByIdPedido(idPedido));
     }
 
     @PostMapping("/public/newPedido")
-    public ResponseEntity<Pedido> newPedido(@RequestBody CreatePedidoDTO pedidoDTO){
-            System.out.println("pedidoDTO completo: " + pedidoDTO);
+    public ResponseEntity<PedidoResponse> newPedido(@RequestBody PedidoRequest newPedido){
+        log.info("PedidoRequest completo: {}", newPedido);
 
-            if (pedidoDTO.getUsuarioDTO() != null) {
-                System.out.println("UsuarioDTO: " + pedidoDTO.getUsuarioDTO());
-                System.out.println("ID Usuario: " + pedidoDTO.getUsuarioDTO().getId_usuario());
+            if (newPedido.getIdUsuario() != null) {
+                log.info("Usuario id: {}", newPedido.getIdUsuario());
             } else {
-                System.out.println("UsuarioDTO es NULL!");
+                log.info("Usuario es NULL!");
             }
 
-        return ResponseEntity.ok(pedidoService.guardar(pedidoDTO));
-    }
-
-    @PostMapping("public/detalles")
-    public ResponseEntity<List<DetallePedido>> newDetallePedido(@RequestBody List<CreateDetallePedidoDTO> detallePedido){
-        List<DetallePedido> lista = pedidoService.guardarDetalles(detallePedido);
-        return ResponseEntity.ok(lista);
+        return ResponseEntity.ok(pedidoService.guardar(newPedido));
     }
 
     @PatchMapping("/admin/{idPedido}/new-state")
-    public ResponseEntity<PedidoDTO> actualizarEstadoPedido(@PathVariable Long idPedido, @RequestParam String newEstado) {
-        return pedidoService.actualizarEstado(idPedido,newEstado)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<PedidoResponse> actualizarEstadoPedido(@PathVariable Long idPedido, @RequestParam String newEstado) {
+        PedidoResponse pedidoResponse = pedidoService.actualizarEstado(idPedido, newEstado);
+        return ResponseEntity.ok(pedidoResponse);
     }
 }

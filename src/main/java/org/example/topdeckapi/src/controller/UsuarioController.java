@@ -2,33 +2,21 @@ package org.example.topdeckapi.src.controller;
 
 import jakarta.validation.Valid;
 
+import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.request.UsuarioRequest;
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
 import org.example.topdeckapi.src.DTOs.response.UsuarioResponse;
 import org.example.topdeckapi.src.service.IMPL.UsuarioService;
-import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/user")
+@RequiredArgsConstructor
 public class UsuarioController {
     private final UsuarioService usuarioService;
 
-
-    /*
-    * En este controlador no vamos a tratar con los metodos
-    * para guardar usuarios en la base de datos porque de eso
-    * se va a encargar el AuthController una vez creado
-    * en este controlador solo se manipulan usuarios ya creados
-    * y la idea es que en la proteccion de rutas ningun usuario
-    * no autenticado puede acceder a estar rutas
-    * */
-
-    @Autowired
-    public UsuarioController(UsuarioService usuarioService){
-        this.usuarioService = usuarioService;
-    }
 
     //=======================GET========================
 

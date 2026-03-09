@@ -12,6 +12,9 @@ import org.example.topdeckapi.src.model.Pedido;
 import org.example.topdeckapi.src.service.Interface.IDetallePedidoService;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -52,5 +55,14 @@ public class DetallePedidoService implements IDetallePedidoService{
         }else{
             return false;
         }
+    }
+
+    public List<DetallePedidoResponse> obtenerDetallesByIdPedido(Long idPedido){
+        Pedido p = pedidoRepo.findById(idPedido)
+                        .orElseThrow(()-> new PedidoNotFoundException("Pedido no encontrado"));
+        List<DetallePedido> detales = detallePedidoRepo.findByPedido(p);
+        return detales.stream()
+                .map(detallePedidoMapper::toResponse)
+                .collect(Collectors.toList());
     }
 }

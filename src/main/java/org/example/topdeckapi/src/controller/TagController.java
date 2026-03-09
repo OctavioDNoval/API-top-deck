@@ -1,13 +1,13 @@
 package org.example.topdeckapi.src.controller;
 
-import jakarta.servlet.ServletResponse;
+
 import lombok.RequiredArgsConstructor;
-import org.example.topdeckapi.src.DTOs.CreateDTO.CreateTagDTO;
-import org.example.topdeckapi.src.DTOs.DTO.TagDTO;
-import org.example.topdeckapi.src.model.Tag;
+
+
+import org.example.topdeckapi.src.DTOs.request.TagRequest;
+import org.example.topdeckapi.src.DTOs.response.TagResponse;
 import org.example.topdeckapi.src.service.IMPL.TagService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.support.ResourceTransactionManager;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,24 +19,22 @@ public class TagController {
     private final TagService tagService;
 
     @GetMapping("/public/getAll")
-    public ResponseEntity<List<TagDTO>> getAllTags() {
+    public ResponseEntity<List<TagResponse>> getAllTags() {
         return ResponseEntity.ok(tagService.getAllTags());
     }
 
     @PostMapping("/admin/post")
-    public ResponseEntity<TagDTO> addTag(@RequestBody CreateTagDTO dto, ServletResponse servletResponse) {
+    public ResponseEntity<TagResponse> addTag(@RequestBody TagRequest dto) {
         return ResponseEntity.ok(tagService.save(dto));
     }
 
     @PatchMapping("/admin/edit/{id}")
-    public ResponseEntity<TagDTO> editTag(@PathVariable Long id, @RequestBody Tag newTag) {
-        return tagService.actualizarTag(id,newTag)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<TagResponse> editTag(@PathVariable Long id, @RequestBody TagRequest newTag) {
+        return ResponseEntity.ok(tagService.actualizarTag(id, newTag));
     }
 
     @DeleteMapping("/admin/delete/{id}")
-    public ResponseEntity<Boolean> delete (@PathVariable Long id){
+    public ResponseEntity<Void> delete (@PathVariable Long id){
         boolean res = tagService.delete(id);
         if(res){
             return ResponseEntity.noContent().build();

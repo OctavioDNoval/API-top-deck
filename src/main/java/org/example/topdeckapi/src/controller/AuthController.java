@@ -1,11 +1,9 @@
 package org.example.topdeckapi.src.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.example.topdeckapi.src.DTOs.CreateDTO.CreateUsuarioDTO;
-import org.example.topdeckapi.src.DTOs.CreateDTO.CreateUsuarioSinContraseniaDTO;
 import org.example.topdeckapi.src.DTOs.auth.AuthResponse;
 import org.example.topdeckapi.src.DTOs.auth.LoginRequest;
-import org.example.topdeckapi.src.model.Usuario;
+import org.example.topdeckapi.src.DTOs.request.UsuarioRequest;
 import org.example.topdeckapi.src.service.IMPL.AuthService;
 import org.example.topdeckapi.src.service.IMPL.JwtService;
 import org.springframework.http.HttpStatus;
@@ -25,7 +23,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register (@RequestBody CreateUsuarioDTO dto){
+    public ResponseEntity<AuthResponse> register (@RequestBody UsuarioRequest dto){
         return ResponseEntity.ok(authService.register(dto));
     }
 
