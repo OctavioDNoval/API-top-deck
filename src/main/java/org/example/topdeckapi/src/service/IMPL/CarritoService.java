@@ -1,19 +1,22 @@
 package org.example.topdeckapi.src.service.IMPL;
 
-import org.example.topdeckapi.src.DTOs.DTO.DetalleCarritoDTO;
-import org.example.topdeckapi.src.DTOs.DTO.ProductoDTO;
-import org.example.topdeckapi.src.DTOs.DTO.UsuarioDTO;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import org.example.topdeckapi.src.DTOs.mappers.CarritoMapper;
+import org.example.topdeckapi.src.DTOs.mappers.DetalleCarritoMapper;
+import org.example.topdeckapi.src.DTOs.response.CarritoResponse;
+import org.example.topdeckapi.src.DTOs.response.DetalleCarritoResponse;
 import org.example.topdeckapi.src.Exception.CarritoNotFoundException;
-import org.example.topdeckapi.src.Exception.ProductNotFoundException;
 import org.example.topdeckapi.src.Exception.UsuarioNotFoundException;
 import org.example.topdeckapi.src.Repository.ICarritoRepository;
 import org.example.topdeckapi.src.Repository.IDetalleCarritoRepository;
+import org.example.topdeckapi.src.Repository.IProductoRepo;
+import org.example.topdeckapi.src.Repository.IUsuarioRepo;
 import org.example.topdeckapi.src.model.Carrito;
 import org.example.topdeckapi.src.model.DetalleCarrito;
 import org.example.topdeckapi.src.model.Producto;
 import org.example.topdeckapi.src.model.Usuario;
 import org.example.topdeckapi.src.service.Interface.ICarritoService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 
@@ -22,84 +25,64 @@ import java.util.stream.Collectors;
 
 
 @Service
+@RequiredArgsConstructor
+@Transactional
 public class CarritoService implements ICarritoService {
     private final ICarritoRepository carritoRepository;
     private final IDetalleCarritoRepository detalleCarritoRepository;
-    private final UsuarioService usuarioService;
-    private final ProductoService productoService;
+    private final IUsuarioRepo usuarioRepo;
+    private final IProductoRepo productoRepo;
+    private final CarritoMapper carritoMapper;
+    private final DetalleCarritoMapper detalleCarritoMapper;
 
-    @Autowired
-    public CarritoService(ICarritoRepository carritoRepository, IDetalleCarritoRepository detalleCarritoRepository, UsuarioService usuarioService, ProductoService productoService) {
-        this.carritoRepository = carritoRepository;
-        this.detalleCarritoRepository = detalleCarritoRepository;
-        this.usuarioService = usuarioService;
-        this.productoService = productoService;
-    }
-
-    protected DetalleCarritoDTO convertToDTO(DetalleCarrito dc) {
-        DetalleCarritoDTO dto = new DetalleCarritoDTO();
-        dto.setId_carrito(dc.getCarrito().getIdCarrito());
-        dto.setId_DetalleCarrito(dc.getId_detalle_carrito());
-        dto.setCantidad(dc.getCantidad());
-
-        Producto p = dc.getProducto();
-        ProductoDTO pDto = productoService.convertToDTO(p);
-
-        dto.setProductoDTO(pDto);
-
-        return dto;
-    }
-
-    public Carrito obtenerCarritoPorUsuario(Long idUsuario){
-        UsuarioDTO usuarioDTO = usuarioService.buscarPorId(idUsuario)
+    public CarritoResponse obtenerCarritoPorUsuario(Long idUsuario){
+        Usuario u = usuarioRepo.findById(idUsuario)
                 .orElseThrow(()-> new UsuarioNotFoundException("Usuario no encontrado"));
 
-        Usuario usuario = usuarioService.convertToEntity(usuarioDTO);
-
-        return carritoRepository.findByUsuario(usuario)
+        Carrito c = carritoRepository.findByUsuario(u)
                 .orElseGet(()->{
                     Carrito nuevoCarrito = new Carrito();
-                    nuevoCarrito.setUsuario(usuario);
+                    nuevoCarrito.setUsuario(u);
                     return carritoRepository.save(nuevoCarrito);
                 });
+
+        return carritoMapper.toResponse(c);
     }
 
-    public DetalleCarritoDTO actualizarCantidad (Long idDetalle, int nuevaCantidad){
+    public DetalleCarritoResponse actualizarCantidad (Long idDetalle, Integer nuevaCantidad){
         DetalleCarrito dc = detalleCarritoRepository.findById(idDetalle).orElse(null);
-        
         if(dc != null ){
             dc.setCantidad(nuevaCantidad);
             detalleCarritoRepository.save(dc);
         }
-        return convertToDTO(dc);
+        return detalleCarritoMapper.toResponse(dc);
     }
 
-    public List<DetalleCarritoDTO> obtenerDetalleCarrito(Long idCarrito){
+    public List<DetalleCarritoResponse> obtenerDetalleCarrito(Long idCarrito){
         Carrito carrito = carritoRepository.findById(idCarrito)
                 .orElseThrow(()-> new CarritoNotFoundException("Carrito no encontrado"));
 
         List<DetalleCarrito> detalle = detalleCarritoRepository.findByCarrito(carrito);
 
         return detalle.stream()
-                .map(this::convertToDTO)
+                .map(detalleCarritoMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
-    public DetalleCarritoDTO agregarAlCarrito (Long id_producto, Long id_carrito, int cantidad){
-        Producto producto = productoService.buscarPorId(id_producto)
-                .map(productoService::convertToEntity)
-                .orElseThrow(()-> new ProductNotFoundException("Producto no encontrado"));
+    public DetalleCarritoResponse agregarAlCarrito (Long idProducto, Long idCarrito, Integer cantidad){
+        Producto p = productoRepo.findById(idProducto)
+                .orElseThrow(()-> new RuntimeException("Producto no encontrado"));
 
-        Carrito carrito = carritoRepository.findById(id_carrito)
+        Carrito c = carritoRepository.findById(idCarrito)
                 .orElseThrow(()-> new CarritoNotFoundException("Carrito no encontrado"));
 
         DetalleCarrito detalle = new DetalleCarrito();
-        detalle.setCarrito(carrito);
+        detalle.setCarrito(c);
         detalle.setCantidad(cantidad);
-        detalle.setProducto(producto);
+        detalle.setProducto(p);
 
         DetalleCarrito savedDetalle = detalleCarritoRepository.save(detalle);
-        return convertToDTO(savedDetalle);
+        return detalleCarritoMapper.toResponse(savedDetalle);
     }
 
     public boolean deleteProducto (Long detalleCarrito){
