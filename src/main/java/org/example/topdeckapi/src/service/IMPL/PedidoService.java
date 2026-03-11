@@ -109,7 +109,7 @@ public class PedidoService implements IPedidoService {
 
         pedidoGuardado.setDetalles(detallePedidosGuardado);
         pedidoGuardado.setTotal(total);
-        return pedidoMapper.toResponse(pedidoRepo.save(pedido));
+        return pedidoMapper.toResponse(pedidoRepo.save(pedidoGuardado));
     }
 
     public PedidoResponse actualizarEstado(Long idPedido,String nuevoEstado){
