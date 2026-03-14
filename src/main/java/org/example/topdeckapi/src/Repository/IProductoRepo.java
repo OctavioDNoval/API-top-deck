@@ -16,5 +16,14 @@ public interface IProductoRepo extends JpaRepository<Producto,Long> {
             "LOWER(p.descripcion) LIKE LOWER(CONCAT('%', :search, '%')) ")
     Page<Producto> findBySearch(@Param("search") String search, Pageable pageable);
 
+    @Query("SELECT p FROM Producto p WHERE " +
+            "(:search IS NULL OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(p.descripcion) LIKE LOWER(CONCAT('%', :search, '%'))) AND " +
+            "(:idCategoria IS NULL OR p.categoria.idCategoria = :idCategoria) AND " +
+            "(:idTag IS NULL OR p.tag.idTag = :idTag)")
+    Page<Producto> findByFiltros(@Param("search") String search,
+                                 @Param("idCategoria") Long idCategoria,
+                                 @Param("idTag") Long idTag,
+                                 Pageable pageable);
+
     boolean existsByNombre(String nombre);
 }

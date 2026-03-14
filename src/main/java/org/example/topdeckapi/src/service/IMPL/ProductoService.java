@@ -55,11 +55,24 @@ public class ProductoService implements IProductoService {
         return paginationService.crearPaginacionResponse(paginaProducto,pagina,tamanio,productoMapper::toResponse);
     }
 
-    public PaginacionResponse<ProductoResponse> obtenerPaginadosConFiltro(Integer pagina, Integer tamanio, String sortBy, String direction, String filter){
+    public PaginacionResponse<ProductoResponse> obtenerPaginadosConFiltro(
+            Integer pagina,
+            Integer tamanio,
+            String sortBy,
+            String direction,
+            String filter,
+            Long idCategoria,
+            Long idTag) {
+
         Sort sort = buildSort(sortBy, direction);
         Pageable pageable = PageRequest.of(pagina - 1, tamanio, sort);
-        Page<Producto> paginaProducto = productoRepo.findBySearch(filter, pageable);
-        return  paginationService.crearPaginacionResponse(paginaProducto,pagina,tamanio,productoMapper::toResponse);
+
+        // Si filter es una cadena vacía, conviene pasarlo como null para que no filtre por texto
+        String search = (filter == null || filter.trim().isEmpty()) ? null : filter.trim();
+
+        Page<Producto> paginaProducto = productoRepo.findByFiltros(search, idCategoria, idTag, pageable);
+
+        return paginationService.crearPaginacionResponse(paginaProducto, pagina, tamanio, productoMapper::toResponse);
     }
 
     public ProductoResponse guardar(ProductoRequest producto) {

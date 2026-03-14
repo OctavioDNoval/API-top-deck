@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.request.UsuarioRequest;
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
+import org.example.topdeckapi.src.DTOs.response.ProductoResponse;
 import org.example.topdeckapi.src.DTOs.response.UsuarioResponse;
 import org.example.topdeckapi.src.service.IMPL.UsuarioService;
 
@@ -20,9 +21,22 @@ public class UsuarioController {
 
     //=======================GET========================
 
-    @GetMapping("/admin/getAll")
-    public ResponseEntity<PaginacionResponse<UsuarioResponse>>  getAll(Integer pagina, Integer tamanio, String sortBy, String direction){
-        return ResponseEntity.ok(usuarioService.obtenerPaginados(pagina, tamanio, sortBy, direction));
+    @GetMapping("/admin/obtenerPaginados")
+    public ResponseEntity<PaginacionResponse<UsuarioResponse>>  getAll(
+            @RequestParam(defaultValue = "1") Integer pagina,
+            @RequestParam(defaultValue = "15") Integer tamanio,
+            @RequestParam(defaultValue = "idPedido") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction,
+            @RequestParam(defaultValue = "") String filter){
+        PaginacionResponse<UsuarioResponse> paginacionResponse;
+
+        if(filter == null || filter.trim().isEmpty()){
+            paginacionResponse = usuarioService.obtenerPaginados(pagina, tamanio, sortBy, direction);
+        }else{
+            paginacionResponse = usuarioService.obtenerPaginadosConFiltro(pagina, tamanio, sortBy, direction, filter);
+        }
+
+        return ResponseEntity.ok(paginacionResponse);
     }
 
     @GetMapping("/admin/{id}")

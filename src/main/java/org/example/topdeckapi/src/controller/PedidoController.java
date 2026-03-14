@@ -56,9 +56,17 @@ public class PedidoController {
         return ResponseEntity.ok(pedidoService.guardar(newPedido));
     }
 
-    @PatchMapping("/admin/{idPedido}/new-state")
-    public ResponseEntity<PedidoResponse> actualizarEstadoPedido(@PathVariable Long idPedido, @RequestParam String newEstado) {
+    @PatchMapping("/admin/{idPedido}/newState")
+    public ResponseEntity<PedidoResponse> actualizarEstadoPedido(@PathVariable Long idPedido, @RequestBody String newEstado) {
         PedidoResponse pedidoResponse = pedidoService.actualizarEstado(idPedido, newEstado);
         return ResponseEntity.ok(pedidoResponse);
+    }
+
+    @DeleteMapping("/admin/delete/{idPedido}")
+    public ResponseEntity<Void> deletePedido(@PathVariable Long idPedido){
+        boolean isDeleted = pedidoService.delete(idPedido);
+        return isDeleted
+                ? ResponseEntity.ok().build()
+                : ResponseEntity.notFound().build();
     }
 }

@@ -23,21 +23,22 @@ public class ProductoController {
         return ResponseEntity.ok("El Servicio funciona!");
     }
 
-    @GetMapping("/public/getAll")
+    @GetMapping("/public/obtenerPaginados")
     public ResponseEntity<PaginacionResponse<ProductoResponse>> obtenerPaginados(
             @RequestParam(defaultValue = "1") Integer pagina,
             @RequestParam(defaultValue = "15") Integer tamanio,
-            @RequestParam(defaultValue = "idPedido") String sortBy,
+            @RequestParam(defaultValue = "idProducto") String sortBy,
             @RequestParam(defaultValue = "desc") String direction,
-            @RequestParam(defaultValue = "") String filter
-    ){
-        PaginacionResponse<ProductoResponse> paginacionResponse;
+            @RequestParam(defaultValue = "") String filter,
+            @RequestParam(defaultValue = "0") Long idTag,
+            @RequestParam(defaultValue = "0") Long idCategoria
+    ) {
+        Long categoria = (idCategoria == 0) ? null : idCategoria;
+        Long tag = (idTag == 0) ? null : idTag;
+        String search = (filter == null || filter.trim().isEmpty()) ? null : filter.trim();
 
-        if(filter == null || filter.trim().isEmpty()){
-            paginacionResponse = productoService.obtenerPaginados(pagina, tamanio, sortBy, direction);
-        }else{
-            paginacionResponse = productoService.obtenerPaginadosConFiltro(pagina, tamanio, sortBy, direction, filter);
-        }
+        PaginacionResponse<ProductoResponse> paginacionResponse =
+                productoService.obtenerPaginadosConFiltro(pagina, tamanio, sortBy, direction, search, categoria, tag);
 
         return ResponseEntity.ok(paginacionResponse);
     }
