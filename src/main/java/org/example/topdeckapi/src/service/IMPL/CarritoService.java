@@ -20,6 +20,7 @@ import org.example.topdeckapi.src.service.Interface.ICarritoService;
 import org.springframework.stereotype.Service;
 
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,6 +36,7 @@ public class CarritoService implements ICarritoService {
     private final CarritoMapper carritoMapper;
     private final DetalleCarritoMapper detalleCarritoMapper;
 
+    //METODOS PARA EL CARRITO DE USUARIO REGISTRADO
     public CarritoResponse obtenerCarritoPorUsuario(Long idUsuario){
         Usuario u = usuarioRepo.findById(idUsuario)
                 .orElseThrow(()-> new UsuarioNotFoundException("Usuario no encontrado"));
@@ -99,5 +101,20 @@ public class CarritoService implements ICarritoService {
 
         List<DetalleCarrito> detalles = detalleCarritoRepository.findByCarrito(carrito);
         detalleCarritoRepository.deleteAll(detalles);
+    }
+
+
+    //METODO PARA EL CARRITO EFIMERO USUARIOS TIPO GUESS
+
+    public CarritoResponse obtenerCarritoEfimero(String sessionId){
+        Carrito carritoEfimero = carritoRepository.findBySessionId(sessionId)
+                .orElseGet(()->{
+                    Carrito carrito = new Carrito();
+                    carrito.setSessionId(sessionId);
+                    carrito.setFechaCreacion(LocalDateTime.now());
+                    return carritoRepository.save(carrito);
+                });
+
+        return carritoMapper.toResponse(carritoEfimero);
     }
 }

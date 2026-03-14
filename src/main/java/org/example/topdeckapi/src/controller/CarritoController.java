@@ -29,6 +29,11 @@ public class CarritoController {
         return ResponseEntity.ok(detalles);
     }
 
+    @GetMapping("/public/efimero/obtenerCarrito/{sessionId}")
+    public ResponseEntity<CarritoResponse> obtenerCarritoEfimero (@PathVariable String sessionId){
+        return ResponseEntity.ok(carritoService.obtenerCarritoEfimero(sessionId));
+    }
+
     @PostMapping("/user/{idCarrito}/save")
     public ResponseEntity<DetalleCarritoResponse> agregarDetalle (
             @PathVariable("idCarrito") Long idCarrito,
@@ -38,6 +43,10 @@ public class CarritoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(detalle);
     }
 
+    @PatchMapping("/user/detalle/actualizar/{idDetalle}")
+    public ResponseEntity<DetalleCarritoResponse> actualizarDetalle (@PathVariable Long idDetalle,@RequestParam int nuevaCantidad){
+        return ResponseEntity.ok(carritoService.actualizarCantidad(idDetalle, nuevaCantidad));
+    }
     @DeleteMapping("/user/detalle/{idDetalle}")
     public ResponseEntity<Void> eliminarProducto(@PathVariable("idDetalle") Long idDetalle){
         boolean isDeleted = carritoService.deleteProducto(idDetalle);
@@ -46,11 +55,6 @@ public class CarritoController {
         }else{
             return ResponseEntity.notFound().build();
         }
-    }
-
-    @PatchMapping("/user/detalle/actualizar/{idDetalle}")
-    public ResponseEntity<DetalleCarritoResponse> actualizarDetalle (@PathVariable Long idDetalle,@RequestParam int nuevaCantidad){
-        return ResponseEntity.ok(carritoService.actualizarCantidad(idDetalle, nuevaCantidad));
     }
 
     @DeleteMapping("/user/{idCarrito}/empty")

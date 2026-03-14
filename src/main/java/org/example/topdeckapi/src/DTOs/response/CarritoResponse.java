@@ -15,6 +15,7 @@ import java.util.List;
 public class CarritoResponse {
     private Long idCarrito;
     private LocalDateTime fechaCreacion;
+    private Double precioTotal;
     List<DetalleCarritoResponse> detalleCarrito;
 
     //Datos resumidos del Usuario
