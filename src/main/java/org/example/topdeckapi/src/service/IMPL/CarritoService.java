@@ -4,9 +4,11 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.mappers.CarritoMapper;
 import org.example.topdeckapi.src.DTOs.mappers.DetalleCarritoMapper;
+import org.example.topdeckapi.src.DTOs.request.DetalleCarritoRequest;
 import org.example.topdeckapi.src.DTOs.response.CarritoResponse;
 import org.example.topdeckapi.src.DTOs.response.DetalleCarritoResponse;
 import org.example.topdeckapi.src.Exception.CarritoNotFoundException;
+import org.example.topdeckapi.src.Exception.ProductNotFoundException;
 import org.example.topdeckapi.src.Exception.UsuarioNotFoundException;
 import org.example.topdeckapi.src.Repository.ICarritoRepository;
 import org.example.topdeckapi.src.Repository.IDetalleCarritoRepository;
@@ -71,17 +73,26 @@ public class CarritoService implements ICarritoService {
                 .collect(Collectors.toList());
     }
 
-    public DetalleCarritoResponse agregarAlCarrito (Long idProducto, Long idCarrito, Integer cantidad){
-        Producto p = productoRepo.findById(idProducto)
+    public DetalleCarritoResponse agregarAlCarrito (DetalleCarritoRequest detalleCarritoRequest){
+        Producto p = productoRepo.findById(detalleCarritoRequest.getIdProducto())
                 .orElseThrow(()-> new RuntimeException("Producto no encontrado"));
 
-        Carrito c = carritoRepository.findById(idCarrito)
+        Carrito c = carritoRepository.findById(detalleCarritoRequest.getIdCarrito())
                 .orElseThrow(()-> new CarritoNotFoundException("Carrito no encontrado"));
+
+        DetalleCarrito detalleExistente = detalleCarritoRepository.findByProductoAndCarrito(p,c)
+                .orElse(null);
+
+        if(detalleExistente != null){
+            detalleExistente.setCantidad(detalleCarritoRequest.getCantidad() +  detalleExistente.getCantidad());
+            DetalleCarrito detalleGuardado = detalleCarritoRepository.save(detalleExistente);
+            return detalleCarritoMapper.toResponse(detalleGuardado);
+        }
 
         DetalleCarrito detalle = new DetalleCarrito();
         detalle.setCarrito(c);
-        detalle.setCantidad(cantidad);
         detalle.setProducto(p);
+        detalle.setCantidad(detalleCarritoRequest.getCantidad());
 
         DetalleCarrito savedDetalle = detalleCarritoRepository.save(detalle);
         return detalleCarritoMapper.toResponse(savedDetalle);
@@ -116,5 +127,37 @@ public class CarritoService implements ICarritoService {
                 });
 
         return carritoMapper.toResponse(carritoEfimero);
+    }
+
+    public DetalleCarritoResponse agregarDetalleCarritoEfimero (DetalleCarritoRequest detalleCarritoRequest){
+        Carrito c = carritoRepository.findById(detalleCarritoRequest.getIdCarrito())
+                .orElseThrow(()-> new CarritoNotFoundException("Carrito no encontrado"));
+
+        Producto p = productoRepo.findById(detalleCarritoRequest.getIdProducto())
+                .orElseThrow(()-> new ProductNotFoundException("Producto no encontrado"));
+
+        DetalleCarrito detalleExistente = detalleCarritoRepository.findByProductoAndCarrito(p,c)
+                .orElse(null);
+        if(detalleExistente != null){
+            detalleExistente.setCantidad(detalleCarritoRequest.getCantidad() +   detalleExistente.getCantidad());
+            DetalleCarrito detalleGuardado = detalleCarritoRepository.save(detalleExistente);
+            return detalleCarritoMapper.toResponse(detalleGuardado);
+        }
+
+        DetalleCarrito dc = detalleCarritoMapper.toEntity(detalleCarritoRequest);
+        dc.setCarrito(c);
+        dc.setProducto(p);
+        DetalleCarrito savedDetalleCarrito = detalleCarritoRepository.save(dc);
+        return detalleCarritoMapper.toResponse(savedDetalleCarrito);
+    }
+
+    public Boolean eliminarDeCarritoEfimero(Long idDetalleCarrito){
+        if(detalleCarritoRepository.existsById(idDetalleCarrito)){
+            detalleCarritoRepository.deleteById(idDetalleCarrito);
+            System.out.println("Se elimino "+idDetalleCarrito);
+            return true;
+        }else {
+            return false;
+        }
     }
 }

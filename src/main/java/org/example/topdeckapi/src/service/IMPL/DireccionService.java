@@ -23,6 +23,7 @@ public class DireccionService implements IDireccionService {
     private final IDireccionRepo direccionRepo;
     private final DireccionMapper direccionMapper;
     private final IUsuarioRepo usuarioRepo;
+    private final UsuarioService usuarioService;
 
     public List<DireccionResponse> getAll(){
         return direccionRepo.findAll().stream()
@@ -114,8 +115,10 @@ public class DireccionService implements IDireccionService {
                 .orElseThrow(()-> new UsuarioNotFoundException("Usuario asignado a la direccion no encontrado"));
     }
 
-    public List<DireccionResponse> direccionesPorUsuario (Long idUsuario){
-        return direccionRepo.findByUsuario_IdUsuario(idUsuario)
+    public List<DireccionResponse> direccionesPorUsuario (){
+        Usuario u = usuarioService.obtenerUsuarioAutenticado();
+
+        return direccionRepo.findByUsuario_IdUsuario(u.getIdUsuario())
                 .stream()
                 .map(direccionMapper::toResponse)
                 .collect(Collectors.toList());

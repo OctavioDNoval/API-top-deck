@@ -36,9 +36,8 @@ public class AuthService {
         }
         Usuario u = usuarioMapper.toEntity(dto);
         u.setPassword(encoder.encode(dto.getPassword()));
-        if (u.getRol() == null){
-            u.setRol(ROL.USER);
-        }
+        u.setRol(ROL.USER);
+
         Usuario usuarioGuardado = usuarioRepo.save(u);
 
         Carrito nuevoCarrito = new Carrito();

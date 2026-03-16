@@ -17,5 +17,5 @@ public class UsuarioRequest {
     private String telefono;
     private String ipUsuario;
     private String versionTerminosYCondicionesAceptadas = "0.0";
-    private Boolean terminosAceptados;
+    private Boolean terminosAceptados = false;
 }

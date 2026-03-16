@@ -22,15 +22,15 @@ public class DireccionController {
         return ResponseEntity.ok(d);
     }
 
-    @PostMapping("/public/save")
+    @PostMapping("/user/save")
     public ResponseEntity<DireccionResponse> saveDireccion (@RequestBody DireccionRequest dto){
         DireccionResponse d = direccionService.guardar(dto);
         return ResponseEntity.ok(d);
     }
 
-    @GetMapping("/user/getAll/{id}")
-    public ResponseEntity<List<DireccionResponse>> getAllDireccionByUsuarioId(@PathVariable Long id){
-        List<DireccionResponse> lista = direccionService.direccionesPorUsuario(id);
+    @GetMapping("/user/getAll/")
+    public ResponseEntity<List<DireccionResponse>> getAllDireccionByUsuarioId(){
+        List<DireccionResponse> lista = direccionService.direccionesPorUsuario();
         return ResponseEntity.ok(lista);
     }
 }
