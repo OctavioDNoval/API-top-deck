@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.Repository;
 
+import org.example.topdeckapi.src.Enumerados.ROL;
 import org.example.topdeckapi.src.model.Usuario;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +16,8 @@ public interface IUsuarioRepo extends JpaRepository<Usuario,Long> {
     Optional<Usuario> findByEmail(String email);
 
     boolean existsByEmail(String email);
+
+    boolean existsByEmailAndRol(String email, ROL rol);
 
     @Query("SELECT u FROM Usuario u WHERE " +
             "LOWER(u.nombre) LIKE LOWER(CONCAT('%', :search, '%')) OR " +

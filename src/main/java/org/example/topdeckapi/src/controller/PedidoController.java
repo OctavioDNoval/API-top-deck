@@ -57,9 +57,9 @@ public class PedidoController {
         return ResponseEntity.ok(pedidoService.guardar(newPedido));
     }
 
-    @PostMapping("/public/pedidoEfimero")
-    public ResponseEntity<PedidoResponse> pedidoEfimero(@RequestBody PedidoEfimeroRequest newPedido){
-        return ResponseEntity.ok(pedidoService.guardarPedidoEfimero(newPedido));
+    @PostMapping("/public/pedidoEfimero/{sessionId}")
+    public ResponseEntity<PedidoResponse> pedidoEfimero(@RequestBody PedidoEfimeroRequest newPedido, @PathVariable("sessionId") String sessionId){
+        return ResponseEntity.ok(pedidoService.guardarPedidoEfimero(newPedido, sessionId));
     }
 
     @PatchMapping("/admin/{idPedido}/newState")

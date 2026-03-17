@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 
 import java.util.Map;
+import java.util.Optional;
 
 
 @Service
@@ -120,12 +121,17 @@ public class UsuarioService implements IUsuarioService {
     }
 
     public Usuario crearUsuarioEfimero(UsuarioRequest newUsuario){
-        if(usuarioRepo.existsByEmail(newUsuario.getEmail())){
-            throw new RuntimeException("El email ya existe en el sistema");
+        Optional<Usuario> usuarioExistente = usuarioRepo.findByEmail(newUsuario.getEmail());
+
+        if (usuarioExistente.isPresent()) {
+            Usuario usuario = usuarioExistente.get();
+            if (usuario.getRol() == ROL.GUESS) {
+                return usuario;
+            }
+            throw new RuntimeException("El email ya está registrado con un usuario de tipo: " + usuario.getRol());
         }
         Usuario usuario = usuarioMapper.toEntity(newUsuario);
         usuario.setRol(ROL.GUESS);
-
         return usuarioRepo.save(usuario);
     }
 

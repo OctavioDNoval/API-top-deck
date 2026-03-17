@@ -47,6 +47,8 @@ public class PedidoService implements IPedidoService {
     private final UsuarioService usuarioService;
     private final DireccionService direccionService;
     private final DetallePedidoMapper detallePedidoMapper;
+    private final ICarritoRepository carritoRepository;
+    private final CarritoService carritoService;
 
     private Sort buildSort (String sortBy, String direction){
         Map<String,String> mapeoCampos = Map.of(
@@ -138,7 +140,7 @@ public class PedidoService implements IPedidoService {
         return pedidoMapper.toResponse(pedidoActualizado);
     }
 
-    public PedidoResponse guardarPedidoEfimero (PedidoEfimeroRequest request){
+    public PedidoResponse guardarPedidoEfimero (PedidoEfimeroRequest request, String sessionId){
         if(request.getDetalles().isEmpty()) throw new RuntimeException("El carrito esta vacio");
 
         Usuario usuario = usuarioService.crearUsuarioEfimero(request.getUsuario());
@@ -179,6 +181,10 @@ public class PedidoService implements IPedidoService {
         pedidoTerminado.getDetalles().forEach(detalle ->
                 Hibernate.initialize(detalle.getProducto())
         );
+
+        Carrito c = carritoRepository.findBySessionId(sessionId)
+                .orElseThrow(() -> new RuntimeException("Carrito no encontrado: " + sessionId));
+        carritoService.borrarCarrito(c.getIdCarrito());
         return pedidoMapper.toResponse(pedidoTerminado);
     }
 
