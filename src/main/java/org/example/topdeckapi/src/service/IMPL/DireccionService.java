@@ -58,14 +58,8 @@ public class DireccionService implements IDireccionService {
         return direccionMapper.toResponse(direccionGuardada);
     }
 
-    public DireccionResponse guardarDireccionParaGuest (DireccionRequest dto, String email) {
-        Usuario usuarioGuest = usuarioRepo.findByEmail(email)
-                .orElseGet(()->{
-                    Usuario nuevoGuest = new Usuario();
-                    nuevoGuest.setEmail(email);
-                    nuevoGuest.setRol(ROL.GUESS);
-                    return usuarioRepo.save(nuevoGuest);
-                });
+    public Direccion guardarDireccionParaGuest (DireccionRequest dto, Usuario usuario) {
+
         Optional<Direccion> direccionExistente = direccionRepo.findByDireccionAndAlturaAndPisoAndCiudadAndProvinciaAndPaisAndCodigoPostalAndUsuario_IdUsuario(
                 dto.getDireccion(),
                 dto.getAltura(),
@@ -74,15 +68,15 @@ public class DireccionService implements IDireccionService {
                 dto.getProvincia(),
                 dto.getPais(),
                 dto.getCodigoPostal(),
-                usuarioGuest.getIdUsuario()
+                usuario.getIdUsuario()
         );
 
         if(direccionExistente.isPresent()){
-            return direccionMapper.toResponse(direccionExistente.get());
+            return direccionExistente.get();
         }
 
         Direccion direccion = Direccion.builder()
-                .usuario(usuarioGuest)
+                .usuario(usuario)
                 .ciudad(dto.getCiudad())
                 .provincia(dto.getProvincia())
                 .pais(dto.getPais())
@@ -93,8 +87,7 @@ public class DireccionService implements IDireccionService {
                 .principal(dto.getPrincipal() != null ? dto.getPrincipal() : false)
                 .build();
 
-        Direccion direccionGuardada = direccionRepo.save(direccion);
-        return direccionMapper.toResponse(direccionGuardada);
+        return direccionRepo.save(direccion);
     }
 
     public DireccionResponse update(DireccionRequest request, Long id) {

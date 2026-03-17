@@ -8,6 +8,7 @@ import org.example.topdeckapi.src.DTOs.mappers.UsuarioMapper;
 import org.example.topdeckapi.src.DTOs.request.UsuarioRequest;
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
 import org.example.topdeckapi.src.DTOs.response.UsuarioResponse;
+import org.example.topdeckapi.src.Enumerados.ROL;
 import org.example.topdeckapi.src.Repository.IUsuarioRepo;
 import org.example.topdeckapi.src.model.Usuario;
 import org.example.topdeckapi.src.service.Interface.IUsuarioService;
@@ -81,7 +82,6 @@ public class UsuarioService implements IUsuarioService {
     }
 
     //METODOS PARA CREAR DATOS
-    //refaccionado 👌
     public UsuarioResponse guardar (UsuarioRequest newUsuario){
         if(usuarioRepo.existsByEmail(newUsuario.getEmail())){
             throw new RuntimeException("El email ya existe en el sistema");
@@ -117,6 +117,15 @@ public class UsuarioService implements IUsuarioService {
 
         Usuario usuarioGuardado = usuarioRepo.save(usuarioActualizado);
         return usuarioMapper.toResponse(usuarioGuardado);
+    }
+
+    public Usuario crearUsuarioEfimero(UsuarioRequest newUsuario){
+        if(usuarioRepo.existsByEmail(newUsuario.getEmail())){
+            throw new RuntimeException("El email ya existe en el sistema");
+        }
+        Usuario usuario = usuarioMapper.toEntity(newUsuario);
+        usuario.setRol(ROL.GUESS);
+        return usuarioRepo.save(usuario);
     }
 
     public boolean deleteUsuario(Long id){

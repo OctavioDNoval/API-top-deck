@@ -4,10 +4,15 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 
+import org.example.topdeckapi.src.DTOs.mappers.DetallePedidoMapper;
 import org.example.topdeckapi.src.DTOs.mappers.PedidoMapper;
+import org.example.topdeckapi.src.DTOs.request.DetallePedidoRequest;
+import org.example.topdeckapi.src.DTOs.request.PedidoEfimeroRequest;
 import org.example.topdeckapi.src.DTOs.request.PedidoRequest;
+
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
 import org.example.topdeckapi.src.DTOs.response.PedidoResponse;
+
 import org.example.topdeckapi.src.Enumerados.ESTADO_PEDIDO;
 import org.example.topdeckapi.src.Exception.PedidoNotFoundException;
 import org.example.topdeckapi.src.Repository.*;
@@ -22,6 +27,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -37,6 +43,9 @@ public class PedidoService implements IPedidoService {
     private final IUsuarioRepo usuarioRepo;
     private final IDireccionRepo direccionRepo;
     private final IProductoRepo productoRepo;
+    private final UsuarioService usuarioService;
+    private final DireccionService direccionService;
+    private final DetallePedidoMapper detallePedidoMapper;
 
     private Sort buildSort (String sortBy, String direction){
         Map<String,String> mapeoCampos = Map.of(
@@ -126,6 +135,37 @@ public class PedidoService implements IPedidoService {
         }
         Pedido pedidoActualizado = pedidoRepo.save(pedido);
         return pedidoMapper.toResponse(pedidoActualizado);
+    }
+
+    public PedidoResponse guardarPedidoEfimero (PedidoEfimeroRequest request){
+        if(request.getDetalles().isEmpty()) throw new RuntimeException("El carrito esta vacio");
+
+        Usuario usuario = usuarioService.crearUsuarioEfimero(request.getUsuario());
+        Direccion direccion = direccionService.guardarDireccionParaGuest(request.getDireccion(),usuario);
+        Pedido pedido = Pedido.builder()
+                .usuario(usuario)
+                .direccion(direccion)
+                .fechaPedido(LocalDateTime.now())
+                .estado(ESTADO_PEDIDO.PENDIENTE)
+                .ipUsuario(request.getIpUsuario())
+                .build();
+
+        pedido = pedidoRepo.save(pedido);
+
+        List<DetallePedido> detalles = new ArrayList<>();
+        for(DetallePedidoRequest detallePedidoRequest : request.getDetalles()){
+            DetallePedido dp = detallePedidoMapper.toEntity(detallePedidoRequest);
+            dp.setPedido(pedido);
+            detalles.add(dp);
+        }
+        List<DetallePedido> detallesGuardados = detallePedidoRepo.saveAll(detalles);
+        pedido.setDetalles(detallesGuardados);
+        double total = detallesGuardados.stream()
+                .mapToDouble(DetallePedido::getSubTotal)
+                .sum();
+        pedido.setTotal(total);
+        Pedido pedidoTerminado = pedidoRepo.save(pedido);
+        return pedidoMapper.toResponse(pedidoTerminado);
     }
 
     public boolean delete(Long id){
