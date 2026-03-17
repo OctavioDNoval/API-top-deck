@@ -18,6 +18,7 @@ import org.example.topdeckapi.src.Exception.PedidoNotFoundException;
 import org.example.topdeckapi.src.Repository.*;
 import org.example.topdeckapi.src.model.*;
 import org.example.topdeckapi.src.service.Interface.IPedidoService;
+import org.hibernate.Hibernate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -155,7 +156,15 @@ public class PedidoService implements IPedidoService {
         List<DetallePedido> detalles = new ArrayList<>();
         for(DetallePedidoRequest detallePedidoRequest : request.getDetalles()){
             DetallePedido dp = detallePedidoMapper.toEntity(detallePedidoRequest);
+            Producto producto = productoRepo.findById(detallePedidoRequest.getIdProducto())
+                    .orElseThrow(() -> new RuntimeException("Producto no encontrado: " + detallePedidoRequest.getIdProducto()));
+            dp.setProducto(producto);
             dp.setPedido(pedido);
+            if(dp.getProducto().getDescuento() > 0){
+                dp.setSubTotal(dp.getPrecioUnitario() * dp.getCantidad() * (1-dp.getProducto().getDescuento() / 100));
+            }else{
+                dp.setSubTotal(dp.getPrecioUnitario() * dp.getCantidad());
+            }
             detalles.add(dp);
         }
         List<DetallePedido> detallesGuardados = detallePedidoRepo.saveAll(detalles);
@@ -164,7 +173,12 @@ public class PedidoService implements IPedidoService {
                 .mapToDouble(DetallePedido::getSubTotal)
                 .sum();
         pedido.setTotal(total);
+
         Pedido pedidoTerminado = pedidoRepo.save(pedido);
+        Hibernate.initialize(pedidoTerminado.getDetalles());
+        pedidoTerminado.getDetalles().forEach(detalle ->
+                Hibernate.initialize(detalle.getProducto())
+        );
         return pedidoMapper.toResponse(pedidoTerminado);
     }
 

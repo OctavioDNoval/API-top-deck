@@ -18,10 +18,10 @@ public class PedidoResponse {
     private LocalDateTime fechaPedido;
     private ESTADO_PEDIDO estado;
     private Double total;
+    private String ipUsuario;
 
     //Datos del usuario
     private UsuarioResponse usuario;
-    private String ipUsuario;
 
     //Datos de la direccion
     private DireccionResponse direccion;

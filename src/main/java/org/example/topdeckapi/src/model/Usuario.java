@@ -29,7 +29,6 @@ public class Usuario {
     @Email(message = "El email debe tener formato valido")
     private String email;
 
-    @NotBlank
     @JsonIgnore
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(name = "password")

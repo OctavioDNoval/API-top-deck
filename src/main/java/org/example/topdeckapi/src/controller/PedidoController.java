@@ -3,6 +3,7 @@ package org.example.topdeckapi.src.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.topdeckapi.src.DTOs.request.PedidoEfimeroRequest;
 import org.example.topdeckapi.src.DTOs.request.PedidoRequest;
 import org.example.topdeckapi.src.DTOs.response.DetallePedidoResponse;
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
@@ -54,6 +55,11 @@ public class PedidoController {
             }
 
         return ResponseEntity.ok(pedidoService.guardar(newPedido));
+    }
+
+    @PostMapping("/public/pedidoEfimero")
+    public ResponseEntity<PedidoResponse> pedidoEfimero(@RequestBody PedidoEfimeroRequest newPedido){
+        return ResponseEntity.ok(pedidoService.guardarPedidoEfimero(newPedido));
     }
 
     @PatchMapping("/admin/{idPedido}/newState")

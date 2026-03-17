@@ -16,12 +16,6 @@ import java.util.List;
 public class DireccionController {
     private final DireccionService direccionService;
 
-    @PostMapping("/public/save/nouser")
-    public ResponseEntity<DireccionResponse> saveDireccionSinUsuario(@RequestBody DireccionRequest dto, @RequestParam String email){
-        DireccionResponse d = direccionService.guardarDireccionParaGuest(dto,email);
-        return ResponseEntity.ok(d);
-    }
-
     @PostMapping("/user/save")
     public ResponseEntity<DireccionResponse> saveDireccion (@RequestBody DireccionRequest dto){
         DireccionResponse d = direccionService.guardar(dto);

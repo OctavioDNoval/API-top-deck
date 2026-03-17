@@ -12,9 +12,7 @@ public interface UsuarioMapper {
 
     UsuarioResponse toResponse(Usuario usuario);
 
-    @Mapping(target = "ipUsuario", ignore = true)
     @Mapping(target = "idUsuario", ignore = true)
-    @Mapping(target = "versionTerminosYCondicionesAceptados", ignore = true)
     @Mapping(target = "rol", constant = "GUESS")
     @Mapping(target = "password", ignore = true)
     Usuario toEntity(UsuarioRequest usuarioRequest);

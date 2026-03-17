@@ -108,7 +108,7 @@ public class UsuarioService implements IUsuarioService {
         usuarioActualizado.setNombre(request.getNombre());
         usuarioActualizado.setEmail(request.getEmail());
         usuarioActualizado.setTerminosAceptados(request.getTerminosAceptados());
-        usuarioActualizado.setVersionTerminosYCondicionesAceptados(request.getVersionTerminosYCondicionesAceptadas());
+        usuarioActualizado.setVersionTerminosYCondicionesAceptados(request.getVersionTerminosYCondicionesAceptados());
         if(request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
             usuarioActualizado.setPassword(passwordEncoder.encode(request.getPassword()));
         }else{
@@ -125,6 +125,7 @@ public class UsuarioService implements IUsuarioService {
         }
         Usuario usuario = usuarioMapper.toEntity(newUsuario);
         usuario.setRol(ROL.GUESS);
+
         return usuarioRepo.save(usuario);
     }
 

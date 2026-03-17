@@ -13,6 +13,7 @@ import org.mapstruct.Mapping;
 })
 public interface PedidoMapper {
 
+    @Mapping(target = "detallePedidos", source = "detalles")
     PedidoResponse toResponse(Pedido pedido);
 
     @Mapping(target = "idPedido", ignore = true)
