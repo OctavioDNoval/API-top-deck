@@ -7,16 +7,25 @@ import org.example.topdeckapi.src.DTOs.request.ProductoRequest;
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
 import org.example.topdeckapi.src.DTOs.response.ProductoResponse;
 import org.example.topdeckapi.src.service.IMPL.ProductoService;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/products")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class ProductoController {
     private final ProductoService productoService;
+    private final RestTemplate restTemplate = new RestTemplate();
+
+
+    @Value("${tcg.api.key}")
+    private String tcgApiKey;
 
     @GetMapping("/test")
     public ResponseEntity<String> test(){
@@ -41,6 +50,52 @@ public class ProductoController {
                 productoService.obtenerPaginadosConFiltro(pagina, tamanio, sortBy, direction, search, categoria, tag);
 
         return ResponseEntity.ok(paginacionResponse);
+    }
+
+    @GetMapping("/public/image-proxy")
+    public ResponseEntity<byte[]> proxyImage(@RequestParam String url) {
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            byte[] imageBytes = restTemplate.getForObject(url, byte[].class);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.IMAGE_PNG); // o detectar dinámicamente
+            
+            return new ResponseEntity<>(imageBytes, headers, HttpStatus.OK);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/admin/tcg/{franquicia}/{nombreCarta}/{page}/{limit}")
+    public ResponseEntity<?> tcg(@PathVariable String franquicia, @PathVariable String nombreCarta, @PathVariable Integer page, @PathVariable Integer limit) {
+        try {
+            String url = "https://www.apitcg.com/api/" + franquicia + "/cards";
+            if (nombreCarta != null && !nombreCarta.isEmpty()) {
+                url += "?name=" + URLEncoder.encode(nombreCarta, StandardCharsets.UTF_8);
+            }
+
+            url += "&page=" + page + "&limit=" + limit;
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("x-api-key", tcgApiKey);
+            headers.set("Accept", "application/json");
+
+
+            HttpEntity<?> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<String> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    String.class
+            );
+
+            return ResponseEntity.ok(response.getBody());
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al consultar API TCG: " + e.getMessage()));
+        }
     }
 
     @PostMapping("/admin/post")

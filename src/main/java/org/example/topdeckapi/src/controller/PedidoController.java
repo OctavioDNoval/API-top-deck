@@ -44,7 +44,7 @@ public class PedidoController {
         return ResponseEntity.ok(detallePedidoService.obtenerDetallesByIdPedido(idPedido));
     }
 
-    @PostMapping("/public/newPedido")
+    @PostMapping("/user/newPedido")
     public ResponseEntity<PedidoResponse> newPedido(@RequestBody PedidoRequest newPedido){
         log.info("PedidoRequest completo: {}", newPedido);
 
