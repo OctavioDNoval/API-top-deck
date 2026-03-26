@@ -7,6 +7,7 @@ import org.example.topdeckapi.src.DTOs.request.TagRequest;
 import org.example.topdeckapi.src.DTOs.response.TagResponse;
 import org.example.topdeckapi.src.Repository.ITagRepository;
 import org.example.topdeckapi.src.Security.AuditUtils;
+import org.example.topdeckapi.src.model.Categoria;
 import org.example.topdeckapi.src.model.Tag;
 
 import org.springframework.stereotype.Service;
@@ -27,6 +28,17 @@ public class TagService {
                 .stream()
                 .map(tagMapper::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    public Long obtenerIdPorNombre(String nombre) {
+        Tag t = tagRepository.findByNombre(nombre)
+                .orElseGet(()->{
+                   Tag tag = new Tag();
+                   tag.setNombre(nombre);
+                   return tagRepository.save(tag);
+                });
+
+        return t.getIdTag();
     }
 
     public TagResponse save(TagRequest request) {

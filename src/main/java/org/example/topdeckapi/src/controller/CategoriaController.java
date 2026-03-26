@@ -29,6 +29,11 @@ public class CategoriaController {
         return ResponseEntity.ok(categoriaService.buscarPorId(id));
     }
 
+    @GetMapping("/admin/getId/{nombre}")
+    public ResponseEntity<Long> getIdByName(@PathVariable("nombre") String nombre){
+        return ResponseEntity.ok(categoriaService.obtenerIdPorNombre(nombre));
+    }
+
     @PatchMapping("/admin/edit/{id}")
     public ResponseEntity<CategoriaResponse> edit(@PathVariable("id") Long id, @RequestBody CategoriaRequest newCategoria){
         return ResponseEntity.ok(categoriaService.actualizar(newCategoria,id));

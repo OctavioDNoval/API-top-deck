@@ -36,6 +36,17 @@ public class CategoriaService implements ICategoriaService {
         return categoriaMapper.toResponse(c);
     }
 
+    public Long obtenerIdPorNombre(String nombre) {
+        Categoria c = categoriasRepo.findByNombre(nombre)
+                .orElseGet(()->{
+                    Categoria categoria = new Categoria();
+                    categoria.setNombre(nombre);
+                    return categoriasRepo.save(categoria);
+                });
+
+        return c.getIdCategoria();
+    }
+
     public CategoriaResponse guardar(CategoriaRequest newCategoria) {
         Categoria categoria = new Categoria();
         categoria.setNombre(newCategoria.getNombre());
