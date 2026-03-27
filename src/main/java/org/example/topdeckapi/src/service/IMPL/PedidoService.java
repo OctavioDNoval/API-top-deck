@@ -58,7 +58,7 @@ public class PedidoService implements IPedidoService {
                 "fechaPedido", "fechaPedido"
         );
 
-        String campoReal = mapeoCampos.getOrDefault(sortBy,"idUsuario");
+        String campoReal = mapeoCampos.getOrDefault(sortBy,"fechaPedido");
         Sort.Direction dir = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
         return Sort.by(dir, campoReal);
     }
@@ -130,6 +130,23 @@ public class PedidoService implements IPedidoService {
 
         try{
             ESTADO_PEDIDO estado = ESTADO_PEDIDO.valueOf(nuevoEstado.toUpperCase());
+            if(estado == ESTADO_PEDIDO.CONFIRMADO){
+                List<DetallePedido> detalles = pedido.getDetalles();
+                for(DetallePedido detalle: detalles){
+                    Producto p =  detalle.getProducto();
+                    p.setStock(p.getStock()-detalle.getCantidad());
+                    productoRepo.save(p);
+                }
+            }
+            if(pedido.getEstado() == ESTADO_PEDIDO.CONFIRMADO && estado == ESTADO_PEDIDO.RECHAZADO){
+                List<DetallePedido> detalles = pedido.getDetalles();
+                for(DetallePedido detalle: detalles){
+                    Producto p =  detalle.getProducto();
+                    p.setStock(p.getStock()+detalle.getCantidad());
+                    productoRepo.save(p);
+                }
+            }
+
             pedido.setEstado(estado);
         }catch (Exception e){
             throw new IllegalArgumentException("No es un valor permitido (" + nuevoEstado + ")\n" +
