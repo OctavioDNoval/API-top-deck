@@ -76,10 +76,30 @@ public class UsuarioService implements IUsuarioService {
     }
 
     public Usuario obtenerUsuarioAutenticado(){
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName();
-        return usuarioRepo.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+            if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) {
+                System.out.println("No hay usuario autenticado o es anónimo");
+                return null;
+            }
+
+            String email = auth.getName();
+            System.out.println("Email del usuario autenticado: " + email);
+
+            Usuario usuario = usuarioRepo.findByEmail(email).orElse(null);
+
+            if (usuario != null) {
+                System.out.println("Usuario encontrado: " + usuario.getEmail() + ", Rol: " + usuario.getRol());
+            } else {
+                System.out.println("Usuario no encontrado en BD con email: " + email);
+            }
+
+            return usuario;
+        } catch (Exception e) {
+            System.err.println("Error al obtener usuario autenticado: " + e.getMessage());
+            return null;
+        }
     }
 
     //METODOS PARA CREAR DATOS

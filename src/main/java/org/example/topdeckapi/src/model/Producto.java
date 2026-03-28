@@ -44,4 +44,7 @@ public class Producto {
     @Column(name = "descuento")
     private Integer descuento; //el descuento se mide en entero como 30% o 50%, no en 0.5
 
+    @Column(name = "activo")
+    private Boolean activo;
+
 }

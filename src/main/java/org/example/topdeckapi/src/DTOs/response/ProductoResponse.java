@@ -18,6 +18,7 @@ public class ProductoResponse {
     private Integer stock;
     private String imgUrl;
     private Integer descuento;
+    private Boolean activo;
 
     //Datos de la categoria
     private CategoriaResponse categoria;

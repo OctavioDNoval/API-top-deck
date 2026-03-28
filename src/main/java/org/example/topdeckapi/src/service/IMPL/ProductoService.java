@@ -8,6 +8,7 @@ import org.example.topdeckapi.src.DTOs.mappers.ProductoMapper;
 import org.example.topdeckapi.src.DTOs.request.ProductoRequest;
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
 import org.example.topdeckapi.src.DTOs.response.ProductoResponse;
+import org.example.topdeckapi.src.Enumerados.ROL;
 import org.example.topdeckapi.src.Repository.ICategoriasRepo;
 import org.example.topdeckapi.src.Repository.IProductoRepo;
 import org.example.topdeckapi.src.Repository.ITagRepository;
@@ -15,6 +16,7 @@ import org.example.topdeckapi.src.Security.AuditUtils;
 import org.example.topdeckapi.src.model.Categoria;
 import org.example.topdeckapi.src.model.Producto;
 import org.example.topdeckapi.src.model.Tag;
+import org.example.topdeckapi.src.model.Usuario;
 import org.example.topdeckapi.src.service.Interface.IProductoService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -35,6 +37,7 @@ public class ProductoService implements IProductoService {
     private final AuditUtils  auditUtils;
     private final PaginacionService paginationService;
     private final ProductoMapper productoMapper;
+    private final UsuarioService usuarioService;
 
     private Sort buildSort(String sortBy, String direction){
         Map<String,String> mapeoCampos = Map.of(
@@ -62,16 +65,21 @@ public class ProductoService implements IProductoService {
             String direction,
             String filter,
             Long idCategoria,
-            Long idTag) {
+            Long idTag,
+            boolean isAdmin) {
 
         Sort sort = buildSort(sortBy, direction);
         Pageable pageable = PageRequest.of(pagina - 1, tamanio, sort);
 
-        // Si filter es una cadena vacía, conviene pasarlo como null para que no filtre por texto
         String search = (filter == null || filter.trim().isEmpty()) ? null : filter.trim();
 
-        Page<Producto> paginaProducto = productoRepo.findByFiltros(search, idCategoria, idTag, pageable);
+        Page<Producto> paginaProducto ;
 
+        if(isAdmin) {
+            paginaProducto = productoRepo.findByFiltros(search,idCategoria,idTag,pageable);
+        }else {
+            paginaProducto = productoRepo.findByFiltrosAndActivo(search, idCategoria, idTag, pageable);
+        }
         return paginationService.crearPaginacionResponse(paginaProducto, pagina, tamanio, productoMapper::toResponse);
     }
 
@@ -91,7 +99,6 @@ public class ProductoService implements IProductoService {
         Producto productoGuardado = productoRepo.save(nuevoProducto);
         auditUtils.setCurrentUserForAudit();
         return productoMapper.toResponse(productoGuardado);
-
     }
 
     public ProductoResponse buscarPorId(Long id) {
@@ -142,6 +149,15 @@ public class ProductoService implements IProductoService {
         auditUtils.setCurrentUserForAudit();
         Producto productoActualizado = productoRepo.save(p);
         return productoMapper.toResponse(productoActualizado);
+    }
+
+    public ProductoResponse cambiarEstadoProducto(Long idProducto){
+        Producto p = productoRepo.findById(idProducto)
+                .orElseThrow(() -> new RuntimeException("No existe el producto"));
+
+        boolean estadoActual = p.getActivo();
+        p.setActivo(!estadoActual);
+        return productoMapper.toResponse(productoRepo.save(p));
     }
 
     public boolean borrarProducto(Long id) {

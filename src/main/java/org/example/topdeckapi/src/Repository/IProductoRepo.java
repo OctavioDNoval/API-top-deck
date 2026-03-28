@@ -11,10 +11,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface IProductoRepo extends JpaRepository<Producto,Long> {
-    @Query("SELECT p FROM Producto p WHERE " +
-            "LOWER(p.nombre) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "LOWER(p.descripcion) LIKE LOWER(CONCAT('%', :search, '%')) ")
-    Page<Producto> findBySearch(@Param("search") String search, Pageable pageable);
+
 
     @Query("SELECT p FROM Producto p WHERE " +
             "(:search IS NULL OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(p.descripcion) LIKE LOWER(CONCAT('%', :search, '%'))) AND " +
@@ -24,6 +21,16 @@ public interface IProductoRepo extends JpaRepository<Producto,Long> {
                                  @Param("idCategoria") Long idCategoria,
                                  @Param("idTag") Long idTag,
                                  Pageable pageable);
+
+    @Query("SELECT p FROM Producto p WHERE " +
+            "(:search IS NULL OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(p.descripcion) LIKE LOWER(CONCAT('%', :search, '%'))) AND " +
+            "(:idCategoria IS NULL OR p.categoria.idCategoria = :idCategoria) AND " +
+            "(:idTag IS NULL OR p.tag.idTag = :idTag) AND " +
+            "p.activo = true ")
+    Page<Producto> findByFiltrosAndActivo(@Param("search") String search,
+                                          @Param("idCategoria") Long idCategoria,
+                                          @Param("idTag") Long idTag,
+                                          Pageable pageable);
 
     boolean existsByNombre(String nombre);
 }

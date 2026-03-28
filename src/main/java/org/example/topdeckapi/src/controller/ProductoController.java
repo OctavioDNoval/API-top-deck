@@ -47,7 +47,27 @@ public class ProductoController {
         String search = (filter == null || filter.trim().isEmpty()) ? null : filter.trim();
 
         PaginacionResponse<ProductoResponse> paginacionResponse =
-                productoService.obtenerPaginadosConFiltro(pagina, tamanio, sortBy, direction, search, categoria, tag);
+                productoService.obtenerPaginadosConFiltro(pagina, tamanio, sortBy, direction, search, categoria, tag, false);
+
+        return ResponseEntity.ok(paginacionResponse);
+    }
+
+    @GetMapping("/admin/obtenerPaginados")
+    public ResponseEntity<PaginacionResponse<ProductoResponse>> obtenerPaginadosAdmin(
+            @RequestParam(defaultValue = "1") Integer pagina,
+            @RequestParam(defaultValue = "15") Integer tamanio,
+            @RequestParam(defaultValue = "idProducto") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction,
+            @RequestParam(defaultValue = "") String filter,
+            @RequestParam(defaultValue = "0") Long idTag,
+            @RequestParam(defaultValue = "0") Long idCategoria
+    ) {
+        Long categoria = (idCategoria == 0) ? null : idCategoria;
+        Long tag = (idTag == 0) ? null : idTag;
+        String search = (filter == null || filter.trim().isEmpty()) ? null : filter.trim();
+
+        PaginacionResponse<ProductoResponse> paginacionResponse =
+                productoService.obtenerPaginadosConFiltro(pagina, tamanio, sortBy, direction, search, categoria, tag, true);
 
         return ResponseEntity.ok(paginacionResponse);
     }
@@ -114,6 +134,11 @@ public class ProductoController {
     public ResponseEntity<ProductoResponse> edit(@PathVariable("id") Long id, @RequestBody @Valid ProductoRequest producto){
         ProductoResponse productoActualizado = productoService.actualizarProducto(id,producto);
         return ResponseEntity.ok(productoActualizado);
+    }
+
+    @PatchMapping("/admin/deslistar/{idProducto}")
+    public ResponseEntity<ProductoResponse> deslistar(@PathVariable("idProducto") Long idProducto){
+        return ResponseEntity.ok(productoService.cambiarEstadoProducto(idProducto));
     }
 
     @DeleteMapping("/admin/delete/{id}")
