@@ -30,15 +30,35 @@ public class TagService {
                 .collect(Collectors.toList());
     }
 
+    public TagResponse getTagById(Long id) {
+        return tagMapper.toResponse(tagRepository.findById(id)
+                .orElseThrow(()-> new RuntimeException("Tag not found")));
+    }
+
     public Long obtenerIdPorNombre(String nombre) {
-        Tag t = tagRepository.findByNombre(nombre)
+        String nombreNormalizado = normalizar(nombre);
+
+        Tag t = tagRepository.findByNombreNormalizado(nombreNormalizado)
                 .orElseGet(()->{
-                   Tag tag = new Tag();
-                   tag.setNombre(nombre);
-                   return tagRepository.save(tag);
+                    Tag tag = new Tag();
+                    tag.setNombre(nombre);
+                    return tagRepository.save(tag);
                 });
 
         return t.getIdTag();
+    }
+
+    private String normalizar(String input) {
+        if (input == null) return null;
+
+        String result = input.toLowerCase();
+
+        result = java.text.Normalizer.normalize(result, java.text.Normalizer.Form.NFD);
+        result = result.replaceAll("\\p{M}", "");
+
+        result = result.replaceAll("[-]", "");
+
+        return result;
     }
 
     public TagResponse save(TagRequest request) {

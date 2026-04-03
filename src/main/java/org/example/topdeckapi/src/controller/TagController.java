@@ -28,6 +28,11 @@ public class TagController {
         return ResponseEntity.ok(tagService.obtenerIdPorNombre(nombre));
     }
 
+    @GetMapping("/admin/getById/{idTag}")
+    public ResponseEntity<TagResponse> getTagById(@PathVariable("idTag") Long idTag) {
+        return ResponseEntity.ok(tagService.getTagById(idTag));
+    }
+
     @PostMapping("/admin/post")
     public ResponseEntity<TagResponse> addTag(@RequestBody TagRequest dto) {
         return ResponseEntity.ok(tagService.save(dto));

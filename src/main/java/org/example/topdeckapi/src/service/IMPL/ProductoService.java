@@ -8,7 +8,7 @@ import org.example.topdeckapi.src.DTOs.mappers.ProductoMapper;
 import org.example.topdeckapi.src.DTOs.request.ProductoRequest;
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
 import org.example.topdeckapi.src.DTOs.response.ProductoResponse;
-import org.example.topdeckapi.src.Enumerados.ROL;
+
 import org.example.topdeckapi.src.Repository.ICategoriasRepo;
 import org.example.topdeckapi.src.Repository.IProductoRepo;
 import org.example.topdeckapi.src.Repository.ITagRepository;
@@ -16,7 +16,7 @@ import org.example.topdeckapi.src.Security.AuditUtils;
 import org.example.topdeckapi.src.model.Categoria;
 import org.example.topdeckapi.src.model.Producto;
 import org.example.topdeckapi.src.model.Tag;
-import org.example.topdeckapi.src.model.Usuario;
+
 import org.example.topdeckapi.src.service.Interface.IProductoService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -49,13 +49,6 @@ public class ProductoService implements IProductoService {
         String campoReal = mapeoCampos.getOrDefault(sortBy, "idProducto");
         Sort.Direction dir = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
         return Sort.by(dir, campoReal);
-    }
-
-    public PaginacionResponse<ProductoResponse> obtenerPaginados(Integer pagina, Integer tamanio, String sortBy, String direction){
-        Sort sort = buildSort(sortBy, direction);
-        Pageable pageable = PageRequest.of(pagina - 1, tamanio, sort);
-        Page<Producto> paginaProducto = productoRepo.findAll(pageable);
-        return paginationService.crearPaginacionResponse(paginaProducto,pagina,tamanio,productoMapper::toResponse);
     }
 
     public PaginacionResponse<ProductoResponse> obtenerPaginadosConFiltro(
@@ -96,6 +89,7 @@ public class ProductoService implements IProductoService {
 
         nuevoProducto.setCategoria(categoria);
         nuevoProducto.setTag(tag);
+        nuevoProducto.setActivo(true);
         Producto productoGuardado = productoRepo.save(nuevoProducto);
         auditUtils.setCurrentUserForAudit();
         return productoMapper.toResponse(productoGuardado);
