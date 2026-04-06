@@ -9,6 +9,7 @@ import org.example.topdeckapi.src.DTOs.request.UsuarioRequest;
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
 import org.example.topdeckapi.src.DTOs.response.UsuarioResponse;
 import org.example.topdeckapi.src.Enumerados.ROL;
+import org.example.topdeckapi.src.Exception.EmailYaRegistradoException;
 import org.example.topdeckapi.src.Repository.IUsuarioRepo;
 import org.example.topdeckapi.src.model.Usuario;
 import org.example.topdeckapi.src.service.Interface.IUsuarioService;
@@ -148,7 +149,7 @@ public class UsuarioService implements IUsuarioService {
             if (usuario.getRol() == ROL.GUESS) {
                 return usuario;
             }
-            throw new RuntimeException("El email ya está registrado con un usuario de tipo: " + usuario.getRol());
+            throw new EmailYaRegistradoException("El email pertenece a una cuenta ya registrada, Intente ingresando a su cuenta");
         }
         Usuario usuario = usuarioMapper.toEntity(newUsuario);
         usuario.setRol(ROL.GUESS);
