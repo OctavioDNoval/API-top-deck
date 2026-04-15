@@ -7,6 +7,7 @@ import org.example.topdeckapi.src.DTOs.mappers.UsuarioMapper;
 import org.example.topdeckapi.src.DTOs.request.UsuarioRequest;
 import org.example.topdeckapi.src.DTOs.response.UsuarioResponse;
 import org.example.topdeckapi.src.Enumerados.ROL;
+import org.example.topdeckapi.src.Exception.BussinesException;
 import org.example.topdeckapi.src.Exception.UsuarioNotFoundException;
 import org.example.topdeckapi.src.Repository.ICarritoRepository;
 import org.example.topdeckapi.src.Repository.IUsuarioRepo;
@@ -32,7 +33,7 @@ public class AuthService {
 
     public AuthResponse register (UsuarioRequest dto){
         if(usuarioRepo.existsByEmail(dto.getEmail())){
-            throw new UsuarioNotFoundException("El usuario ya existe");
+            throw new BussinesException("El usuario con ese mail ya existe");
         }
         Usuario u = usuarioMapper.toEntity(dto);
         u.setPassword(encoder.encode(dto.getPassword()));
@@ -58,10 +59,10 @@ public class AuthService {
 
     public AuthResponse login (LoginRequest request){
         Usuario u = usuarioRepo.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UsuarioNotFoundException("El usuario no existe"));
+                .orElseThrow(() -> new UsuarioNotFoundException("Usuario con ese mail no encontrado"));
 
         if(!encoder.matches(request.getPassword(), u.getPassword())){
-            throw new RuntimeException("Contraseña incorrecta");
+            throw new BussinesException("Contraseña o Email incorrectos");
         }
 
         String token = jwtService.generateToken(

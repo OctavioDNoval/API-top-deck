@@ -5,6 +5,7 @@ import org.example.topdeckapi.src.DTOs.mappers.DireccionMapper;
 import org.example.topdeckapi.src.DTOs.request.DireccionRequest;
 import org.example.topdeckapi.src.DTOs.response.DireccionResponse;
 import org.example.topdeckapi.src.Enumerados.ROL;
+import org.example.topdeckapi.src.Exception.ResourceNotFoundException;
 import org.example.topdeckapi.src.Exception.UsuarioNotFoundException;
 import org.example.topdeckapi.src.Repository.IDireccionRepo;
 import org.example.topdeckapi.src.Repository.IUsuarioRepo;
@@ -33,7 +34,7 @@ public class DireccionService implements IDireccionService {
 
     public DireccionResponse getById(Long id){
         Direccion d= direccionRepo.findById(id)
-                .orElseThrow(()-> new RuntimeException("Direccion no encontrado"));
+                .orElseThrow(()-> new ResourceNotFoundException("Direccion no encontrado"));
         return direccionMapper.toResponse(d);
     }
 

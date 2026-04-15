@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.mappers.TagMapper;
 import org.example.topdeckapi.src.DTOs.request.TagRequest;
 import org.example.topdeckapi.src.DTOs.response.TagResponse;
+import org.example.topdeckapi.src.Exception.BussinesException;
+import org.example.topdeckapi.src.Exception.ResourceNotFoundException;
 import org.example.topdeckapi.src.Repository.ITagRepository;
 import org.example.topdeckapi.src.Security.AuditUtils;
 import org.example.topdeckapi.src.model.Categoria;
@@ -32,7 +34,7 @@ public class TagService {
 
     public TagResponse getTagById(Long id) {
         return tagMapper.toResponse(tagRepository.findById(id)
-                .orElseThrow(()-> new RuntimeException("Tag not found")));
+                .orElseThrow(()-> new ResourceNotFoundException("Tag not found")));
     }
 
     public Long obtenerIdPorNombre(String nombre) {
@@ -63,7 +65,7 @@ public class TagService {
 
     public TagResponse save(TagRequest request) {
         if(tagRepository.existsByNombre(request.getNombre())){
-            throw new RuntimeException("El nombre existe en el sistema");
+            throw new BussinesException("El nombre de tag ya existe en el sistema");
         }
 
         Tag tag = new Tag();
@@ -76,9 +78,9 @@ public class TagService {
     }
 
     public TagResponse actualizarTag(Long id, TagRequest newTag) {
-        Tag tag = tagRepository.findById(id).orElseThrow(() -> new RuntimeException("Tag not found"));
+        Tag tag = tagRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Tag not found"));
         if(tagRepository.existsByNombre(newTag.getNombre())){
-            throw new RuntimeException("El nombre existe en el sistema");
+            throw new BussinesException("El nombre de tag ya existe en el sistema");
         }
         tag.setNombre(newTag.getNombre());
         if(newTag.getImgUrl() != null){

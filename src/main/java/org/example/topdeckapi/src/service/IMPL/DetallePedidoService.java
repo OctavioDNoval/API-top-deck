@@ -5,6 +5,7 @@ import org.example.topdeckapi.src.DTOs.mappers.DetallePedidoMapper;
 import org.example.topdeckapi.src.DTOs.request.DetallePedidoRequest;
 import org.example.topdeckapi.src.DTOs.response.DetallePedidoResponse;
 import org.example.topdeckapi.src.Exception.PedidoNotFoundException;
+import org.example.topdeckapi.src.Exception.ResourceNotFoundException;
 import org.example.topdeckapi.src.Repository.IDetallePedidoRepo;
 import org.example.topdeckapi.src.Repository.IPedidoRepo;
 import org.example.topdeckapi.src.model.DetallePedido;
@@ -26,7 +27,7 @@ public class DetallePedidoService implements IDetallePedidoService{
     public DetallePedidoResponse getById(Long id){
         return detallePedidoRepo.findById(id)
                 .map(detallePedidoMapper::toResponse)
-                .orElseThrow(()-> new RuntimeException("Detalle pedido No encontrado"));
+                .orElseThrow(()-> new ResourceNotFoundException("Detalle pedido No encontrado"));
     }
 
     public DetallePedidoResponse guardar(DetallePedidoRequest dp){
