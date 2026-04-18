@@ -9,7 +9,9 @@ import org.example.topdeckapi.src.DTOs.request.UsuarioRequest;
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
 import org.example.topdeckapi.src.DTOs.response.UsuarioResponse;
 import org.example.topdeckapi.src.Enumerados.ROL;
+import org.example.topdeckapi.src.Exception.BussinesException;
 import org.example.topdeckapi.src.Exception.EmailYaRegistradoException;
+import org.example.topdeckapi.src.Exception.ResourceNotFoundException;
 import org.example.topdeckapi.src.Repository.IUsuarioRepo;
 import org.example.topdeckapi.src.model.Usuario;
 import org.example.topdeckapi.src.service.Interface.IUsuarioService;
@@ -67,13 +69,11 @@ public class UsuarioService implements IUsuarioService {
     }
 
     public UsuarioResponse obtenerPorId(Long id){
-        if(usuarioRepo.existsById(id)){
-            return usuarioMapper.toResponse(usuarioRepo.findById(id).orElseThrow(
-                    () -> new RuntimeException("Usuario no encontrado")
-            ));
-        }else{
-            throw new RuntimeException("Usuario no encontrado");
-        }
+        return usuarioMapper.toResponse(usuarioRepo.
+                findById(id)
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("Usuario no encontrado"))
+        );
     }
 
     public Usuario obtenerUsuarioAutenticado(){
@@ -106,23 +106,23 @@ public class UsuarioService implements IUsuarioService {
     //METODOS PARA CREAR DATOS
     public UsuarioResponse guardar (UsuarioRequest newUsuario){
         if(usuarioRepo.existsByEmail(newUsuario.getEmail())){
-            throw new RuntimeException("El email ya existe en el sistema");
+            throw new BussinesException("El email ya existe en el sistema");
         }
 
         Usuario usuario = usuarioMapper.toEntity(newUsuario);
         usuario.setPassword(passwordEncoder.encode(newUsuario.getPassword()));
         Usuario usuarioGuardado = usuarioRepo.save(usuario);
-        return usuarioMapper.toResponse(usuario);
+        return usuarioMapper.toResponse(usuarioGuardado);
     }
 
     public UsuarioResponse actualizarUsuario(UsuarioRequest request, Long id){
         Usuario usuario = usuarioRepo.findById(id).orElseThrow(
-                ()-> new RuntimeException("Usuario no encontrado")
+                ()-> new ResourceNotFoundException("Usuario no encontrado")
         );
 
         if(request.getEmail() != null
             && usuarioRepo.existsByEmail(request.getEmail())){
-            throw new RuntimeException("El email ya existe en el sistema");
+            throw new BussinesException("El email ya existe en el sistema");
         }
 
         Usuario usuarioActualizado = usuarioMapper.toEntity(request);

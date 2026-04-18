@@ -4,6 +4,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.example.topdeckapi.src.DTOs.mappers.DetallePedidoMapper;
 import org.example.topdeckapi.src.DTOs.mappers.PedidoMapper;
 import org.example.topdeckapi.src.DTOs.request.DetallePedidoRequest;
@@ -14,7 +15,9 @@ import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
 import org.example.topdeckapi.src.DTOs.response.PedidoResponse;
 
 import org.example.topdeckapi.src.Enumerados.ESTADO_PEDIDO;
+import org.example.topdeckapi.src.Exception.BussinesException;
 import org.example.topdeckapi.src.Exception.PedidoNotFoundException;
+import org.example.topdeckapi.src.Exception.ResourceNotFoundException;
 import org.example.topdeckapi.src.Repository.*;
 import org.example.topdeckapi.src.model.*;
 import org.example.topdeckapi.src.service.Interface.IPedidoService;
@@ -36,6 +39,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class PedidoService implements IPedidoService {
     private final PaginacionService paginacionService;
     private final IPedidoRepo pedidoRepo;
@@ -86,10 +90,10 @@ public class PedidoService implements IPedidoService {
     public PedidoResponse guardar(PedidoRequest newPedido){
         Pedido pedido = new Pedido();
         Usuario usuarioAsociado = usuarioRepo.findById(newPedido.getIdUsuario())
-                .orElseThrow(()-> new RuntimeException("Usuario asociado al pedido no encontrado"));
+                .orElseThrow(()-> new ResourceNotFoundException("Usuario asociado al pedido no encontrado"));
 
         Direccion direccionAsociada = direccionRepo.findById(newPedido.getIdDireccion())
-                .orElseThrow(()-> new RuntimeException("Direccion asociada al pedido no encontrada"));
+                .orElseThrow(()-> new ResourceNotFoundException("Direccion asociada al pedido no encontrada"));
 
         pedido.setIpUsuario(newPedido.getIpUsuario());
         pedido.setFechaPedido(LocalDateTime.now());
@@ -101,7 +105,7 @@ public class PedidoService implements IPedidoService {
         List<DetallePedido> detalles = newPedido.getDetalles().stream()
                 .map(dp->{
                     Producto producto = productoRepo.findById(dp.getIdProducto())
-                            .orElseThrow(()-> new RuntimeException("Producto no encontrado"));
+                            .orElseThrow(()-> new ResourceNotFoundException("Producto no encontrado"));
 
                     return DetallePedido.builder()
                             .pedido(pedidoGuardado)
@@ -149,7 +153,7 @@ public class PedidoService implements IPedidoService {
 
             pedido.setEstado(estado);
         }catch (Exception e){
-            throw new IllegalArgumentException("No es un valor permitido (" + nuevoEstado + ")\n" +
+            throw new BussinesException("No es un valor permitido (" + nuevoEstado + ")\n" +
                                                 "los valores permitidos son PENDIENTE, CONFIRMADO, RECHAZADO"
             );
         }
@@ -158,7 +162,7 @@ public class PedidoService implements IPedidoService {
     }
 
     public PedidoResponse guardarPedidoEfimero (PedidoEfimeroRequest request, String sessionId){
-        if(request.getDetalles().isEmpty()) throw new RuntimeException("El carrito esta vacio");
+        if(request.getDetalles().isEmpty()) throw new BussinesException("El carrito esta vacio");
 
         Usuario usuario = usuarioService.crearUsuarioEfimero(request.getUsuario());
         Direccion direccion = direccionService.guardarDireccionParaGuest(request.getDireccion(),usuario);
@@ -176,7 +180,8 @@ public class PedidoService implements IPedidoService {
         for(DetallePedidoRequest detallePedidoRequest : request.getDetalles()){
             DetallePedido dp = detallePedidoMapper.toEntity(detallePedidoRequest);
             Producto producto = productoRepo.findById(detallePedidoRequest.getIdProducto())
-                    .orElseThrow(() -> new RuntimeException("Producto no encontrado: " + detallePedidoRequest.getIdProducto()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado: " + detallePedidoRequest.getIdProducto()));
+            log.info("Producto {}", producto);
             dp.setProducto(producto);
             dp.setPedido(pedido);
             if(dp.getProducto().getDescuento() > 0){
@@ -200,7 +205,7 @@ public class PedidoService implements IPedidoService {
         );
 
         Carrito c = carritoRepository.findBySessionId(sessionId)
-                .orElseThrow(() -> new RuntimeException("Carrito no encontrado: " + sessionId));
+                .orElseThrow(() -> new ResourceNotFoundException("Carrito no encontrado: " + sessionId));
         carritoService.borrarCarrito(c.getIdCarrito());
         return pedidoMapper.toResponse(pedidoTerminado);
     }

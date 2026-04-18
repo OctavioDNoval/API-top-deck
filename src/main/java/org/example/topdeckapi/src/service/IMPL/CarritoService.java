@@ -41,7 +41,7 @@ public class CarritoService implements ICarritoService {
     //METODOS PARA EL CARRITO DE USUARIO REGISTRADO
     public CarritoResponse obtenerCarritoPorUsuario(Long idUsuario){
         Usuario u = usuarioRepo.findById(idUsuario)
-                .orElseThrow(()-> new UsuarioNotFoundException("Usuario no encontrado"));
+                .orElseThrow(()-> new UsuarioNotFoundException("No se encontro Carrito relacionado al usuario. Contacte con soporte"));
 
         Carrito c = carritoRepository.findByUsuario(u)
                 .orElseGet(()->{
@@ -75,7 +75,7 @@ public class CarritoService implements ICarritoService {
 
     public DetalleCarritoResponse agregarAlCarrito (DetalleCarritoRequest detalleCarritoRequest){
         Producto p = productoRepo.findById(detalleCarritoRequest.getIdProducto())
-                .orElseThrow(()-> new RuntimeException("Producto no encontrado"));
+                .orElseThrow(()-> new ProductNotFoundException("Producto no encontrado"));
 
         Carrito c = carritoRepository.findById(detalleCarritoRequest.getIdCarrito())
                 .orElseThrow(()-> new CarritoNotFoundException("Carrito no encontrado"));

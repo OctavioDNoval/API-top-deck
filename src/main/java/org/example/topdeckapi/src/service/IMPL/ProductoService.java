@@ -9,6 +9,8 @@ import org.example.topdeckapi.src.DTOs.request.ProductoRequest;
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
 import org.example.topdeckapi.src.DTOs.response.ProductoResponse;
 
+import org.example.topdeckapi.src.Exception.BussinesException;
+import org.example.topdeckapi.src.Exception.ResourceNotFoundException;
 import org.example.topdeckapi.src.Repository.ICategoriasRepo;
 import org.example.topdeckapi.src.Repository.IProductoRepo;
 import org.example.topdeckapi.src.Repository.ITagRepository;
@@ -78,14 +80,14 @@ public class ProductoService implements IProductoService {
 
     public ProductoResponse guardar(ProductoRequest producto) {
         if(productoRepo.existsByNombre(producto.getNombre())){
-            throw new RuntimeException("El producto ya existe");
+            throw new BussinesException("El producto ya existe");
         }
         Producto nuevoProducto = productoMapper.toEntity(producto);
         Tag tag= tagRepository.findById(producto.getIdTag())
-                .orElseThrow(() -> new RuntimeException("El tag no existe"));
+                .orElseThrow(() -> new ResourceNotFoundException("El tag no existe"));
 
         Categoria categoria = categoriasRepo.findById(producto.getIdCategoria())
-                .orElseThrow(() -> new RuntimeException("El categoria no existe"));
+                .orElseThrow(() -> new ResourceNotFoundException("El categoria no existe"));
 
         nuevoProducto.setCategoria(categoria);
         nuevoProducto.setTag(tag);
@@ -97,18 +99,18 @@ public class ProductoService implements IProductoService {
 
     public ProductoResponse buscarPorId(Long id) {
         return productoMapper.toResponse(productoRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("No existe el producto")));
+                .orElseThrow(() -> new ResourceNotFoundException("No existe el producto")));
     }
 
     public ProductoResponse actualizarProducto(Long id, ProductoRequest newProducto) {
         Producto p = productoRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("No existe el producto"));
+                .orElseThrow(() -> new ResourceNotFoundException("No existe el producto"));
 
         if(newProducto.getNombre() != null && !newProducto.getNombre().trim().isEmpty()){
             String nuevoNombre = newProducto.getNombre().trim();
             if(!p.getNombre().equals(nuevoNombre)) {
                 if(productoRepo.existsByNombre(nuevoNombre)) {
-                    throw new RuntimeException("Ya existe un producto con el nombre: " + nuevoNombre);
+                    throw new BussinesException("Ya existe un producto con el nombre: " + nuevoNombre);
                 }
                 p.setNombre(nuevoNombre);
             }
@@ -116,13 +118,13 @@ public class ProductoService implements IProductoService {
         if(newProducto.getIdCategoria() != null &&
                 !p.getCategoria().getIdCategoria().equals(newProducto.getIdCategoria())){
             Categoria categoria = categoriasRepo.findById(newProducto.getIdCategoria())
-                    .orElseThrow(() -> new RuntimeException("No existe la categoría"));
+                    .orElseThrow(() -> new ResourceNotFoundException("No existe la categoría"));
             p.setCategoria(categoria);
         }
         if(newProducto.getIdTag() != null &&
                 !p.getTag().getIdTag().equals(newProducto.getIdTag())){
             Tag tag = tagRepository.findById(newProducto.getIdTag())
-                    .orElseThrow(() -> new RuntimeException("No existe el tag"));
+                    .orElseThrow(() -> new ResourceNotFoundException("No existe el tag"));
             p.setTag(tag);
         }
         Optional.ofNullable(newProducto.getDescripcion())
@@ -147,7 +149,7 @@ public class ProductoService implements IProductoService {
 
     public ProductoResponse cambiarEstadoProducto(Long idProducto){
         Producto p = productoRepo.findById(idProducto)
-                .orElseThrow(() -> new RuntimeException("No existe el producto"));
+                .orElseThrow(() -> new ResourceNotFoundException("No existe el producto"));
 
         boolean estadoActual = p.getActivo();
         p.setActivo(!estadoActual);

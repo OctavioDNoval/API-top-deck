@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.mappers.CategoriaMapper;
 import org.example.topdeckapi.src.DTOs.request.CategoriaRequest;
 import org.example.topdeckapi.src.DTOs.response.CategoriaResponse;
+import org.example.topdeckapi.src.Exception.ResourceNotFoundException;
 import org.example.topdeckapi.src.Repository.ICategoriasRepo;
 import org.example.topdeckapi.src.Security.AuditUtils;
 import org.example.topdeckapi.src.model.Categoria;
@@ -31,7 +32,7 @@ public class CategoriaService implements ICategoriaService {
 
     public CategoriaResponse buscarPorId(Long idCategoria) {
         Categoria c = categoriasRepo.findById(idCategoria)
-                .orElseThrow(()-> new RuntimeException("Categoria no encontrada"));
+                .orElseThrow(()-> new ResourceNotFoundException("Categoria no encontrada"));
 
         return categoriaMapper.toResponse(c);
     }
@@ -57,7 +58,7 @@ public class CategoriaService implements ICategoriaService {
 
     public CategoriaResponse actualizar(CategoriaRequest categoria, Long idCategoria) {
         Categoria c = categoriasRepo.findById(idCategoria)
-                .orElseThrow(()-> new RuntimeException("Categoria no encontrada"));
+                .orElseThrow(()-> new ResourceNotFoundException("Categoria no encontrada"));
         if(!c.getNombre().equals(categoria.getNombre())) {
             c.setNombre(categoria.getNombre());
         }
