@@ -4,6 +4,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.example.topdeckapi.src.DTOs.mappers.DetallePedidoMapper;
 import org.example.topdeckapi.src.DTOs.mappers.PedidoMapper;
 import org.example.topdeckapi.src.DTOs.request.DetallePedidoRequest;
@@ -38,6 +39,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class PedidoService implements IPedidoService {
     private final PaginacionService paginacionService;
     private final IPedidoRepo pedidoRepo;
@@ -179,6 +181,7 @@ public class PedidoService implements IPedidoService {
             DetallePedido dp = detallePedidoMapper.toEntity(detallePedidoRequest);
             Producto producto = productoRepo.findById(detallePedidoRequest.getIdProducto())
                     .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado: " + detallePedidoRequest.getIdProducto()));
+            log.info("Producto {}", producto);
             dp.setProducto(producto);
             dp.setPedido(pedido);
             if(dp.getProducto().getDescuento() > 0){

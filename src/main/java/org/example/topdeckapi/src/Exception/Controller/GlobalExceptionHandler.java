@@ -38,6 +38,11 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
 
+    /*
+    * Handler para las excepcion que tengan
+    * que ver con recursos que no se encuentran en la
+    * base de datos (404)
+    * */
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> resolveResourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
         ApiErrorResponse error = new ApiErrorResponse(
@@ -48,5 +53,22 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now()
         );
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+    }
+
+    /*
+    * Hanlder para errores internos del servidor
+    * que no tiene que ver con la base de datos
+    * sino un error en el servidor
+    * */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiErrorResponse> resolveException(Exception ex, WebRequest request) {
+        ApiErrorResponse error = new ApiErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
+                "Ha ocurrido un error inesperado. Intente mas tarde",
+                request.getDescription(false).replace("uri =", ""),
+                LocalDateTime.now()
+        );
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
