@@ -160,4 +160,45 @@ public class CarritoService implements ICarritoService {
             return false;
         }
     }
+
+    public CarritoResponse mergeCarritoEfimeroToUser(String sessionId, Long idUsuario){
+        Usuario usuario = usuarioRepo.findById(idUsuario)
+                .orElseThrow(() -> new UsuarioNotFoundException("Usuario no encontrado"));
+
+        Carrito userCarrito = carritoRepository.findByUsuario(usuario)
+                .orElseGet(() -> {
+                    Carrito nuevo = new Carrito();
+                    nuevo.setUsuario(usuario);
+                    nuevo.setFechaCreacion(LocalDateTime.now());
+                    return carritoRepository.save(nuevo);
+                });
+
+        Carrito efimeroCarrito = carritoRepository.findBySessionId(sessionId)
+                .orElse(null);
+
+        if (efimeroCarrito != null) {
+            List<DetalleCarrito> efimeroDetalles = detalleCarritoRepository.findByCarrito(efimeroCarrito);
+
+            for (DetalleCarrito det : efimeroDetalles) {
+                DetalleCarrito existing = detalleCarritoRepository
+                        .findByProductoAndCarrito(det.getProducto(), userCarrito)
+                        .orElse(null);
+
+                if (existing != null) {
+                    existing.setCantidad(existing.getCantidad() + det.getCantidad());
+                    detalleCarritoRepository.save(existing);
+                } else {
+                    DetalleCarrito nuevoDetalle = new DetalleCarrito();
+                    nuevoDetalle.setCarrito(userCarrito);
+                    nuevoDetalle.setProducto(det.getProducto());
+                    nuevoDetalle.setCantidad(det.getCantidad());
+                    detalleCarritoRepository.save(nuevoDetalle);
+                }
+            }
+
+            detalleCarritoRepository.deleteAll(efimeroDetalles);
+        }
+
+        return carritoMapper.toResponse(userCarrito);
+    }
 }

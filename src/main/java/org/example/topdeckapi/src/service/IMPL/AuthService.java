@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -32,9 +33,40 @@ public class AuthService {
 
 
     public AuthResponse register (UsuarioRequest dto){
-        if(usuarioRepo.existsByEmail(dto.getEmail())){
-            throw new BussinesException("El usuario con ese mail ya existe");
+        Optional<Usuario> existingUser = usuarioRepo.findByEmail(dto.getEmail());
+
+        if (existingUser.isPresent()) {
+            Usuario user = existingUser.get();
+            if (user.getRol() == ROL.USER) {
+                throw new BussinesException("El usuario con ese mail ya existe");
+            }
+            user.setRol(ROL.USER);
+            user.setPassword(encoder.encode(dto.getPassword()));
+            user.setNombre(dto.getNombre());
+            user.setVersionTerminosYCondicionesAceptados(dto.getVersionTerminosYCondicionesAceptados());
+            user.setTerminosAceptados(dto.getTerminosAceptados());
+            user.setTelefono(dto.getTelefono());
+
+            Usuario usuarioGuardado = usuarioRepo.save(user);
+
+            Optional<Carrito> existingCarrito = carritoRepo.findByUsuario(usuarioGuardado);
+            if (existingCarrito.isEmpty()) {
+                Carrito nuevoCarrito = new Carrito();
+                nuevoCarrito.setUsuario(usuarioGuardado);
+                nuevoCarrito.setFechaCreacion(LocalDateTime.now());
+                carritoRepo.save(nuevoCarrito);
+            }
+
+            UserDetails userDetails = User.withUsername(usuarioGuardado.getEmail())
+                    .password("")
+                    .roles(usuarioGuardado.getRol().name())
+                    .build();
+
+            String token = jwtService.generateToken(userDetails);
+            UsuarioResponse uResponse = usuarioMapper.toResponse(usuarioGuardado);
+            return new AuthResponse(token, uResponse);
         }
+
         Usuario u = usuarioMapper.toEntity(dto);
         u.setPassword(encoder.encode(dto.getPassword()));
         u.setRol(ROL.USER);

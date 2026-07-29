@@ -82,4 +82,11 @@ public class CarritoController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/user/mergeEfimero/{sessionId}")
+    public ResponseEntity<CarritoResponse> mergeEfimero(@PathVariable String sessionId){
+        Usuario usuario = usuarioService.obtenerUsuarioAutenticado();
+        CarritoResponse merged = carritoService.mergeCarritoEfimeroToUser(sessionId, usuario.getIdUsuario());
+        return ResponseEntity.ok(merged);
+    }
+
 }
