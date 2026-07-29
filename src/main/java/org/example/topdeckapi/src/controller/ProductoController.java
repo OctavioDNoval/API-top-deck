@@ -89,9 +89,9 @@ public class ProductoController {
     @GetMapping("/admin/tcg/{franquicia}/{nombreCarta}/{page}/{limit}")
     public ResponseEntity<?> tcg(@PathVariable String franquicia, @PathVariable String nombreCarta, @PathVariable Integer page, @PathVariable Integer limit) {
         try {
-            String url = "https://www.apitcg.com/api/" + franquicia + "/cards";
+            String url = "https://api.apitcg.com/api/products?tcg=" + franquicia + "&type=card";
             if (nombreCarta != null && !nombreCarta.isEmpty()) {
-                url += "?name=" + URLEncoder.encode(nombreCarta, StandardCharsets.UTF_8);
+                url += "&name=" + URLEncoder.encode(nombreCarta, StandardCharsets.UTF_8);
             }
 
             url += "&page=" + page + "&limit=" + limit;
