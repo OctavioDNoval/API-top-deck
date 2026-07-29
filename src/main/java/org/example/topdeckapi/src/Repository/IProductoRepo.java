@@ -4,6 +4,8 @@ import org.example.topdeckapi.src.model.Producto;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,6 +33,9 @@ public interface IProductoRepo extends JpaRepository<Producto,Long> {
                                           @Param("idCategoria") Long idCategoria,
                                           @Param("idTag") Long idTag,
                                           Pageable pageable);
+
+    @Query("SELECT p FROM Producto p WHERE p.descuento > 0 AND p.activo = true")
+    List<Producto> findOfertas(Pageable pageable);
 
     boolean existsByNombre(String nombre);
 }

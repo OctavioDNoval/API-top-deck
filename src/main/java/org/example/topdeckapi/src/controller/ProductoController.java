@@ -14,6 +14,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -70,6 +71,11 @@ public class ProductoController {
                 productoService.obtenerPaginadosConFiltro(pagina, tamanio, sortBy, direction, search, categoria, tag, true);
 
         return ResponseEntity.ok(paginacionResponse);
+    }
+
+    @GetMapping("/public/ofertas")
+    public ResponseEntity<List<ProductoResponse>> obtenerOfertas() {
+        return ResponseEntity.ok(productoService.obtenerOfertas());
     }
 
     @GetMapping("/public/image-proxy")

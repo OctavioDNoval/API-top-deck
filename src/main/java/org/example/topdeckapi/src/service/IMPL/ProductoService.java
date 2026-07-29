@@ -26,6 +26,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -95,6 +96,13 @@ public class ProductoService implements IProductoService {
         Producto productoGuardado = productoRepo.save(nuevoProducto);
         auditUtils.setCurrentUserForAudit();
         return productoMapper.toResponse(productoGuardado);
+    }
+
+    public List<ProductoResponse> obtenerOfertas() {
+        Pageable pageable = PageRequest.of(0, 8, Sort.by(Sort.Direction.DESC, "descuento"));
+        return productoRepo.findOfertas(pageable).stream()
+                .map(productoMapper::toResponse)
+                .toList();
     }
 
     public ProductoResponse buscarPorId(Long id) {
