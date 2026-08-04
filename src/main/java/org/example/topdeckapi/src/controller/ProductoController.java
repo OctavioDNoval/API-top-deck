@@ -78,20 +78,6 @@ public class ProductoController {
         return ResponseEntity.ok(productoService.obtenerOfertas());
     }
 
-    @GetMapping("/public/image-proxy")
-    public ResponseEntity<byte[]> proxyImage(@RequestParam String url) {
-        try {
-            RestTemplate restTemplate = new RestTemplate();
-            byte[] imageBytes = restTemplate.getForObject(url, byte[].class);
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.IMAGE_PNG); // o detectar dinámicamente
-            
-            return new ResponseEntity<>(imageBytes, headers, HttpStatus.OK);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
     @GetMapping("/admin/tcg/{franquicia}/{nombreCarta}/{page}/{limit}")
     public ResponseEntity<?> tcg(@PathVariable String franquicia, @PathVariable String nombreCarta, @PathVariable Integer page, @PathVariable Integer limit) {
         try {
@@ -131,24 +117,24 @@ public class ProductoController {
     }
 
     @GetMapping("/public/{id}")
-    public ResponseEntity<ProductoResponse> getByID(@PathVariable("id") Long id){
+    public ResponseEntity<ProductoResponse> getByID(@PathVariable("id") String id){
         ProductoResponse productoReponse = productoService.buscarPorId(id);
         return ResponseEntity.ok(productoReponse);
     }
 
     @PatchMapping("/admin/edit/{id}")
-    public ResponseEntity<ProductoResponse> edit(@PathVariable("id") Long id, @RequestBody @Valid ProductoRequest producto){
+    public ResponseEntity<ProductoResponse> edit(@PathVariable("id") String id, @RequestBody @Valid ProductoRequest producto){
         ProductoResponse productoActualizado = productoService.actualizarProducto(id,producto);
         return ResponseEntity.ok(productoActualizado);
     }
 
     @PatchMapping("/admin/deslistar/{idProducto}")
-    public ResponseEntity<ProductoResponse> deslistar(@PathVariable("idProducto") Long idProducto){
+    public ResponseEntity<ProductoResponse> deslistar(@PathVariable("idProducto") String idProducto){
         return ResponseEntity.ok(productoService.cambiarEstadoProducto(idProducto));
     }
 
     @DeleteMapping("/admin/delete/{id}")
-    public ResponseEntity<Void> delete(@PathVariable("id") Long id){
+    public ResponseEntity<Void> delete(@PathVariable("id") String id){
         boolean isDeleted = productoService.borrarProducto(id);
         return isDeleted
                 ? ResponseEntity.ok().build()

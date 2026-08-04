@@ -8,6 +8,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import net.minidev.json.annotate.JsonIgnore;
 
+import java.util.UUID;
+
 
 @Entity
 @Data
@@ -20,6 +22,14 @@ public class DetallePedido {
     @GeneratedValue (strategy = GenerationType.IDENTITY)
     @Column(name= "id_detalle_pedido")
     private Long idDetallePedido;
+
+    @Column(name = "uuid", unique = true, nullable = false, updatable = false)
+    private String uuid;
+
+    @PrePersist
+    protected void onCreate() {
+        this.uuid = UUID.randomUUID().toString();
+    }
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_producto", nullable = false)

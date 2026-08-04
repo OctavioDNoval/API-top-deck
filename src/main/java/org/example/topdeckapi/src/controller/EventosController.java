@@ -30,7 +30,7 @@ public class EventosController {
     }
 
     @DeleteMapping("/admin/delete/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id){
+    public ResponseEntity<Void> delete(@PathVariable String id){
         boolean rta = eventosService.delete(id);
         return rta
                 ? ResponseEntity.noContent().build()

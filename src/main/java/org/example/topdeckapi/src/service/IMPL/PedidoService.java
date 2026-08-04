@@ -26,6 +26,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 
@@ -51,8 +52,6 @@ public class PedidoService implements IPedidoService {
     private final UsuarioService usuarioService;
     private final DireccionService direccionService;
     private final DetallePedidoMapper detallePedidoMapper;
-    private final ICarritoRepository carritoRepository;
-    private final CarritoService carritoService;
 
     private Sort buildSort (String sortBy, String direction){
         Map<String,String> mapeoCampos = Map.of(
@@ -81,8 +80,8 @@ public class PedidoService implements IPedidoService {
         return paginacionService.crearPaginacionResponse(paginaPedido,pagina,tamanio,pedidoMapper::toResponse);
     }
 
-    public PedidoResponse getById(Long id){
-        Pedido p = pedidoRepo.findById(id)
+    public PedidoResponse getById(String uuid){
+        Pedido p = pedidoRepo.findByUuid(uuid)
                 .orElseThrow(()-> new PedidoNotFoundException("Pedido no encontrado"));
         return pedidoMapper.toResponse(p);
     }
@@ -92,22 +91,25 @@ public class PedidoService implements IPedidoService {
             throw new BussinesException("El pedido no tiene detalles");
         }
 
-        Pedido pedido = new Pedido();
-        Usuario usuarioAsociado = usuarioRepo.findById(newPedido.getIdUsuario())
-                .orElseThrow(()-> new ResourceNotFoundException("Usuario asociado al pedido no encontrado"));
+        Usuario usuarioAuth = usuarioService.obtenerUsuarioAutenticado();
+        if (usuarioAuth == null) {
+            throw new AccessDeniedException("Usuario no autenticado");
+        }
 
-        Direccion direccionAsociada = direccionRepo.findById(newPedido.getIdDireccion())
+        Pedido pedido = new Pedido();
+
+        Direccion direccionAsociada = direccionRepo.findByUuid(newPedido.getIdDireccion())
                 .orElseThrow(()-> new ResourceNotFoundException("Direccion asociada al pedido no encontrada"));
 
         pedido.setIpUsuario(newPedido.getIpUsuario());
         pedido.setFechaPedido(LocalDateTime.now());
         pedido.setEstado(ESTADO_PEDIDO.PENDIENTE);
-        pedido.setUsuario(usuarioAsociado);
+        pedido.setUsuario(usuarioAuth);
         pedido.setDireccion(direccionAsociada);
 
         List<DetallePedido> detalles = newPedido.getDetalles().stream()
                 .map(dp->{
-                    Producto producto = productoRepo.findById(dp.getIdProducto())
+                    Producto producto = productoRepo.findByUuid(dp.getIdProducto())
                             .orElseThrow(()-> new ResourceNotFoundException("Producto no encontrado"));
 
                     int cantidad = dp.getCantidad() != null ? dp.getCantidad() : 0;
@@ -140,14 +142,11 @@ public class PedidoService implements IPedidoService {
 
         pedidoGuardado.setDetalles(detallePedidosGuardado);
 
-        carritoRepository.findByUsuario(usuarioAsociado)
-                .ifPresent(c -> carritoService.borrarCarrito(c.getIdCarrito()));
-
         return pedidoMapper.toResponse(pedidoRepo.save(pedidoGuardado));
     }
 
-    public PedidoResponse actualizarEstado(Long idPedido,String nuevoEstado){
-        Pedido pedido = pedidoRepo.findById(idPedido)
+    public PedidoResponse actualizarEstado(String uuidPedido, String nuevoEstado){
+        Pedido pedido = pedidoRepo.findByUuid(uuidPedido)
                 .orElseThrow(()-> new PedidoNotFoundException("Pedido no encontrado"));
 
         ESTADO_PEDIDO estado;
@@ -190,7 +189,7 @@ public class PedidoService implements IPedidoService {
         return pedidoMapper.toResponse(pedidoActualizado);
     }
 
-    public PedidoResponse guardarPedidoEfimero (PedidoEfimeroRequest request, String sessionId){
+    public PedidoResponse guardarPedidoEfimero (PedidoEfimeroRequest request){
         if(request.getDetalles().isEmpty()) throw new BussinesException("El carrito esta vacio");
 
         Usuario usuario = usuarioService.crearUsuarioEfimero(request.getUsuario());
@@ -199,7 +198,7 @@ public class PedidoService implements IPedidoService {
         List<DetallePedido> detalles = new ArrayList<>();
         for(DetallePedidoRequest detallePedidoRequest : request.getDetalles()){
             DetallePedido dp = detallePedidoMapper.toEntity(detallePedidoRequest);
-            Producto producto = productoRepo.findById(detallePedidoRequest.getIdProducto())
+            Producto producto = productoRepo.findByUuid(detallePedidoRequest.getIdProducto())
                     .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado: " + detallePedidoRequest.getIdProducto()));
             log.info("Producto {}", producto);
 
@@ -244,19 +243,14 @@ public class PedidoService implements IPedidoService {
                 Hibernate.initialize(detalle.getProducto())
         );
 
-        Carrito c = carritoRepository.findBySessionId(sessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Carrito no encontrado: " + sessionId));
-        carritoService.borrarCarrito(c.getIdCarrito());
         return pedidoMapper.toResponse(pedidoTerminado);
     }
 
-    public boolean delete(Long id){
-        if (pedidoRepo.existsById(id)) {
-            pedidoRepo.deleteById(id);
-            return true;
-        }else{
-            return false;
-        }
+    public boolean delete(String uuid){
+        Pedido pedido = pedidoRepo.findByUuid(uuid)
+                .orElseThrow(()-> new PedidoNotFoundException("Pedido no encontrado"));
+        pedidoRepo.delete(pedido);
+        return true;
     }
 
     private Double calcularSubTotal(Producto producto, Integer cantidad) {

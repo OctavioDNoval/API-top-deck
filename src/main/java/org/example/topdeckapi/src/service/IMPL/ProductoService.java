@@ -46,10 +46,10 @@ public class ProductoService implements IProductoService {
         Map<String,String> mapeoCampos = Map.of(
                 "nombre", "nombre",
                 "precio", "precio",
-                "idProducto", "idProducto"
+                "uuid", "uuid"
         );
 
-        String campoReal = mapeoCampos.getOrDefault(sortBy, "idProducto");
+        String campoReal = mapeoCampos.getOrDefault(sortBy, "uuid");
         Sort.Direction dir = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
         return Sort.by(dir, campoReal);
     }
@@ -79,16 +79,43 @@ public class ProductoService implements IProductoService {
         return paginationService.crearPaginacionResponse(paginaProducto, pagina, tamanio, productoMapper::toResponse);
     }
 
+    private boolean isUuid(String value) {
+        return value != null && value.matches("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
+    }
+
+    private Tag resolveTag(String idTag) {
+        if (isUuid(idTag)) {
+            return tagRepository.findByUuid(idTag)
+                    .orElseThrow(() -> new ResourceNotFoundException("El tag no existe"));
+        }
+        try {
+            return tagRepository.findById(Long.parseLong(idTag))
+                    .orElseThrow(() -> new ResourceNotFoundException("El tag no existe"));
+        } catch (NumberFormatException e) {
+            throw new ResourceNotFoundException("El tag no existe");
+        }
+    }
+
+    private Categoria resolveCategoria(String idCategoria) {
+        if (isUuid(idCategoria)) {
+            return categoriasRepo.findByUuid(idCategoria)
+                    .orElseThrow(() -> new ResourceNotFoundException("La categoría no existe"));
+        }
+        try {
+            return categoriasRepo.findById(Long.parseLong(idCategoria))
+                    .orElseThrow(() -> new ResourceNotFoundException("La categoría no existe"));
+        } catch (NumberFormatException e) {
+            throw new ResourceNotFoundException("La categoría no existe");
+        }
+    }
+
     public ProductoResponse guardar(ProductoRequest producto) {
         if(productoRepo.existsByNombre(producto.getNombre())){
             throw new BussinesException("El producto ya existe");
         }
         Producto nuevoProducto = productoMapper.toEntity(producto);
-        Tag tag= tagRepository.findById(producto.getIdTag())
-                .orElseThrow(() -> new ResourceNotFoundException("El tag no existe"));
-
-        Categoria categoria = categoriasRepo.findById(producto.getIdCategoria())
-                .orElseThrow(() -> new ResourceNotFoundException("El categoria no existe"));
+        Tag tag = resolveTag(producto.getIdTag());
+        Categoria categoria = resolveCategoria(producto.getIdCategoria());
 
         nuevoProducto.setCategoria(categoria);
         nuevoProducto.setTag(tag);
@@ -105,13 +132,13 @@ public class ProductoService implements IProductoService {
                 .toList();
     }
 
-    public ProductoResponse buscarPorId(Long id) {
-        return productoMapper.toResponse(productoRepo.findById(id)
+    public ProductoResponse buscarPorId(String uuid) {
+        return productoMapper.toResponse(productoRepo.findByUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("No existe el producto")));
     }
 
-    public ProductoResponse actualizarProducto(Long id, ProductoRequest newProducto) {
-        Producto p = productoRepo.findById(id)
+    public ProductoResponse actualizarProducto(String uuid, ProductoRequest newProducto) {
+        Producto p = productoRepo.findByUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("No existe el producto"));
 
         if(newProducto.getNombre() != null && !newProducto.getNombre().trim().isEmpty()){
@@ -124,15 +151,13 @@ public class ProductoService implements IProductoService {
             }
         }
         if(newProducto.getIdCategoria() != null &&
-                !p.getCategoria().getIdCategoria().equals(newProducto.getIdCategoria())){
-            Categoria categoria = categoriasRepo.findById(newProducto.getIdCategoria())
-                    .orElseThrow(() -> new ResourceNotFoundException("No existe la categoría"));
+                !p.getCategoria().getUuid().equals(newProducto.getIdCategoria())){
+            Categoria categoria = resolveCategoria(newProducto.getIdCategoria());
             p.setCategoria(categoria);
         }
         if(newProducto.getIdTag() != null &&
-                !p.getTag().getIdTag().equals(newProducto.getIdTag())){
-            Tag tag = tagRepository.findById(newProducto.getIdTag())
-                    .orElseThrow(() -> new ResourceNotFoundException("No existe el tag"));
+                !p.getTag().getUuid().equals(newProducto.getIdTag())){
+            Tag tag = resolveTag(newProducto.getIdTag());
             p.setTag(tag);
         }
         Optional.ofNullable(newProducto.getDescripcion())
@@ -155,8 +180,8 @@ public class ProductoService implements IProductoService {
         return productoMapper.toResponse(productoActualizado);
     }
 
-    public ProductoResponse cambiarEstadoProducto(Long idProducto){
-        Producto p = productoRepo.findById(idProducto)
+    public ProductoResponse cambiarEstadoProducto(String uuidProducto){
+        Producto p = productoRepo.findByUuid(uuidProducto)
                 .orElseThrow(() -> new ResourceNotFoundException("No existe el producto"));
 
         boolean estadoActual = p.getActivo();
@@ -164,14 +189,12 @@ public class ProductoService implements IProductoService {
         return productoMapper.toResponse(productoRepo.save(p));
     }
 
-    public boolean borrarProducto(Long id) {
-        if (productoRepo.existsById(id)) {
-            auditUtils.setCurrentUserForAudit();
-            productoRepo.deleteById(id);
-            return true;
-        }else{
-            return false;
-        }
+    public boolean borrarProducto(String uuid) {
+        Producto p = productoRepo.findByUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("No existe el producto"));
+        auditUtils.setCurrentUserForAudit();
+        productoRepo.delete(p);
+        return true;
     }
 
 

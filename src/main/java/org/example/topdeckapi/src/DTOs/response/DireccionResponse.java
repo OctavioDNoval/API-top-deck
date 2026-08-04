@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class DireccionResponse {
-    private Long idDireccion;
+    private String idDireccion;
     private String ciudad;
     private String provincia;
     private String codigoPostal;
@@ -21,6 +21,6 @@ public class DireccionResponse {
     private Boolean principal;
 
     //Datos del usuario asignado a la direccion
-    private Long idUsuario;
+    private String idUsuario;
     private String nombreUsuario;
 }

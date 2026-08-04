@@ -26,17 +26,17 @@ public class CategoriaController {
     }
 
     @GetMapping("/public/{id}")
-    public ResponseEntity<CategoriaResponse> getById(@PathVariable("id") Long id){
+    public ResponseEntity<CategoriaResponse> getById(@PathVariable("id") String id){
         return ResponseEntity.ok(categoriaService.buscarPorId(id));
     }
 
     @GetMapping("/admin/getId/{nombre}")
-    public ResponseEntity<Long> getIdByName(@PathVariable("nombre") String nombre){
+    public ResponseEntity<String> getIdByName(@PathVariable("nombre") String nombre){
         return ResponseEntity.ok(categoriaService.obtenerIdPorNombre(nombre));
     }
 
     @PatchMapping("/admin/edit/{id}")
-    public ResponseEntity<CategoriaResponse> edit(@PathVariable("id") Long id, @RequestBody @Valid CategoriaRequest newCategoria){
+    public ResponseEntity<CategoriaResponse> edit(@PathVariable("id") String id, @RequestBody @Valid CategoriaRequest newCategoria){
         return ResponseEntity.ok(categoriaService.actualizar(newCategoria,id));
     }
 
@@ -47,7 +47,7 @@ public class CategoriaController {
     }
 
     @DeleteMapping("/admin/delete/{id}")
-    public ResponseEntity<Void> delete(@PathVariable("id") Long id){
+    public ResponseEntity<Void> delete(@PathVariable("id") String id){
         boolean isDeleted = categoriaService.borrarCategoria(id);
         return isDeleted
                 ? ResponseEntity.noContent().build()

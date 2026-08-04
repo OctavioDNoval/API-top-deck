@@ -12,16 +12,15 @@ import org.mapstruct.Named;
         UsuarioMapper.class,
 })
 public interface CarritoMapper {
-    @Mapping(target = "idCarrito", source = "idCarrito")
+    @Mapping(target = "idCarrito", source = "uuid")
     @Mapping(target = "fechaCreacion", source = "fechaCreacion")
     @Mapping(target = "detalleCarrito", source = "detalles")
-    @Mapping(target = "idUsuario", source = "usuario.idUsuario")
+    @Mapping(target = "idUsuario", source = "usuario.uuid")
     @Mapping(target = "nombreUsuario", source = "usuario.nombre")
     @Mapping(target = "sessionId", source = "sessionId")
     @Mapping(target = "precioTotal", source= "carrito", qualifiedByName = "calcularTotal")
     CarritoResponse toResponse(Carrito carrito);
 
-    @Mapping(target = "idCarrito", ignore = true)
     Carrito toEntity(CarritoRequest carritoRequest);
 
     @Named("calcularTotal")

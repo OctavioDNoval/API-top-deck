@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -38,4 +39,5 @@ public interface IProductoRepo extends JpaRepository<Producto,Long> {
     List<Producto> findOfertas(Pageable pageable);
 
     boolean existsByNombre(String nombre);
+    Optional<Producto> findByUuid(String uuid);
 }

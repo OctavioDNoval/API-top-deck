@@ -23,4 +23,6 @@ public interface IUsuarioRepo extends JpaRepository<Usuario,Long> {
             "LOWER(u.nombre) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) ")
     Page<Usuario> findBySearch(@Param("search") String search, Pageable pageable);
+
+    Optional<Usuario> findByUuid(String uuid);
 }

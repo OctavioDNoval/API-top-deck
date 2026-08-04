@@ -9,6 +9,7 @@ import org.example.topdeckapi.src.Enumerados.ESTADO_EVENTO;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.UUID;
 
 @Entity
 @Data
@@ -21,6 +22,14 @@ public class Evento {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_evento")
     private Long idEvento;
+
+    @Column(name = "uuid", unique = true, nullable = false, updatable = false)
+    private String uuid;
+
+    @PrePersist
+    protected void onCreate() {
+        this.uuid = UUID.randomUUID().toString();
+    }
 
     @Column(name = "nombre_evento")
     private String nombreEvento;

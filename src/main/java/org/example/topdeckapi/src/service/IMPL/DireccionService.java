@@ -32,14 +32,14 @@ public class DireccionService implements IDireccionService {
                 .collect(Collectors.toList());
     }
 
-    public DireccionResponse getById(Long id){
-        Direccion d= direccionRepo.findById(id)
+    public DireccionResponse getById(String uuid){
+        Direccion d= direccionRepo.findByUuid(uuid)
                 .orElseThrow(()-> new ResourceNotFoundException("Direccion no encontrado"));
         return direccionMapper.toResponse(d);
     }
 
     public DireccionResponse guardar(DireccionRequest dto) {
-        Usuario usuario = usuarioRepo.findById(dto.getIdUsuario())
+        Usuario usuario = usuarioRepo.findByUuid(dto.getIdUsuario())
                 .orElseThrow(()-> new UsuarioNotFoundException("Usuario no encontrado"));
 
         Direccion direccion = Direccion.builder()
@@ -91,14 +91,14 @@ public class DireccionService implements IDireccionService {
         return direccionRepo.save(direccion);
     }
 
-    public DireccionResponse update(DireccionRequest request, Long id) {
-        return direccionRepo.findById(id)
+    public DireccionResponse update(DireccionRequest request, String uuid) {
+        return direccionRepo.findByUuid(uuid)
                 .map(d->{
                     direccionMapper.updateEntity(d, request);
 
                     if(request.getIdUsuario() != null
-                            && (d.getUsuario() == null || !request.getIdUsuario().equals(d.getUsuario().getIdUsuario()))){
-                        Usuario u = usuarioRepo.findById(request.getIdUsuario())
+                            && (d.getUsuario() == null || !request.getIdUsuario().equals(d.getUsuario().getUuid()))){
+                        Usuario u = usuarioRepo.findByUuid(request.getIdUsuario())
                                 .orElseThrow(()-> new UsuarioNotFoundException("Usuario no encontrado"));
 
                         d.setUsuario(u);
@@ -119,12 +119,10 @@ public class DireccionService implements IDireccionService {
                 .collect(Collectors.toList());
     }
 
-    public boolean delete(Long id) {
-        if (direccionRepo.existsById(id)) {
-            direccionRepo.deleteById(id);
-            return true;
-        }else{
-            return false;
-        }
+    public boolean delete(String uuid) {
+        Direccion d = direccionRepo.findByUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Direccion no encontrado"));
+        direccionRepo.delete(d);
+        return true;
     }
 }

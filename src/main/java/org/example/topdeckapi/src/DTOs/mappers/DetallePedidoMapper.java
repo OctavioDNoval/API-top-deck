@@ -9,14 +9,14 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface DetallePedidoMapper {
 
-    @Mapping(target = "idProducto", source = "producto.idProducto")
+    @Mapping(target = "idDetallePedido", source = "uuid")
+    @Mapping(target = "idProducto", source = "producto.uuid")
     @Mapping(target = "nombreProducto", source = "producto.nombre")
     @Mapping(target = "precioProducto", source = "producto.precio")
     @Mapping(target = "descuentoProducto", source = "producto.descuento")
-    @Mapping(target = "idPedido", source = "pedido.idPedido")
+    @Mapping(target = "idPedido", source = "pedido.uuid")
     DetallePedidoResponse toResponse(DetallePedido detallePedido);
 
-    @Mapping(target = "idDetallePedido", ignore = true)
     @Mapping(target = "producto", ignore = true)
     @Mapping(target = "pedido", ignore = true)
     @Mapping(target = "subTotal", ignore = true)

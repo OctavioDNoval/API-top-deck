@@ -11,7 +11,7 @@ import org.example.topdeckapi.src.Enumerados.ROL;
 @NoArgsConstructor
 @Builder
 public class UsuarioResponse {
-    private Long idUsuario;
+    private String idUsuario;
     private String nombre;
     private String email;
     private String telefono;

@@ -12,24 +12,23 @@ import org.mapstruct.Named;
 @Mapper(componentModel = "spring", uses = {UsuarioMapper.class})
 public interface DireccionMapper {
 
-    @Mapping(target = "idUsuario", source = "usuario.idUsuario")
+    @Mapping(target = "idDireccion", source = "uuid")
+    @Mapping(target = "idUsuario", source = "usuario.uuid")
     @Mapping(target = "nombreUsuario", source = "usuario.nombre")
     DireccionResponse toResponse(Direccion direccion);
 
-    @Mapping(target = "idDireccion", ignore = true)
     @Mapping(target = "usuario", source = "idUsuario", qualifiedByName = "idToUsuario")
     Direccion toEntity(DireccionRequest direccionRequest);
 
-    @Mapping(target = "idDireccion", ignore = true)
     @Mapping(target = "usuario", ignore = true)
     void updateEntity(@MappingTarget Direccion direccion, DireccionRequest request);
 
     @Named("idToUsuario")
-    default Usuario idToUsuario( Long idUsuario) {
-        if (idUsuario == null) return null;
+    default Usuario idToUsuario(String uuidUsuario) {
+        if (uuidUsuario == null) return null;
 
         Usuario usuario = new Usuario();
-        usuario.setIdUsuario(idUsuario);
+        usuario.setUuid(uuidUsuario);
         return usuario;
     }
 }

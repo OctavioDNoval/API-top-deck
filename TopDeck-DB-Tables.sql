@@ -2,11 +2,13 @@ create database if not exists topdeck_database;
 
 create table categoria(
 	id_categoria bigint primary key auto_increment,
+    uuid varchar(36) not null unique,
     nombre varchar(255)
 );
 
 create table tag(
 	id_tag bigint primary key auto_increment,
+    uuid varchar(36) not null unique,
     nombre varchar(255) unique,
     nombre_normalizado varchar(255) unique,
     img_url varchar(255)
@@ -14,6 +16,7 @@ create table tag(
 
 create table producto(
 	id_producto bigint primary key auto_increment,
+    uuid varchar(36) not null unique,
     id_categoria bigint,
     id_tag bigint,
     nombre varchar(255),
@@ -29,6 +32,7 @@ create table producto(
 
 create table usuario(
 	id_usuario bigint primary key auto_increment,
+    uuid varchar(36) not null unique,
     nombre varchar(255),
     email varchar(255) not null unique,
     password varchar(255),
@@ -41,6 +45,7 @@ create table usuario(
 
 create table direccion(
 	id_direccion bigint primary key auto_increment,
+    uuid varchar(36) not null unique,
     id_usuario bigint not null,
     ciudad varchar(255),
     provincia varchar(255),
@@ -55,6 +60,7 @@ create table direccion(
 
 create table pedido(
 	id_pedido bigint primary key auto_increment,
+    uuid varchar(36) not null unique,
     id_usuario bigint not null,
     id_direccion bigint,
     fecha_pedido datetime not null default current_timestamp,
@@ -67,6 +73,7 @@ create table pedido(
 
 create table detallepedido(
 	id_detalle_pedido bigint primary key auto_increment,
+    uuid varchar(36) not null unique,
     id_pedido bigint not null,
     id_producto bigint not null,
 	cantidad int,
@@ -78,7 +85,8 @@ create table detallepedido(
 
 create table carrito (
 	id_carrito bigint primary key auto_increment,
-    id_usuario bigint not null,
+    uuid varchar(36) not null unique,
+    id_usuario bigint,
     session_id varchar(255),
     fecha_creacion datetime default current_timestamp,
     foreign key (id_usuario) references usuario(id_usuario)
@@ -86,6 +94,7 @@ create table carrito (
 
 create table detallecarrito(
 	id_detalle_carrito bigint primary key auto_increment,
+    uuid varchar(36) not null unique,
     id_carrito bigint not null,
     id_producto bigint not null,
     cantidad int default 1,
@@ -103,6 +112,7 @@ create table auditoria(
 
 create table evento(
 	id_evento bigint primary key auto_increment,
+    uuid varchar(36) not null unique,
     nombre_evento varchar(255),
     ubicacion varchar(255),
     fecha date,
@@ -113,33 +123,33 @@ create table evento(
 
 use topdeck_database;
 
-insert into categoria(nombre) values
-    ('Sobres'),
-    ('Cajas'),
-    ('Barajas'),
-    ('Accesorios'),
-    ('Figuras');
+insert into categoria(uuid, nombre) values
+    (UUID(), 'Sobres'),
+    (UUID(), 'Cajas'),
+    (UUID(), 'Barajas'),
+    (UUID(), 'Accesorios'),
+    (UUID(), 'Figuras');
 
-insert into tag(nombre, img_url) values
-    ('Pokémon', null),
-    ('Dragon Ball', null),
-    ('One Piece', null),
-    ('Yu-Gi-Oh!', null),
-    ('Magic: The Gathering', null);
+insert into tag(uuid, nombre, img_url) values
+    (UUID(), 'Pokémon', null),
+    (UUID(), 'Dragon Ball', null),
+    (UUID(), 'One Piece', null),
+    (UUID(), 'Yu-Gi-Oh!', null),
+    (UUID(), 'Magic: The Gathering', null);
 
 update tag set nombre_normalizado = replace(replace(replace(replace(replace(replace(replace(replace(
     lower(nombre),
     'á','a'),'é','e'),'í','i'),'ó','o'),'ú','u'),'ü','u'),'ñ','n'),'-','')
 where nombre_normalizado is null;
 
-insert into producto(id_categoria, id_tag, nombre, descripcion, precio, stock, img_url, descuento) values
-    (1, 1, 'Sobre Evoluciones Prismáticas Pokémon', 'Sobre de 10 cartas de la colección Evoluciones Prismáticas', 8500.00, 50, null, 0),
-    (2, 1, 'Caja Evoluciones Prismáticas Pokémon', 'Caja sellada de 36 sobres de Evoluciones Prismáticas', 45000.00, 10, null, 5),
-    (3, 1, 'Baraja Liga Evoluciones Prismáticas', 'Baraja lista para jugar de la temporada Evoluciones Prismáticas', 12000.00, 20, null, 0),
-    (1, 2, 'Sobre Battle Spirits Saga Dragon Ball', 'Sobre de 12 cartas de Battle Spirits Saga Dragon Ball', 6500.00, 40, null, 0),
-    (2, 2, 'Caja Battle Spirits Saga Dragon Ball', 'Caja sellada de 24 sobres de Battle Spirits Saga', 35000.00, 8, null, 10),
-    (1, 3, 'Sobre Romance Dawn One Piece', 'Sobre de 12 cartas de la colección Romance Dawn', 7500.00, 30, null, 0),
-    (2, 3, 'Caja Romance Dawn One Piece', 'Caja sellada de 24 sobres de Romance Dawn', 40000.00, 5, null, 0),
-    (1, 4, 'Sobre Rage of the Abyss Yu-Gi-Oh!', 'Sobre de 9 cartas de Rage of the Abyss', 5500.00, 60, null, 0),
-    (1, 5, 'Sobre Innistrad Remastered Magic', 'Sobre de 15 cartas de Innistrad Remastered', 9000.00, 25, null, 0),
-    (4, 1, 'Album Pokémon 9 Bolsillos', 'Álbum de colección con fundas para 9 cartas por página', 3500.00, 100, null, 0);
+insert into producto(uuid, id_categoria, id_tag, nombre, descripcion, precio, stock, img_url, descuento) values
+    (UUID(), 1, 1, 'Sobre Evoluciones Prismáticas Pokémon', 'Sobre de 10 cartas de la colección Evoluciones Prismáticas', 8500.00, 50, null, 0),
+    (UUID(), 2, 1, 'Caja Evoluciones Prismáticas Pokémon', 'Caja sellada de 36 sobres de Evoluciones Prismáticas', 45000.00, 10, null, 5),
+    (UUID(), 3, 1, 'Baraja Liga Evoluciones Prismáticas', 'Baraja lista para jugar de la temporada Evoluciones Prismáticas', 12000.00, 20, null, 0),
+    (UUID(), 1, 2, 'Sobre Battle Spirits Saga Dragon Ball', 'Sobre de 12 cartas de Battle Spirits Saga Dragon Ball', 6500.00, 40, null, 0),
+    (UUID(), 2, 2, 'Caja Battle Spirits Saga Dragon Ball', 'Caja sellada de 24 sobres de Battle Spirits Saga', 35000.00, 8, null, 10),
+    (UUID(), 1, 3, 'Sobre Romance Dawn One Piece', 'Sobre de 12 cartas de la colección Romance Dawn', 7500.00, 30, null, 0),
+    (UUID(), 2, 3, 'Caja Romance Dawn One Piece', 'Caja sellada de 24 sobres de Romance Dawn', 40000.00, 5, null, 0),
+    (UUID(), 1, 4, 'Sobre Rage of the Abyss Yu-Gi-Oh!', 'Sobre de 9 cartas de Rage of the Abyss', 5500.00, 60, null, 0),
+    (UUID(), 1, 5, 'Sobre Innistrad Remastered Magic', 'Sobre de 15 cartas de Innistrad Remastered', 9000.00, 25, null, 0),
+    (UUID(), 4, 1, 'Album Pokémon 9 Bolsillos', 'Álbum de colección con fundas para 9 cartas por página', 3500.00, 100, null, 0);

@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface IPedidoRepo extends JpaRepository<Pedido,Long> {
     @Query("SELECT p FROM Pedido p WHERE " +
@@ -16,4 +18,5 @@ public interface IPedidoRepo extends JpaRepository<Pedido,Long> {
             "LOWER(p.usuario.nombre) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "LOWER(p.ipUsuario) LIKE LOWER(CONCAT('%', :search, '%')) ")
     Page<Pedido> findBySearch(@Param("search") String search, Pageable pageable);
+    Optional<Pedido> findByUuid(String uuid);
 }

@@ -21,5 +21,6 @@ public interface IDireccionRepo extends JpaRepository<Direccion,Long> {
             String codigoPostal,
             Long usuarioId
     );
+    Optional<Direccion> findByUuid(String uuid);
 
 }

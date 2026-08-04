@@ -20,6 +20,7 @@ import org.example.topdeckapi.src.model.DetalleCarrito;
 import org.example.topdeckapi.src.model.Producto;
 import org.example.topdeckapi.src.model.Usuario;
 import org.example.topdeckapi.src.service.Interface.ICarritoService;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 
@@ -38,6 +39,7 @@ public class CarritoService implements ICarritoService {
     private final IProductoRepo productoRepo;
     private final CarritoMapper carritoMapper;
     private final DetalleCarritoMapper detalleCarritoMapper;
+    private final UsuarioService usuarioService;
 
     //METODOS PARA EL CARRITO DE USUARIO REGISTRADO
     public CarritoResponse obtenerCarritoPorUsuario(Long idUsuario){
@@ -54,20 +56,31 @@ public class CarritoService implements ICarritoService {
         return carritoMapper.toResponse(c);
     }
 
-    public DetalleCarritoResponse actualizarCantidad (Long idDetalle, Integer nuevaCantidad){
+    public DetalleCarritoResponse actualizarCantidad(String uuidDetalle, Integer nuevaCantidad){
         if(nuevaCantidad == null || nuevaCantidad <= 0){
             throw new BussinesException("La cantidad debe ser mayor a 0");
         }
-        DetalleCarrito dc = detalleCarritoRepository.findById(idDetalle)
+        DetalleCarrito dc = detalleCarritoRepository.findByUuid(uuidDetalle)
                 .orElseThrow(()-> new CarritoNotFoundException("Detalle de carrito no encontrado"));
+
+        Usuario usuarioAuth = usuarioService.obtenerUsuarioAutenticado();
+        if (usuarioAuth == null || !dc.getCarrito().getUsuario().getIdUsuario().equals(usuarioAuth.getIdUsuario())) {
+            throw new AccessDeniedException("No tienes acceso a este detalle de carrito");
+        }
+
         dc.setCantidad(nuevaCantidad);
         detalleCarritoRepository.save(dc);
         return detalleCarritoMapper.toResponse(dc);
     }
 
-    public List<DetalleCarritoResponse> obtenerDetalleCarrito(Long idCarrito){
-        Carrito carrito = carritoRepository.findById(idCarrito)
+    public List<DetalleCarritoResponse> obtenerDetalleCarrito(String uuidCarrito){
+        Carrito carrito = carritoRepository.findByUuid(uuidCarrito)
                 .orElseThrow(()-> new CarritoNotFoundException("Carrito no encontrado"));
+
+        Usuario usuarioAuth = usuarioService.obtenerUsuarioAutenticado();
+        if (usuarioAuth == null || !carrito.getUsuario().getIdUsuario().equals(usuarioAuth.getIdUsuario())) {
+            throw new AccessDeniedException("No tienes acceso a este carrito");
+        }
 
         List<DetalleCarrito> detalle = detalleCarritoRepository.findByCarrito(carrito);
 
@@ -76,12 +89,17 @@ public class CarritoService implements ICarritoService {
                 .collect(Collectors.toList());
     }
 
-    public DetalleCarritoResponse agregarAlCarrito (DetalleCarritoRequest detalleCarritoRequest){
-        Producto p = productoRepo.findById(detalleCarritoRequest.getIdProducto())
+    public DetalleCarritoResponse agregarAlCarrito(DetalleCarritoRequest detalleCarritoRequest){
+        Producto p = productoRepo.findByUuid(detalleCarritoRequest.getIdProducto())
                 .orElseThrow(()-> new ProductNotFoundException("Producto no encontrado"));
 
-        Carrito c = carritoRepository.findById(detalleCarritoRequest.getIdCarrito())
-                .orElseThrow(()-> new CarritoNotFoundException("Carrito no encontrado"));
+        Carrito c;
+        if(detalleCarritoRequest.getIdCarrito() != null && !detalleCarritoRequest.getIdCarrito().isEmpty()){
+            c = carritoRepository.findByUuid(detalleCarritoRequest.getIdCarrito())
+                    .orElseGet(() -> crearCarritoParaUsuarioAutenticado());
+        } else {
+            c = crearCarritoParaUsuarioAutenticado();
+        }
 
         DetalleCarrito detalleExistente = detalleCarritoRepository.findByProductoAndCarrito(p,c)
                 .orElse(null);
@@ -101,15 +119,44 @@ public class CarritoService implements ICarritoService {
         return detalleCarritoMapper.toResponse(savedDetalle);
     }
 
-    public boolean deleteProducto (Long detalleCarrito){
-        if(detalleCarritoRepository.existsById(detalleCarrito)){
-            detalleCarritoRepository.deleteById(detalleCarrito);
-            return true;
-        }else
-            return false;
+    private Carrito crearCarritoParaUsuarioAutenticado(){
+        Usuario usuarioAuth = usuarioService.obtenerUsuarioAutenticado();
+        return carritoRepository.findByUsuario(usuarioAuth)
+                .orElseGet(() -> {
+                    Carrito nuevoCarrito = new Carrito();
+                    nuevoCarrito.setUsuario(usuarioAuth);
+                    nuevoCarrito.setFechaCreacion(LocalDateTime.now());
+                    return carritoRepository.save(nuevoCarrito);
+                });
     }
 
-    public void borrarCarrito (Long idCarrito){
+    public boolean deleteProducto(String uuidDetalle){
+        DetalleCarrito dc = detalleCarritoRepository.findByUuid(uuidDetalle)
+                .orElseThrow(()-> new CarritoNotFoundException("Detalle de carrito no encontrado"));
+
+        Usuario usuarioAuth = usuarioService.obtenerUsuarioAutenticado();
+        if (usuarioAuth == null || !dc.getCarrito().getUsuario().getIdUsuario().equals(usuarioAuth.getIdUsuario())) {
+            throw new AccessDeniedException("No tienes acceso a este detalle de carrito");
+        }
+
+        detalleCarritoRepository.delete(dc);
+        return true;
+    }
+
+    public void borrarCarrito(String uuidCarrito){
+        Carrito carrito = carritoRepository.findByUuid(uuidCarrito)
+                .orElseThrow(()-> new CarritoNotFoundException("Carrito no encontrado"));
+
+        Usuario usuarioAuth = usuarioService.obtenerUsuarioAutenticado();
+        if (usuarioAuth == null || !carrito.getUsuario().getIdUsuario().equals(usuarioAuth.getIdUsuario())) {
+            throw new AccessDeniedException("No tienes acceso a este carrito");
+        }
+
+        List<DetalleCarrito> detalles = detalleCarritoRepository.findByCarrito(carrito);
+        detalleCarritoRepository.deleteAll(detalles);
+    }
+
+    public void borrarCarrito(Long idCarrito){
         Carrito carrito = carritoRepository.findById(idCarrito)
                 .orElseThrow(()-> new CarritoNotFoundException("Carrito no encontrado"));
 
@@ -118,90 +165,72 @@ public class CarritoService implements ICarritoService {
     }
 
 
-    //METODO PARA EL CARRITO EFIMERO USUARIOS TIPO GUESS
-
-    public CarritoResponse obtenerCarritoEfimero(String sessionId){
-        Carrito carritoEfimero = carritoRepository.findBySessionId(sessionId)
-                .orElseGet(()->{
-                    Carrito carrito = new Carrito();
-                    carrito.setSessionId(sessionId);
-                    carrito.setFechaCreacion(LocalDateTime.now());
-                    return carritoRepository.save(carrito);
-                });
-
-        return carritoMapper.toResponse(carritoEfimero);
-    }
-
-    public DetalleCarritoResponse agregarDetalleCarritoEfimero (DetalleCarritoRequest detalleCarritoRequest){
-        Carrito c = carritoRepository.findById(detalleCarritoRequest.getIdCarrito())
-                .orElseThrow(()-> new CarritoNotFoundException("Carrito no encontrado"));
-
-        Producto p = productoRepo.findById(detalleCarritoRequest.getIdProducto())
-                .orElseThrow(()-> new ProductNotFoundException("Producto no encontrado"));
-
-        DetalleCarrito detalleExistente = detalleCarritoRepository.findByProductoAndCarrito(p,c)
-                .orElse(null);
-        if(detalleExistente != null){
-            detalleExistente.setCantidad(detalleCarritoRequest.getCantidad() +   detalleExistente.getCantidad());
-            DetalleCarrito detalleGuardado = detalleCarritoRepository.save(detalleExistente);
-            return detalleCarritoMapper.toResponse(detalleGuardado);
-        }
-
-        DetalleCarrito dc = detalleCarritoMapper.toEntity(detalleCarritoRequest);
-        dc.setCarrito(c);
-        dc.setProducto(p);
-        DetalleCarrito savedDetalleCarrito = detalleCarritoRepository.save(dc);
-        return detalleCarritoMapper.toResponse(savedDetalleCarrito);
-    }
-
-    public Boolean eliminarDeCarritoEfimero(Long idDetalleCarrito){
-        if(detalleCarritoRepository.existsById(idDetalleCarrito)){
-            detalleCarritoRepository.deleteById(idDetalleCarrito);
-            System.out.println("Se elimino "+idDetalleCarrito);
-            return true;
-        }else {
-            return false;
-        }
-    }
-
-    public CarritoResponse mergeCarritoEfimeroToUser(String sessionId, Long idUsuario){
-        Usuario usuario = usuarioRepo.findById(idUsuario)
-                .orElseThrow(() -> new UsuarioNotFoundException("Usuario no encontrado"));
-
-        Carrito userCarrito = carritoRepository.findByUsuario(usuario)
-                .orElseGet(() -> {
-                    Carrito nuevo = new Carrito();
-                    nuevo.setUsuario(usuario);
-                    nuevo.setFechaCreacion(LocalDateTime.now());
-                    return carritoRepository.save(nuevo);
-                });
-
-        Carrito efimeroCarrito = carritoRepository.findBySessionId(sessionId)
-                .orElse(null);
-
-        if (efimeroCarrito != null) {
-            List<DetalleCarrito> efimeroDetalles = detalleCarritoRepository.findByCarrito(efimeroCarrito);
-
-            for (DetalleCarrito det : efimeroDetalles) {
-                DetalleCarrito existing = detalleCarritoRepository
-                        .findByProductoAndCarrito(det.getProducto(), userCarrito)
-                        .orElse(null);
-
-                if (existing != null) {
-                    existing.setCantidad(existing.getCantidad() + det.getCantidad());
-                    detalleCarritoRepository.save(existing);
-                } else {
-                    DetalleCarrito nuevoDetalle = new DetalleCarrito();
-                    nuevoDetalle.setCarrito(userCarrito);
-                    nuevoDetalle.setProducto(det.getProducto());
-                    nuevoDetalle.setCantidad(det.getCantidad());
-                    detalleCarritoRepository.save(nuevoDetalle);
-                }
-            }
-
-            detalleCarritoRepository.deleteAll(efimeroDetalles);
-        }
-
-        return carritoMapper.toResponse(userCarrito);
-    }
+    // LEGACY: Métodos efímeros — el carrito efímero ahora se maneja 100% en localStorage del frontend
+    //
+    // public CarritoResponse obtenerCarritoEfimero(String sessionId){
+    //     Carrito carritoEfimero = carritoRepository.findBySessionId(sessionId)
+    //             .orElseGet(()->{
+    //                 Carrito carrito = new Carrito();
+    //                 carrito.setSessionId(sessionId);
+    //                 carrito.setFechaCreacion(LocalDateTime.now());
+    //                 return carritoRepository.save(carrito);
+    //             });
+    //     return carritoMapper.toResponse(carritoEfimero);
+    // }
+    //
+    // public DetalleCarritoResponse agregarDetalleCarritoEfimero(DetalleCarritoRequest detalleCarritoRequest){
+    //     Carrito c = carritoRepository.findByUuid(detalleCarritoRequest.getIdCarrito())
+    //             .orElseThrow(()-> new CarritoNotFoundException("Carrito no encontrado"));
+    //     Producto p = productoRepo.findByUuid(detalleCarritoRequest.getIdProducto())
+    //             .orElseThrow(()-> new ProductNotFoundException("Producto no encontrado"));
+    //     DetalleCarrito detalleExistente = detalleCarritoRepository.findByProductoAndCarrito(p,c).orElse(null);
+    //     if(detalleExistente != null){
+    //         detalleExistente.setCantidad(detalleCarritoRequest.getCantidad() + detalleExistente.getCantidad());
+    //         DetalleCarrito detalleGuardado = detalleCarritoRepository.save(detalleExistente);
+    //         return detalleCarritoMapper.toResponse(detalleGuardado);
+    //     }
+    //     DetalleCarrito dc = detalleCarritoMapper.toEntity(detalleCarritoRequest);
+    //     dc.setCarrito(c);
+    //     dc.setProducto(p);
+    //     DetalleCarrito savedDetalleCarrito = detalleCarritoRepository.save(dc);
+    //     return detalleCarritoMapper.toResponse(savedDetalleCarrito);
+    // }
+    //
+    // public Boolean eliminarDeCarritoEfimero(String uuidDetalleCarrito){
+    //     DetalleCarrito dc = detalleCarritoRepository.findByUuid(uuidDetalleCarrito)
+    //             .orElseThrow(()-> new CarritoNotFoundException("Detalle de carrito no encontrado"));
+    //     detalleCarritoRepository.delete(dc);
+    //     return true;
+    // }
+    //
+    // public CarritoResponse mergeCarritoEfimeroToUser(String sessionId, Long idUsuario){
+    //     Usuario usuario = usuarioRepo.findById(idUsuario)
+    //             .orElseThrow(() -> new UsuarioNotFoundException("Usuario no encontrado"));
+    //     Carrito userCarrito = carritoRepository.findByUsuario(usuario)
+    //             .orElseGet(() -> {
+    //                 Carrito nuevo = new Carrito();
+    //                 nuevo.setUsuario(usuario);
+    //                 nuevo.setFechaCreacion(LocalDateTime.now());
+    //                 return carritoRepository.save(nuevo);
+    //             });
+    //     Carrito efimeroCarrito = carritoRepository.findBySessionId(sessionId).orElse(null);
+    //     if (efimeroCarrito != null) {
+    //         List<DetalleCarrito> efimeroDetalles = detalleCarritoRepository.findByCarrito(efimeroCarrito);
+    //         for (DetalleCarrito det : efimeroDetalles) {
+    //             DetalleCarrito existing = detalleCarritoRepository.findByProductoAndCarrito(det.getProducto(), userCarrito).orElse(null);
+    //             if (existing != null) {
+    //                 existing.setCantidad(existing.getCantidad() + det.getCantidad());
+    //                 detalleCarritoRepository.save(existing);
+    //             } else {
+    //                 DetalleCarrito nuevoDetalle = new DetalleCarrito();
+    //                 nuevoDetalle.setCarrito(userCarrito);
+    //                 nuevoDetalle.setProducto(det.getProducto());
+    //                 nuevoDetalle.setCantidad(det.getCantidad());
+    //                 detalleCarritoRepository.save(nuevoDetalle);
+    //             }
+    //         }
+    //         detalleCarritoRepository.deleteAll(efimeroDetalles);
+    //     }
+    //     return carritoMapper.toResponse(userCarrito);
+    // }
 }

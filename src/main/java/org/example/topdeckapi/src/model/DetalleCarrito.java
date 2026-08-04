@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Entity
 @Data
 @AllArgsConstructor
@@ -16,6 +18,14 @@ public class DetalleCarrito {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_detalle_carrito")
     private Long idDetalleCarrito;
+
+    @Column(name = "uuid", unique = true, nullable = false, updatable = false)
+    private String uuid;
+
+    @PrePersist
+    protected void onCreate() {
+        this.uuid = UUID.randomUUID().toString();
+    }
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_carrito", nullable = false)

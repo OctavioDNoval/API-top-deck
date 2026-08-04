@@ -14,7 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 public class PedidoResponse {
-    private Long idPedido;
+    private String idPedido;
     private LocalDateTime fechaPedido;
     private ESTADO_PEDIDO estado;
     private Double total;

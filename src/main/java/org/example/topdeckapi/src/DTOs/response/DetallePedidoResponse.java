@@ -10,15 +10,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class DetallePedidoResponse {
-    private Long idDetallePedido;
+    private String idDetallePedido;
     private Integer cantidad;
     private Double precioUnitario;
     private Double subTotal;
 
-    private Long idPedido;
+    private String idPedido;
 
     //Datos resumidos del producto
-    private Long idProducto;
+    private String idProducto;
     private String nombreProducto;
     private Double precioProducto;
     private Integer descuentoProducto;

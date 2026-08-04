@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class CarritoRequest {
-    private Long idUsuario;
+    private String idUsuario;
     private String sessionId;
 }

@@ -13,10 +13,10 @@ import org.mapstruct.Mapping;
 })
 public interface PedidoMapper {
 
+    @Mapping(target = "idPedido", source = "uuid")
     @Mapping(target = "detallePedidos", source = "detalles")
     PedidoResponse toResponse(Pedido pedido);
 
-    @Mapping(target = "idPedido", ignore = true)
     @Mapping(target = "usuario", ignore = true)
     @Mapping(target = "direccion", ignore = true)
     @Mapping(target = "fechaPedido", ignore = true)

@@ -30,14 +30,14 @@ public class CategoriaService implements ICategoriaService {
                 .collect(Collectors.toList());
     }
 
-    public CategoriaResponse buscarPorId(Long idCategoria) {
-        Categoria c = categoriasRepo.findById(idCategoria)
+    public CategoriaResponse buscarPorId(String uuid) {
+        Categoria c = categoriasRepo.findByUuid(uuid)
                 .orElseThrow(()-> new ResourceNotFoundException("Categoria no encontrada"));
 
         return categoriaMapper.toResponse(c);
     }
 
-    public Long obtenerIdPorNombre(String nombre) {
+    public String obtenerIdPorNombre(String nombre) {
         Categoria c = categoriasRepo.findByNombre(nombre)
                 .orElseGet(()->{
                     Categoria categoria = new Categoria();
@@ -45,7 +45,7 @@ public class CategoriaService implements ICategoriaService {
                     return categoriasRepo.save(categoria);
                 });
 
-        return c.getIdCategoria();
+        return c.getUuid();
     }
 
     public CategoriaResponse guardar(CategoriaRequest newCategoria) {
@@ -56,8 +56,8 @@ public class CategoriaService implements ICategoriaService {
         return categoriaMapper.toResponse(categoriaGuardada);
     }
 
-    public CategoriaResponse actualizar(CategoriaRequest categoria, Long idCategoria) {
-        Categoria c = categoriasRepo.findById(idCategoria)
+    public CategoriaResponse actualizar(CategoriaRequest categoria, String uuid) {
+        Categoria c = categoriasRepo.findByUuid(uuid)
                 .orElseThrow(()-> new ResourceNotFoundException("Categoria no encontrada"));
         if(!c.getNombre().equals(categoria.getNombre())) {
             c.setNombre(categoria.getNombre());
@@ -66,13 +66,11 @@ public class CategoriaService implements ICategoriaService {
         return categoriaMapper.toResponse(categoriaGuardada);
     }
 
-    public boolean borrarCategoria(Long idCategoria) {
-        if(categoriasRepo.existsById(idCategoria)){
-            auditUtils.setCurrentUserForAudit();
-            categoriasRepo.deleteById(idCategoria);
-            return true;
-        }else{
-            return false;
-        }
+    public boolean borrarCategoria(String uuid) {
+        Categoria c = categoriasRepo.findByUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Categoria no encontrada"));
+        auditUtils.setCurrentUserForAudit();
+        categoriasRepo.delete(c);
+        return true;
     }
 }

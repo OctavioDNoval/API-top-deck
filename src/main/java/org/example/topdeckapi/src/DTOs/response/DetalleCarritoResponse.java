@@ -8,11 +8,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class DetalleCarritoResponse {
-    private Long idDetalleCarrito;
+    private String idDetalleCarrito;
     private Integer cantidad;
 
     //Datos del producto resumido
-    private Long idProducto;
+    private String idProducto;
     private String nombreProducto;
     private Double precio;
     private Integer descuento;

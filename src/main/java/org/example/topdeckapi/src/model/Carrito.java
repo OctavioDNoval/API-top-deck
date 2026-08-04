@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 
 @Entity
@@ -20,8 +21,16 @@ public class Carrito {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idCarrito;
 
+    @Column(name = "uuid", unique = true, nullable = false, updatable = false)
+    private String uuid;
+
+    @PrePersist
+    protected void onCreate() {
+        this.uuid = UUID.randomUUID().toString();
+    }
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn( name = "id_usuario", nullable = false)
+    @JoinColumn( name = "id_usuario")
     private Usuario usuario;
 
     @Column(name = "session_id")

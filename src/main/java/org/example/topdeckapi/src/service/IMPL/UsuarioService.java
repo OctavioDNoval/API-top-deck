@@ -68,9 +68,9 @@ public class UsuarioService implements IUsuarioService {
         return paginacionService.crearPaginacionResponse(paginaUsuarios,tamanio,pagina, usuarioMapper::toResponse);
     }
 
-    public UsuarioResponse obtenerPorId(Long id){
+    public UsuarioResponse obtenerPorId(String uuid){
         return usuarioMapper.toResponse(usuarioRepo.
-                findById(id)
+                findByUuid(uuid)
                 .orElseThrow(
                         () -> new ResourceNotFoundException("Usuario no encontrado"))
         );
@@ -122,8 +122,8 @@ public class UsuarioService implements IUsuarioService {
         return usuarioMapper.toResponse(usuarioGuardado);
     }
 
-    public UsuarioResponse actualizarUsuario(UsuarioRequest request, Long id){
-        Usuario usuario = usuarioRepo.findById(id).orElseThrow(
+    public UsuarioResponse actualizarUsuario(UsuarioRequest request, String uuid){
+        Usuario usuario = usuarioRepo.findByUuid(uuid).orElseThrow(
                 ()-> new ResourceNotFoundException("Usuario no encontrado")
         );
 
@@ -133,7 +133,8 @@ public class UsuarioService implements IUsuarioService {
         }
 
         Usuario usuarioActualizado = usuarioMapper.toEntity(request);
-        usuarioActualizado.setIdUsuario(id);
+        usuarioActualizado.setIdUsuario(usuario.getIdUsuario());
+        usuarioActualizado.setUuid(uuid);
         usuarioActualizado.setNombre(request.getNombre());
         usuarioActualizado.setEmail(request.getEmail());
         usuarioActualizado.setRol(request.getRol() != null ? request.getRol() : usuario.getRol());
@@ -164,12 +165,10 @@ public class UsuarioService implements IUsuarioService {
         return usuarioRepo.save(usuario);
     }
 
-    public boolean deleteUsuario(Long id){
-        if(usuarioRepo.existsById(id)){
-            usuarioRepo.deleteById(id);
-            return true;
-        }else{
-            return false;
-        }
+    public boolean deleteUsuario(String uuid){
+        Usuario usuario = usuarioRepo.findByUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        usuarioRepo.delete(usuario);
+        return true;
     }
 }

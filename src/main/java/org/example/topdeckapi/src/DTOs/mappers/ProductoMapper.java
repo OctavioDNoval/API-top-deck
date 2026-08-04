@@ -15,12 +15,12 @@ import org.mapstruct.Named;
 })
 public interface ProductoMapper {
 
+    @Mapping(target = "idProducto", source = "uuid")
     @Mapping(source = "nombre", target = "nombreProducto")
     ProductoResponse toResponse(Producto producto);
 
     @Mapping(target="categoria", ignore = true)
     @Mapping(target = "tag", ignore =true)
-    @Mapping(target = "idProducto", ignore = true)
     Producto toEntity(ProductoRequest productoRequest);
 
 

@@ -8,9 +8,10 @@ import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface EventoMapper {
+
+    @Mapping(target = "idEvento", source = "uuid")
     EventoResponse toResponse(Evento evento);
 
-    @Mapping(target = "idEvento", ignore = true)
     @Mapping(target = "estado", constant = "PROXIMAMENTE")
     Evento toEntity(EventoRequest eventoRequest);
 }

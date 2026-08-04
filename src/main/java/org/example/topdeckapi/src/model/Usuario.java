@@ -11,6 +11,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.example.topdeckapi.src.Enumerados.ROL;
 
+import java.util.UUID;
+
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,6 +23,14 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_usuario")
     private Long idUsuario;
+
+    @Column(name = "uuid", unique = true, nullable = false, updatable = false)
+    private String uuid;
+
+    @PrePersist
+    protected void onCreate() {
+        this.uuid = UUID.randomUUID().toString();
+    }
 
     @Column(name = "nombre")
     private String nombre;

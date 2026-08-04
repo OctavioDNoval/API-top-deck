@@ -14,4 +14,5 @@ public interface ITagRepository extends JpaRepository<Tag,Long> {
 
     @Query("SELECT t FROM Tag t where t.nombreNormalizado = :nombreNormalizado ")
     Optional<Tag> findByNombreNormalizado(@Param("nombreNormalizado")String nombreNormalizado);
+    Optional<Tag> findByUuid(String uuid);
 }

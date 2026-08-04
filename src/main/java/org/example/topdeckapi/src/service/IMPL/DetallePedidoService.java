@@ -24,14 +24,14 @@ public class DetallePedidoService implements IDetallePedidoService{
     private final IPedidoRepo pedidoRepo;
     private final DetallePedidoMapper detallePedidoMapper;
 
-    public DetallePedidoResponse getById(Long id){
-        return detallePedidoRepo.findById(id)
+    public DetallePedidoResponse getById(String uuid){
+        return detallePedidoRepo.findByUuid(uuid)
                 .map(detallePedidoMapper::toResponse)
                 .orElseThrow(()-> new ResourceNotFoundException("Detalle pedido No encontrado"));
     }
 
     public DetallePedidoResponse guardar(DetallePedidoRequest dp){
-        Pedido p = pedidoRepo.findById(dp.getIdPedido())
+        Pedido p = pedidoRepo.findByUuid(dp.getIdPedido())
                 .orElseThrow(()-> new PedidoNotFoundException("Pedido con id:"+ dp.getIdPedido()+" no encontrado"));
         DetallePedido d = detallePedidoMapper.toEntity(dp);
         d.setPedido(p);
@@ -39,8 +39,8 @@ public class DetallePedidoService implements IDetallePedidoService{
         return detallePedidoMapper.toResponse(detallePedidoGuardado);
     }
 
-    public DetallePedidoResponse actualizarDetallePedido(DetallePedidoRequest dto, Long id){
-        DetallePedido dp = detallePedidoRepo.findById(id)
+    public DetallePedidoResponse actualizarDetallePedido(DetallePedidoRequest dto, String uuid){
+        DetallePedido dp = detallePedidoRepo.findByUuid(uuid)
                 .orElseThrow(()-> new PedidoNotFoundException("Detalle pedido no encontrado"));
 
         dp.setCantidad(dto.getCantidad());
@@ -49,17 +49,15 @@ public class DetallePedidoService implements IDetallePedidoService{
         );
     }
 
-    public boolean delete(Long id){
-        if (detallePedidoRepo.existsById(id)) {
-            detallePedidoRepo.deleteById(id);
-            return true;
-        }else{
-            return false;
-        }
+    public boolean delete(String uuid){
+        DetallePedido dp = detallePedidoRepo.findByUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Detalle pedido no encontrado"));
+        detallePedidoRepo.delete(dp);
+        return true;
     }
 
-    public List<DetallePedidoResponse> obtenerDetallesByIdPedido(Long idPedido){
-        Pedido p = pedidoRepo.findById(idPedido)
+    public List<DetallePedidoResponse> obtenerDetallesByIdPedido(String uuidPedido){
+        Pedido p = pedidoRepo.findByUuid(uuidPedido)
                         .orElseThrow(()-> new PedidoNotFoundException("Pedido no encontrado"));
         List<DetallePedido> detales = detallePedidoRepo.findByPedido(p);
         return detales.stream()

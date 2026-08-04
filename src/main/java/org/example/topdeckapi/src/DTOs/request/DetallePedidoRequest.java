@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class DetallePedidoRequest {
-    private Long idPedido;
-    private Long idProducto;
+    private String idPedido;
+    private String idProducto;
     private Integer cantidad;
     private Double precioUnitario;
 }

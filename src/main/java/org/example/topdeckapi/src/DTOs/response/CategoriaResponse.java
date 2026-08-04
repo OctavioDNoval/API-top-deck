@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class CategoriaResponse {
-    private Long idCategoria;
+    private String idCategoria;
     private String nombre;
 }

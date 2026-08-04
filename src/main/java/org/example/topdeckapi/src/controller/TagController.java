@@ -24,12 +24,12 @@ public class TagController {
     }
 
     @GetMapping("/admin/getId/{nombre}")
-    public ResponseEntity<Long> obtenerIdTag(@PathVariable("nombre") String nombre) {
+    public ResponseEntity<String> obtenerIdTag(@PathVariable("nombre") String nombre) {
         return ResponseEntity.ok(tagService.obtenerIdPorNombre(nombre));
     }
 
     @GetMapping("/admin/getById/{idTag}")
-    public ResponseEntity<TagResponse> getTagById(@PathVariable("idTag") Long idTag) {
+    public ResponseEntity<TagResponse> getTagById(@PathVariable("idTag") String idTag) {
         return ResponseEntity.ok(tagService.getTagById(idTag));
     }
 
@@ -39,12 +39,12 @@ public class TagController {
     }
 
     @PatchMapping("/admin/edit/{id}")
-    public ResponseEntity<TagResponse> editTag(@PathVariable Long id, @RequestBody @Valid TagRequest newTag) {
+    public ResponseEntity<TagResponse> editTag(@PathVariable String id, @RequestBody @Valid TagRequest newTag) {
         return ResponseEntity.ok(tagService.actualizarTag(id, newTag));
     }
 
     @DeleteMapping("/admin/delete/{id}")
-    public ResponseEntity<Void> delete (@PathVariable Long id){
+    public ResponseEntity<Void> delete (@PathVariable String id){
         boolean res = tagService.delete(id);
         if(res){
             return ResponseEntity.noContent().build();

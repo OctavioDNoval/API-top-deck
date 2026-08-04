@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class DireccionRequest {
-    private Long idUsuario;
+    private String idUsuario;
     private String ciudad;
     private String provincia;
     private String codigoPostal;

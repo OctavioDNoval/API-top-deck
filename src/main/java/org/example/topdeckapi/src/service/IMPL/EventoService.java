@@ -68,12 +68,10 @@ public class EventoService {
         return eventoMapper.toResponse(eventoGuardado);
     }
 
-    public boolean delete(Long id){
-        if(eventoRepository.existsById(id)){
-            eventoRepository.deleteById(id);
-            return true;
-        }else{
-            return false;
-        }
+    public boolean delete(String uuid){
+        Evento evento = eventoRepository.findByUuid(uuid)
+                .orElseThrow(() -> new org.example.topdeckapi.src.Exception.ResourceNotFoundException("Evento no encontrado"));
+        eventoRepository.delete(evento);
+        return true;
     }
 }

@@ -13,13 +13,13 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 public class CarritoResponse {
-    private Long idCarrito;
+    private String idCarrito;
     private LocalDateTime fechaCreacion;
     private Double precioTotal;
     List<DetalleCarritoResponse> detalleCarrito;
 
     //Datos resumidos del Usuario
-    private Long idUsuario;
+    private String idUsuario;
     private String nombreUsuario;
     private String sessionId;
 

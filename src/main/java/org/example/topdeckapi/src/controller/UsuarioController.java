@@ -40,7 +40,7 @@ public class UsuarioController {
     }
 
     @GetMapping("/admin/{id}")
-    public ResponseEntity<UsuarioResponse>  getById(@PathVariable("id") Long id){
+    public ResponseEntity<UsuarioResponse>  getById(@PathVariable("id") String id){
         return ResponseEntity.ok(usuarioService.obtenerPorId(id));
     }
 
@@ -54,14 +54,14 @@ public class UsuarioController {
     //=======================PATCH========================
 
     @PatchMapping("/admin/{id}")
-    public ResponseEntity<UsuarioResponse>  update(@PathVariable("id") Long id, @RequestBody @Valid UsuarioRequest dto){
+    public ResponseEntity<UsuarioResponse>  update(@PathVariable("id") String id, @RequestBody @Valid UsuarioRequest dto){
         return ResponseEntity.ok(usuarioService.actualizarUsuario(dto, id));
     }
 
     //=======================DELETE========================
 
     @DeleteMapping("/admin/delete/{id}")
-    public ResponseEntity<?>  delete(@PathVariable("id") Long id){
+    public ResponseEntity<?>  delete(@PathVariable("id") String id){
         boolean isDeleted = usuarioService.deleteUsuario(id);
         return isDeleted
                 ? ResponseEntity.ok().build()

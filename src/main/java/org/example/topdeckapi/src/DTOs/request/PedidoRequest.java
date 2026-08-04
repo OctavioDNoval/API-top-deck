@@ -13,8 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 public class PedidoRequest {
-    private Long idUsuario;
-    private Long idDireccion;
+    private String idDireccion;
     private String ipUsuario;
     private List<DetallePedidoRequest> detalles;
 }

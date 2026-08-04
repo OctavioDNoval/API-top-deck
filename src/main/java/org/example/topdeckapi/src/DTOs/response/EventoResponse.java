@@ -14,7 +14,7 @@ import java.time.LocalTime;
 @NoArgsConstructor
 @Builder
 public class EventoResponse {
-    private Long idEvento;
+    private String idEvento;
     private String nombreEvento;
     private String ubicacion;
     private LocalDateTime fecha;

@@ -32,12 +32,12 @@ public class TagService {
                 .collect(Collectors.toList());
     }
 
-    public TagResponse getTagById(Long id) {
-        return tagMapper.toResponse(tagRepository.findById(id)
+    public TagResponse getTagById(String uuid) {
+        return tagMapper.toResponse(tagRepository.findByUuid(uuid)
                 .orElseThrow(()-> new ResourceNotFoundException("Tag not found")));
     }
 
-    public Long obtenerIdPorNombre(String nombre) {
+    public String obtenerIdPorNombre(String nombre) {
         String nombreNormalizado = normalizar(nombre);
 
         Tag t = tagRepository.findByNombreNormalizado(nombreNormalizado)
@@ -48,7 +48,7 @@ public class TagService {
                     return tagRepository.save(tag);
                 });
 
-        return t.getIdTag();
+        return t.getUuid();
     }
 
     private String normalizar(String input) {
@@ -79,8 +79,8 @@ public class TagService {
         return tagMapper.toResponse(tagGuardado);
     }
 
-    public TagResponse actualizarTag(Long id, TagRequest newTag) {
-        Tag tag = tagRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Tag not found"));
+    public TagResponse actualizarTag(String uuid, TagRequest newTag) {
+        Tag tag = tagRepository.findByUuid(uuid).orElseThrow(() -> new ResourceNotFoundException("Tag not found"));
         if(tagRepository.existsByNombre(newTag.getNombre())){
             throw new BussinesException("El nombre de tag ya existe en el sistema");
         }
@@ -95,13 +95,11 @@ public class TagService {
     }
 
 
-    public boolean delete(Long id) {
-        if(tagRepository.existsById(id)) {
-            auditUtils.setCurrentUserForAudit();
-            tagRepository.deleteById(id);
-            return true;
-        }else {
-            return false;
-        }
+    public boolean delete(String uuid) {
+        Tag tag = tagRepository.findByUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Tag not found"));
+        auditUtils.setCurrentUserForAudit();
+        tagRepository.delete(tag);
+        return true;
     }
 }

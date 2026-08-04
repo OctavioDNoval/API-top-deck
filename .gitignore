@@ -82,19 +82,7 @@ temp/
 **/hs_err_pid*
 **/replay_pid*
 
-# Spring Boot properties / yml
+# Spring Boot properties (contienen secrets - NO commitear)
 /src/main/resources/application.properties
 /src/main/resources/application.yml
-
-# Si tenés perfiles específicos
-/src/main/resources/application-*.properties
-/src/main/resources/application-*.yml
-src/main/resources/application.properties
 target/classes/application.properties
-/src/main/resources
-/src/main/resources
-src/main/resources/application.properties
-target/classes/application.properties
-/src/main/resources
-target/classes/application.properties
-/target/classes

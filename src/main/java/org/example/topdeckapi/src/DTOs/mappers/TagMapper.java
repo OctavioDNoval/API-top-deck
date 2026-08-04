@@ -9,8 +9,8 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface TagMapper {
 
+    @Mapping(target = "idTag", source = "uuid")
     TagResponse toResponse(Tag tag);
 
-    @Mapping(target = "idTag", ignore = true)
     Tag toEntity(TagRequest tagRequest);
 }
