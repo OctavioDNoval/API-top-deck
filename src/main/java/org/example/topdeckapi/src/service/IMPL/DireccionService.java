@@ -96,7 +96,8 @@ public class DireccionService implements IDireccionService {
                 .map(d->{
                     direccionMapper.updateEntity(d, request);
 
-                    if(request.getIdUsuario() != null && !request.getIdUsuario().equals(id)){
+                    if(request.getIdUsuario() != null
+                            && (d.getUsuario() == null || !request.getIdUsuario().equals(d.getUsuario().getIdUsuario()))){
                         Usuario u = usuarioRepo.findById(request.getIdUsuario())
                                 .orElseThrow(()-> new UsuarioNotFoundException("Usuario no encontrado"));
 

@@ -88,6 +88,10 @@ public class PedidoService implements IPedidoService {
     }
 
     public PedidoResponse guardar(PedidoRequest newPedido){
+        if(newPedido.getDetalles() == null || newPedido.getDetalles().isEmpty()){
+            throw new BussinesException("El pedido no tiene detalles");
+        }
+
         Pedido pedido = new Pedido();
         Usuario usuarioAsociado = usuarioRepo.findById(newPedido.getIdUsuario())
                 .orElseThrow(()-> new ResourceNotFoundException("Usuario asociado al pedido no encontrado"));
@@ -106,11 +110,20 @@ public class PedidoService implements IPedidoService {
                     Producto producto = productoRepo.findById(dp.getIdProducto())
                             .orElseThrow(()-> new ResourceNotFoundException("Producto no encontrado"));
 
+                    int cantidad = dp.getCantidad() != null ? dp.getCantidad() : 0;
+                    if(cantidad <= 0){
+                        throw new BussinesException("La cantidad de un detalle del pedido no es valida");
+                    }
+                    int stock = producto.getStock() != null ? producto.getStock() : 0;
+                    if(stock < cantidad){
+                        throw new BussinesException("Stock insuficiente para el producto " + producto.getNombre());
+                    }
+
                     return DetallePedido.builder()
                             .producto(producto)
-                            .cantidad(dp.getCantidad())
+                            .cantidad(cantidad)
                             .precioUnitario(producto.getPrecio())
-                            .subTotal(calcularSubTotal(producto, dp.getCantidad()))
+                            .subTotal(calcularSubTotal(producto, cantidad))
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -126,6 +139,10 @@ public class PedidoService implements IPedidoService {
         List<DetallePedido> detallePedidosGuardado = detallePedidoRepo.saveAll(detalles);
 
         pedidoGuardado.setDetalles(detallePedidosGuardado);
+
+        carritoRepository.findByUsuario(usuarioAsociado)
+                .ifPresent(c -> carritoService.borrarCarrito(c.getIdCarrito()));
+
         return pedidoMapper.toResponse(pedidoRepo.save(pedidoGuardado));
     }
 
@@ -133,31 +150,42 @@ public class PedidoService implements IPedidoService {
         Pedido pedido = pedidoRepo.findById(idPedido)
                 .orElseThrow(()-> new PedidoNotFoundException("Pedido no encontrado"));
 
+        ESTADO_PEDIDO estado;
         try{
-            ESTADO_PEDIDO estado = ESTADO_PEDIDO.valueOf(nuevoEstado.toUpperCase());
-            if(estado == ESTADO_PEDIDO.CONFIRMADO){
-                List<DetallePedido> detalles = pedido.getDetalles();
-                for(DetallePedido detalle: detalles){
-                    Producto p =  detalle.getProducto();
-                    p.setStock(p.getStock()-detalle.getCantidad());
-                    productoRepo.save(p);
-                }
-            }
-            if(pedido.getEstado() == ESTADO_PEDIDO.CONFIRMADO && estado == ESTADO_PEDIDO.RECHAZADO){
-                List<DetallePedido> detalles = pedido.getDetalles();
-                for(DetallePedido detalle: detalles){
-                    Producto p =  detalle.getProducto();
-                    p.setStock(p.getStock()+detalle.getCantidad());
-                    productoRepo.save(p);
-                }
-            }
-
-            pedido.setEstado(estado);
+            estado = ESTADO_PEDIDO.valueOf(nuevoEstado.toUpperCase());
         }catch (Exception e){
             throw new BussinesException("No es un valor permitido (" + nuevoEstado + ")\n" +
                                                 "los valores permitidos son PENDIENTE, CONFIRMADO, RECHAZADO"
             );
         }
+
+        ESTADO_PEDIDO estadoAnterior = pedido.getEstado();
+        List<DetallePedido> detalles = pedido.getDetalles();
+
+        if(estado == ESTADO_PEDIDO.CONFIRMADO && estadoAnterior != ESTADO_PEDIDO.CONFIRMADO){
+            for(DetallePedido detalle: detalles){
+                Producto p = detalle.getProducto();
+                int cantidad = detalle.getCantidad() != null ? detalle.getCantidad() : 0;
+                if(cantidad <= 0){
+                    throw new BussinesException("La cantidad de un detalle del pedido no es valida");
+                }
+                int stock = p.getStock() != null ? p.getStock() : 0;
+                if(stock < cantidad){
+                    throw new BussinesException("Stock insuficiente para el producto " + p.getNombre());
+                }
+                p.setStock(stock - cantidad);
+                productoRepo.save(p);
+            }
+        }else if(estadoAnterior == ESTADO_PEDIDO.CONFIRMADO && estado == ESTADO_PEDIDO.RECHAZADO){
+            for(DetallePedido detalle: detalles){
+                Producto p = detalle.getProducto();
+                int cantidad = detalle.getCantidad() != null ? detalle.getCantidad() : 0;
+                p.setStock((p.getStock() != null ? p.getStock() : 0) + cantidad);
+                productoRepo.save(p);
+            }
+        }
+
+        pedido.setEstado(estado);
         Pedido pedidoActualizado = pedidoRepo.save(pedido);
         return pedidoMapper.toResponse(pedidoActualizado);
     }
@@ -174,9 +202,20 @@ public class PedidoService implements IPedidoService {
             Producto producto = productoRepo.findById(detallePedidoRequest.getIdProducto())
                     .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado: " + detallePedidoRequest.getIdProducto()));
             log.info("Producto {}", producto);
+
+            int cantidad = dp.getCantidad() != null ? dp.getCantidad() : 0;
+            if(cantidad <= 0){
+                throw new BussinesException("La cantidad de un detalle del pedido no es valida");
+            }
+            int stock = producto.getStock() != null ? producto.getStock() : 0;
+            if(stock < cantidad){
+                throw new BussinesException("Stock insuficiente para el producto " + producto.getNombre());
+            }
+
             dp.setProducto(producto);
+            dp.setCantidad(cantidad);
             dp.setPrecioUnitario(producto.getPrecio());
-            dp.setSubTotal(calcularSubTotal(producto, dp.getCantidad()));
+            dp.setSubTotal(calcularSubTotal(producto, cantidad));
             detalles.add(dp);
         }
 

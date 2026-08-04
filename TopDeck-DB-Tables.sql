@@ -2,82 +2,84 @@ create database if not exists topdeck_database;
 
 create table categoria(
 	id_categoria bigint primary key auto_increment,
-    nombre varchar(225)
+    nombre varchar(255)
 );
 
 create table tag(
 	id_tag bigint primary key auto_increment,
-    nombre varchar(225) unique,
-    img_url varchar(225)
+    nombre varchar(255) unique,
+    nombre_normalizado varchar(255) unique,
+    img_url varchar(255)
 );
 
 create table producto(
 	id_producto bigint primary key auto_increment,
     id_categoria bigint,
     id_tag bigint,
-    nombre varchar(225),
-    descripcion text,
-    precio decimal(10,2),
+    nombre varchar(255),
+    descripcion longtext,
+    precio double precision,
     stock int,
-    img_url varchar(225),
+    img_url varchar(255),
     descuento int default 0,
+    activo bit(1) default b'1',
     foreign key (id_categoria) references categoria(id_categoria),
     foreign key (id_tag) references tag(id_tag)
 );
 
 create table usuario(
 	id_usuario bigint primary key auto_increment,
-    nombre varchar(225),
-    email varchar(225) unique,
-    password varchar(225),
-    telefono varchar(225) unique,
+    nombre varchar(255),
+    email varchar(255) not null unique,
+    password varchar(255),
+    telefono varchar(255) unique,
     rol enum('ADMIN','USER','GUESS'),
-    ip_usuario varchar(225),
-    version_terminos_y_condiciones_aceptadas varchar(50),
-    terminos_aceptados tinyint(1)
+    ip_usuario varchar(255),
+    version_terminos_y_condiciones_aceptadas varchar(255),
+    terminos_aceptados bit(1)
 );
 
 create table direccion(
 	id_direccion bigint primary key auto_increment,
-    id_usuario bigint,
-    ciudad varchar(225),
-    provincia varchar(225),
-    codigo_postal varchar(225),
-    altura varchar(225),
-    pais varchar(225),
-    direccion varchar(225),
-    piso varchar(225),
-    principal tinyint(1),
+    id_usuario bigint not null,
+    ciudad varchar(255),
+    provincia varchar(255),
+    codigo_postal varchar(255),
+    altura varchar(255),
+    pais varchar(255),
+    direccion varchar(255),
+    piso varchar(255),
+    principal bit(1),
     foreign key (id_usuario) references usuario(id_usuario)
 );
 
 create table pedido(
 	id_pedido bigint primary key auto_increment,
-    id_usuario bigint,
+    id_usuario bigint not null,
     id_direccion bigint,
-    fecha_pedido datetime default current_timestamp,
-    estado enum('pendiente','confirmado','rechazado'),
-    total decimal(10,2),
-    ip_usuario varchar(225),
+    fecha_pedido datetime not null default current_timestamp,
+    estado enum('PENDIENTE','CONFIRMADO','RECHAZADO'),
+    total double precision not null,
+    ip_usuario varchar(255),
     foreign key (id_usuario) references usuario(id_usuario),
     foreign key (id_direccion) references direccion(id_direccion)
 );
 
 create table detallepedido(
 	id_detalle_pedido bigint primary key auto_increment,
-    id_pedido bigint,
-    id_producto bigint,
+    id_pedido bigint not null,
+    id_producto bigint not null,
 	cantidad int,
-    precio_unitario decimal(10,2),
-    subtotal decimal(10,2),
+    precio_unitario double precision,
+    subtotal double precision,
     foreign key (id_pedido) references pedido (id_pedido),
     foreign key (id_producto) references producto(id_producto)
 );
 
 create table carrito (
 	id_carrito bigint primary key auto_increment,
-    id_usuario bigint, 
-    session_id varchar(225),
+    id_usuario bigint not null,
+    session_id varchar(255),
     fecha_creacion datetime default current_timestamp,
     foreign key (id_usuario) references usuario(id_usuario)
 );
@@ -93,20 +95,20 @@ create table detallecarrito(
 
 create table auditoria(
 	id_log bigint primary key auto_increment,
-    nombre_usuario varchar(225),
+    nombre_usuario varchar(255),
     fecha_audit datetime default current_timestamp,
-    accion varchar(225),
-    tabla varchar(225)
+    accion varchar(255),
+    tabla varchar(255)
 );
 
 create table evento(
 	id_evento bigint primary key auto_increment,
-    nombre_evento varchar(225),
-    ubicacion varchar(225),
+    nombre_evento varchar(255),
+    ubicacion varchar(255),
     fecha date,
     hora time,
-    precio_entrada decimal(10,2),
-    estado enum('proximamente','en curso','finalizado')
+    precio_entrada double precision,
+    estado enum('PROXIMAMENTE','EN_CURSO','FINALIZADO')
 );
 
 use topdeck_database;
@@ -124,6 +126,11 @@ insert into tag(nombre, img_url) values
     ('One Piece', null),
     ('Yu-Gi-Oh!', null),
     ('Magic: The Gathering', null);
+
+update tag set nombre_normalizado = replace(replace(replace(replace(replace(replace(replace(replace(
+    lower(nombre),
+    'á','a'),'é','e'),'í','i'),'ó','o'),'ú','u'),'ü','u'),'ñ','n'),'-','')
+where nombre_normalizado is null;
 
 insert into producto(id_categoria, id_tag, nombre, descripcion, precio, stock, img_url, descuento) values
     (1, 1, 'Sobre Evoluciones Prismáticas Pokémon', 'Sobre de 10 cartas de la colección Evoluciones Prismáticas', 8500.00, 50, null, 0),

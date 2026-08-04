@@ -37,7 +37,7 @@ public class AuthService {
 
         if (existingUser.isPresent()) {
             Usuario user = existingUser.get();
-            if (user.getRol() == ROL.USER) {
+            if (user.getRol() != ROL.GUESS) {
                 throw new BussinesException("El usuario con ese mail ya existe");
             }
             user.setRol(ROL.USER);

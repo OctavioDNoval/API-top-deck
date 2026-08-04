@@ -13,7 +13,6 @@ public interface UsuarioMapper {
     UsuarioResponse toResponse(Usuario usuario);
 
     @Mapping(target = "idUsuario", ignore = true)
-    @Mapping(target = "rol", constant = "GUESS")
     @Mapping(target = "password", ignore = true)
     Usuario toEntity(UsuarioRequest usuarioRequest);
 }

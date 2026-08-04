@@ -30,6 +30,7 @@ public class Producto {
     private String nombre;
 
     @Column(name = "descripcion")
+    @Lob
     private String descripcion;
 
     @Column (name = "precio")

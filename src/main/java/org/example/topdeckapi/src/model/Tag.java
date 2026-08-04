@@ -18,6 +18,9 @@ public class Tag {
     @Column(name = "nombre")
     private String nombre;
 
+    @Column(name = "nombre_normalizado", unique = true)
+    private String nombreNormalizado;
+
     @Column(name="img_url")
     private String imgUrl;
 }

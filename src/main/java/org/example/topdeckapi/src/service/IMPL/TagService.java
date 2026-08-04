@@ -44,6 +44,7 @@ public class TagService {
                 .orElseGet(()->{
                     Tag tag = new Tag();
                     tag.setNombre(nombre);
+                    tag.setNombreNormalizado(nombreNormalizado);
                     return tagRepository.save(tag);
                 });
 
@@ -70,6 +71,7 @@ public class TagService {
 
         Tag tag = new Tag();
         tag.setNombre(request.getNombre());
+        tag.setNombreNormalizado(normalizar(request.getNombre()));
         tag.setImgUrl(request.getImgUrl());
         Tag tagGuardado = tagRepository.save(tag);
         auditUtils.setCurrentUserForAudit();
@@ -83,6 +85,7 @@ public class TagService {
             throw new BussinesException("El nombre de tag ya existe en el sistema");
         }
         tag.setNombre(newTag.getNombre());
+        tag.setNombreNormalizado(normalizar(newTag.getNombre()));
         if(newTag.getImgUrl() != null){
             tag.setImgUrl(newTag.getImgUrl());
         }

@@ -8,6 +8,7 @@ import org.example.topdeckapi.src.DTOs.request.DetalleCarritoRequest;
 import org.example.topdeckapi.src.DTOs.response.CarritoResponse;
 import org.example.topdeckapi.src.DTOs.response.DetalleCarritoResponse;
 import org.example.topdeckapi.src.Exception.CarritoNotFoundException;
+import org.example.topdeckapi.src.Exception.BussinesException;
 import org.example.topdeckapi.src.Exception.ProductNotFoundException;
 import org.example.topdeckapi.src.Exception.UsuarioNotFoundException;
 import org.example.topdeckapi.src.Repository.ICarritoRepository;
@@ -54,11 +55,13 @@ public class CarritoService implements ICarritoService {
     }
 
     public DetalleCarritoResponse actualizarCantidad (Long idDetalle, Integer nuevaCantidad){
-        DetalleCarrito dc = detalleCarritoRepository.findById(idDetalle).orElse(null);
-        if(dc != null ){
-            dc.setCantidad(nuevaCantidad);
-            detalleCarritoRepository.save(dc);
+        if(nuevaCantidad == null || nuevaCantidad <= 0){
+            throw new BussinesException("La cantidad debe ser mayor a 0");
         }
+        DetalleCarrito dc = detalleCarritoRepository.findById(idDetalle)
+                .orElseThrow(()-> new CarritoNotFoundException("Detalle de carrito no encontrado"));
+        dc.setCantidad(nuevaCantidad);
+        detalleCarritoRepository.save(dc);
         return detalleCarritoMapper.toResponse(dc);
     }
 

@@ -111,6 +111,13 @@ public class UsuarioService implements IUsuarioService {
 
         Usuario usuario = usuarioMapper.toEntity(newUsuario);
         usuario.setPassword(passwordEncoder.encode(newUsuario.getPassword()));
+
+        ROL rol = newUsuario.getRol() != null ? newUsuario.getRol() : ROL.USER;
+        if (rol == ROL.GUESS) {
+            throw new BussinesException("No se puede crear un usuario con rol GUESS");
+        }
+        usuario.setRol(rol);
+
         Usuario usuarioGuardado = usuarioRepo.save(usuario);
         return usuarioMapper.toResponse(usuarioGuardado);
     }
@@ -129,6 +136,7 @@ public class UsuarioService implements IUsuarioService {
         usuarioActualizado.setIdUsuario(id);
         usuarioActualizado.setNombre(request.getNombre());
         usuarioActualizado.setEmail(request.getEmail());
+        usuarioActualizado.setRol(request.getRol() != null ? request.getRol() : usuario.getRol());
         usuarioActualizado.setTerminosAceptados(request.getTerminosAceptados());
         usuarioActualizado.setVersionTerminosYCondicionesAceptados(request.getVersionTerminosYCondicionesAceptados());
         if(request.getPassword() != null && !request.getPassword().trim().isEmpty()) {

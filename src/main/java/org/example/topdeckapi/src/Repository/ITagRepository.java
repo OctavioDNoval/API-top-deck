@@ -12,6 +12,6 @@ import java.util.Optional;
 public interface ITagRepository extends JpaRepository<Tag,Long> {
     boolean existsByNombre(String nombre);
 
-    @Query("SELECT t FROM Tag t where lower(:nombre) = lower( t.nombre) ")
-    Optional<Tag> findByNombreNormalizado(@Param("nombre")String nombre);
+    @Query("SELECT t FROM Tag t where t.nombreNormalizado = :nombreNormalizado ")
+    Optional<Tag> findByNombreNormalizado(@Param("nombreNormalizado")String nombreNormalizado);
 }
