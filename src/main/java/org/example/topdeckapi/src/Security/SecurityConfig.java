@@ -30,6 +30,8 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+    private final RestAccessDeniedHandler restAccessDeniedHandler;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -37,6 +39,9 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(restAuthenticationEntryPoint)
+                        .accessDeniedHandler(restAccessDeniedHandler))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth-> auth
                         .requestMatchers(
@@ -51,18 +56,20 @@ public class SecurityConfig {
                                 "/carrito/public/**")
                         .permitAll()
                         .requestMatchers(
-                                "/carrito/user/**",
-                                "/user/**",
-                                "/direccion/user/**"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
                                 "/products/admin/**",
                                 "/category/admin/**",
                                 "/user/admin/**",
                                 "/tags/admin/**",
                                 "/audit/admin/**",
-                                "/eventos/admin/**"
+                                "/eventos/admin/**",
+                                "/pedidos/admin/**"
                         ).hasRole("ADMIN")
+                        .requestMatchers(
+                                "/carrito/user/**",
+                                "/user/**",
+                                "/direccion/user/**",
+                                "/pedidos/user/**"
+                        ).hasAnyRole("USER", "ADMIN")
                         .anyRequest().authenticated()
                 );
 
