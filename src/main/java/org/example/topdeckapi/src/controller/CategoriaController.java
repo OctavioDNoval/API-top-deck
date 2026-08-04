@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.request.CategoriaRequest;
 import org.example.topdeckapi.src.DTOs.response.CategoriaResponse;
@@ -35,13 +36,13 @@ public class CategoriaController {
     }
 
     @PatchMapping("/admin/edit/{id}")
-    public ResponseEntity<CategoriaResponse> edit(@PathVariable("id") Long id, @RequestBody CategoriaRequest newCategoria){
+    public ResponseEntity<CategoriaResponse> edit(@PathVariable("id") Long id, @RequestBody @Valid CategoriaRequest newCategoria){
         return ResponseEntity.ok(categoriaService.actualizar(newCategoria,id));
     }
 
     @PostMapping("/admin/new")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<CategoriaResponse> save(@RequestBody CategoriaRequest newCategoria){
+    public ResponseEntity<CategoriaResponse> save(@RequestBody @Valid CategoriaRequest newCategoria){
         return ResponseEntity.ok(categoriaService.guardar(newCategoria));
     }
 

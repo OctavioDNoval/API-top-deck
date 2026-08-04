@@ -69,7 +69,7 @@ create table detallepedido(
     id_producto bigint,
 	cantidad int,
     precio_unitario decimal(10,2),
-    subtotal decimal(10,2) generated always as (cantidad * precio_unitario) stored,
+    subtotal decimal(10,2),
     foreign key (id_pedido) references pedido (id_pedido),
     foreign key (id_producto) references producto(id_producto)
 );

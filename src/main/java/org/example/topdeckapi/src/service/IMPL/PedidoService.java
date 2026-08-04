@@ -100,7 +100,6 @@ public class PedidoService implements IPedidoService {
         pedido.setEstado(ESTADO_PEDIDO.PENDIENTE);
         pedido.setUsuario(usuarioAsociado);
         pedido.setDireccion(direccionAsociada);
-        Pedido pedidoGuardado = pedidoRepo.save(pedido);
 
         List<DetallePedido> detalles = newPedido.getDetalles().stream()
                 .map(dp->{
@@ -108,11 +107,10 @@ public class PedidoService implements IPedidoService {
                             .orElseThrow(()-> new ResourceNotFoundException("Producto no encontrado"));
 
                     return DetallePedido.builder()
-                            .pedido(pedidoGuardado)
                             .producto(producto)
                             .cantidad(dp.getCantidad())
-                            .precioUnitario(dp.getPrecioUnitario())
-                            .subTotal(dp.getPrecioUnitario()*dp.getCantidad())
+                            .precioUnitario(producto.getPrecio())
+                            .subTotal(calcularSubTotal(producto, dp.getCantidad()))
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -121,10 +119,13 @@ public class PedidoService implements IPedidoService {
                 .mapToDouble(DetallePedido::getSubTotal)
                 .sum();
 
+        pedido.setTotal(total);
+        Pedido pedidoGuardado = pedidoRepo.save(pedido);
+
+        detalles.forEach(detalle -> detalle.setPedido(pedidoGuardado));
         List<DetallePedido> detallePedidosGuardado = detallePedidoRepo.saveAll(detalles);
 
         pedidoGuardado.setDetalles(detallePedidosGuardado);
-        pedidoGuardado.setTotal(total);
         return pedidoMapper.toResponse(pedidoRepo.save(pedidoGuardado));
     }
 
@@ -166,15 +167,6 @@ public class PedidoService implements IPedidoService {
 
         Usuario usuario = usuarioService.crearUsuarioEfimero(request.getUsuario());
         Direccion direccion = direccionService.guardarDireccionParaGuest(request.getDireccion(),usuario);
-        Pedido pedido = Pedido.builder()
-                .usuario(usuario)
-                .direccion(direccion)
-                .fechaPedido(LocalDateTime.now())
-                .estado(ESTADO_PEDIDO.PENDIENTE)
-                .ipUsuario(request.getIpUsuario())
-                .build();
-
-        pedido = pedidoRepo.save(pedido);
 
         List<DetallePedido> detalles = new ArrayList<>();
         for(DetallePedidoRequest detallePedidoRequest : request.getDetalles()){
@@ -183,22 +175,31 @@ public class PedidoService implements IPedidoService {
                     .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado: " + detallePedidoRequest.getIdProducto()));
             log.info("Producto {}", producto);
             dp.setProducto(producto);
-            dp.setPedido(pedido);
-            if(dp.getProducto().getDescuento() > 0){
-                dp.setSubTotal(dp.getPrecioUnitario() * dp.getCantidad() * (1-dp.getProducto().getDescuento() / 100));
-            }else{
-                dp.setSubTotal(dp.getPrecioUnitario() * dp.getCantidad());
-            }
+            dp.setPrecioUnitario(producto.getPrecio());
+            dp.setSubTotal(calcularSubTotal(producto, dp.getCantidad()));
             detalles.add(dp);
         }
-        List<DetallePedido> detallesGuardados = detallePedidoRepo.saveAll(detalles);
-        pedido.setDetalles(detallesGuardados);
-        double total = detallesGuardados.stream()
+
+        double total = detalles.stream()
                 .mapToDouble(DetallePedido::getSubTotal)
                 .sum();
-        pedido.setTotal(total);
 
-        Pedido pedidoTerminado = pedidoRepo.save(pedido);
+        Pedido pedido = Pedido.builder()
+                .usuario(usuario)
+                .direccion(direccion)
+                .fechaPedido(LocalDateTime.now())
+                .estado(ESTADO_PEDIDO.PENDIENTE)
+                .ipUsuario(request.getIpUsuario())
+                .total(total)
+                .build();
+
+        Pedido pedidoGuardado = pedidoRepo.save(pedido);
+
+        detalles.forEach(detalle -> detalle.setPedido(pedidoGuardado));
+        List<DetallePedido> detallesGuardados = detallePedidoRepo.saveAll(detalles);
+        pedidoGuardado.setDetalles(detallesGuardados);
+
+        Pedido pedidoTerminado = pedidoRepo.save(pedidoGuardado);
         Hibernate.initialize(pedidoTerminado.getDetalles());
         pedidoTerminado.getDetalles().forEach(detalle ->
                 Hibernate.initialize(detalle.getProducto())
@@ -217,5 +218,12 @@ public class PedidoService implements IPedidoService {
         }else{
             return false;
         }
+    }
+
+    private Double calcularSubTotal(Producto producto, Integer cantidad) {
+        double precio = producto.getPrecio() != null ? producto.getPrecio() : 0.0;
+        int descuento = producto.getDescuento() != null ? producto.getDescuento() : 0;
+        int cant = cantidad != null ? cantidad : 0;
+        return precio * cant * (1 - descuento / 100.0);
     }
 }

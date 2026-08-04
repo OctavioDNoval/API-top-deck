@@ -1,8 +1,8 @@
 package org.example.topdeckapi.src.controller;
 
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-
 
 import org.example.topdeckapi.src.DTOs.request.TagRequest;
 import org.example.topdeckapi.src.DTOs.response.TagResponse;
@@ -34,12 +34,12 @@ public class TagController {
     }
 
     @PostMapping("/admin/post")
-    public ResponseEntity<TagResponse> addTag(@RequestBody TagRequest dto) {
+    public ResponseEntity<TagResponse> addTag(@RequestBody @Valid TagRequest dto) {
         return ResponseEntity.ok(tagService.save(dto));
     }
 
     @PatchMapping("/admin/edit/{id}")
-    public ResponseEntity<TagResponse> editTag(@PathVariable Long id, @RequestBody TagRequest newTag) {
+    public ResponseEntity<TagResponse> editTag(@PathVariable Long id, @RequestBody @Valid TagRequest newTag) {
         return ResponseEntity.ok(tagService.actualizarTag(id, newTag));
     }
 
