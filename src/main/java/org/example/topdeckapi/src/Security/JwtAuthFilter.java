@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.topdeckapi.src.service.IMPL.CustomUserDetailsService;
 import org.example.topdeckapi.src.service.IMPL.JwtService;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,6 +22,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
@@ -32,8 +34,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String authHeader = request.getHeader("Authorization");
 
-        System.out.println("JWT Filter ejecutado para: " + request.getRequestURI());
-        System.out.println("Authorization Header: " + authHeader);
+        log.debug("JWT Filter ejecutado para: {}", request.getRequestURI());
 
         if (authHeader == null || !authHeader.startsWith(PREFIX)) {
             filterChain.doFilter(request, response);
@@ -72,9 +73,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                 List.of(authority));
 
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                System.out.println("Autenticando a: " + email + " con roles: " + authToken.getAuthorities());
-                System.out.println("Rol extraído del token: " + role);
-                System.out.println("Authorities establecidas: " + authToken.getAuthorities());
+                log.debug("Autenticando a: {} con roles: {}", email, authToken.getAuthorities());
+                log.debug("Rol extraído del token: {}", role);
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }

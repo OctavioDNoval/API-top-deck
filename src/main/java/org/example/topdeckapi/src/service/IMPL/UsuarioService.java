@@ -81,19 +81,19 @@ public class UsuarioService implements IUsuarioService {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
             if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) {
-                System.out.println("No hay usuario autenticado o es anónimo");
+                log.debug("No hay usuario autenticado o es anónimo");
                 return null;
             }
 
             String email = auth.getName();
-            System.out.println("Email del usuario autenticado: " + email);
+            log.debug("Email del usuario autenticado: {}", email);
 
             Usuario usuario = usuarioRepo.findByEmail(email).orElse(null);
 
             if (usuario != null) {
-                System.out.println("Usuario encontrado: " + usuario.getEmail() + ", Rol: " + usuario.getRol());
+                log.debug("Usuario encontrado: {}, Rol: {}", usuario.getEmail(), usuario.getRol());
             } else {
-                System.out.println("Usuario no encontrado en BD con email: " + email);
+                log.warn("Usuario no encontrado en BD con email: {}", email);
             }
 
             return usuario;

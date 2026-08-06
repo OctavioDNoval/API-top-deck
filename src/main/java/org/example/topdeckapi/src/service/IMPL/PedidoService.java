@@ -246,6 +246,15 @@ public class PedidoService implements IPedidoService {
         return pedidoMapper.toResponse(pedidoTerminado);
     }
 
+    @Transactional
+    public List<PedidoResponse> obtenerPedidosPorUsuario() {
+        Usuario u = usuarioService.obtenerUsuarioAutenticado();
+        return pedidoRepo.findByUsuario_IdUsuario(u.getIdUsuario())
+                .stream()
+                .map(pedidoMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
     public boolean delete(String uuid){
         Pedido pedido = pedidoRepo.findByUuid(uuid)
                 .orElseThrow(()-> new PedidoNotFoundException("Pedido no encontrado"));

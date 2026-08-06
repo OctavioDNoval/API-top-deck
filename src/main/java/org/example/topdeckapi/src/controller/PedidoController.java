@@ -51,6 +51,11 @@ public class PedidoController {
         return ResponseEntity.ok(pedidoService.guardar(newPedido));
     }
 
+    @GetMapping("/user/pedidos")
+    public ResponseEntity<List<PedidoResponse>> getPedidosByUser(){
+        return ResponseEntity.ok(pedidoService.obtenerPedidosPorUsuario());
+    }
+
     @PostMapping("/public/pedidoEfimero")
     public ResponseEntity<PedidoResponse> pedidoEfimero(@RequestBody PedidoEfimeroRequest newPedido){
         return ResponseEntity.ok(pedidoService.guardarPedidoEfimero(newPedido));

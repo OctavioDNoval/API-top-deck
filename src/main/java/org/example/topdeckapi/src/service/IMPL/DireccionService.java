@@ -1,10 +1,12 @@
 package org.example.topdeckapi.src.service.IMPL;
 
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.mappers.DireccionMapper;
 import org.example.topdeckapi.src.DTOs.request.DireccionRequest;
 import org.example.topdeckapi.src.DTOs.response.DireccionResponse;
 import org.example.topdeckapi.src.Enumerados.ROL;
+import org.example.topdeckapi.src.Exception.BussinesException;
 import org.example.topdeckapi.src.Exception.ResourceNotFoundException;
 import org.example.topdeckapi.src.Exception.UsuarioNotFoundException;
 import org.example.topdeckapi.src.Repository.IDireccionRepo;
@@ -26,12 +28,14 @@ public class DireccionService implements IDireccionService {
     private final IUsuarioRepo usuarioRepo;
     private final UsuarioService usuarioService;
 
+    @Transactional(readOnly = true)
     public List<DireccionResponse> getAll(){
         return direccionRepo.findAll().stream()
                 .map(direccionMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public DireccionResponse getById(String uuid){
         Direccion d= direccionRepo.findByUuid(uuid)
                 .orElseThrow(()-> new ResourceNotFoundException("Direccion no encontrado"));
@@ -41,6 +45,31 @@ public class DireccionService implements IDireccionService {
     public DireccionResponse guardar(DireccionRequest dto) {
         Usuario usuario = usuarioRepo.findByUuid(dto.getIdUsuario())
                 .orElseThrow(()-> new UsuarioNotFoundException("Usuario no encontrado"));
+
+        Optional<Direccion> duplicada = direccionRepo
+                .findByDireccionAndAlturaAndPisoAndCiudadAndProvinciaAndPaisAndCodigoPostalAndUsuario_IdUsuario(
+                        dto.getDireccion(),
+                        dto.getAltura(),
+                        dto.getPiso(),
+                        dto.getCiudad(),
+                        dto.getProvincia(),
+                        dto.getPais(),
+                        dto.getCodigoPostal(),
+                        usuario.getIdUsuario()
+                );
+        if (duplicada.isPresent()) {
+            throw new BussinesException("Ya existe una direccion con los mismos datos");
+        }
+
+        if (Boolean.TRUE.equals(dto.getPrincipal())) {
+            List<Direccion> existentes = direccionRepo.findByUsuario_IdUsuario(usuario.getIdUsuario());
+            for (Direccion d : existentes) {
+                if (Boolean.TRUE.equals(d.getPrincipal())) {
+                    d.setPrincipal(false);
+                    direccionRepo.save(d);
+                }
+            }
+        }
 
         Direccion direccion = Direccion.builder()
                 .usuario(usuario)
@@ -104,12 +133,23 @@ public class DireccionService implements IDireccionService {
                         d.setUsuario(u);
                     }
 
+                    if (Boolean.TRUE.equals(request.getPrincipal())) {
+                        List<Direccion> existentes = direccionRepo.findByUsuario_IdUsuario(d.getUsuario().getIdUsuario());
+                        for (Direccion dir : existentes) {
+                            if (!dir.getUuid().equals(uuid) && Boolean.TRUE.equals(dir.getPrincipal())) {
+                                dir.setPrincipal(false);
+                                direccionRepo.save(dir);
+                            }
+                        }
+                    }
+
                     Direccion direccionActualizada= direccionRepo.save(d);
                     return  direccionMapper.toResponse(direccionActualizada);
                 })
                 .orElseThrow(()-> new UsuarioNotFoundException("Usuario asignado a la direccion no encontrado"));
     }
 
+    @Transactional(readOnly = true)
     public List<DireccionResponse> direccionesPorUsuario (){
         Usuario u = usuarioService.obtenerUsuarioAutenticado();
 
