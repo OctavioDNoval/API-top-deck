@@ -11,6 +11,7 @@ import java.util.Optional;
 @Repository
 public interface ITagRepository extends JpaRepository<Tag,Long> {
     boolean existsByNombre(String nombre);
+    boolean existsByNombreAndUuidNot(String nombre, String uuid);
 
     @Query("SELECT t FROM Tag t where t.nombreNormalizado = :nombreNormalizado ")
     Optional<Tag> findByNombreNormalizado(@Param("nombreNormalizado")String nombreNormalizado);

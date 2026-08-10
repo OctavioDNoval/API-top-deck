@@ -60,8 +60,8 @@ public class ProductoService implements IProductoService {
             String sortBy,
             String direction,
             String filter,
-            Long idCategoria,
-            Long idTag,
+            String idCategoria,
+            String idTag,
             boolean isAdmin) {
 
         Sort sort = buildSort(sortBy, direction);
@@ -69,12 +69,24 @@ public class ProductoService implements IProductoService {
 
         String search = (filter == null || filter.trim().isEmpty()) ? null : filter.trim();
 
-        Page<Producto> paginaProducto ;
+        Long resolvedTagId = null;
+        if (idTag != null && !idTag.isEmpty()) {
+            Tag tag = resolveTag(idTag);
+            resolvedTagId = tag.getIdTag();
+        }
+
+        Long resolvedCategoriaId = null;
+        if (idCategoria != null && !idCategoria.isEmpty()) {
+            Categoria categoria = resolveCategoria(idCategoria);
+            resolvedCategoriaId = categoria.getIdCategoria();
+        }
+
+        Page<Producto> paginaProducto;
 
         if(isAdmin) {
-            paginaProducto = productoRepo.findByFiltros(search,idCategoria,idTag,pageable);
-        }else {
-            paginaProducto = productoRepo.findByFiltrosAndActivo(search, idCategoria, idTag, pageable);
+            paginaProducto = productoRepo.findByFiltros(search, resolvedCategoriaId, resolvedTagId, pageable);
+        } else {
+            paginaProducto = productoRepo.findByFiltrosAndActivo(search, resolvedCategoriaId, resolvedTagId, pageable);
         }
         return paginationService.crearPaginacionResponse(paginaProducto, pagina, tamanio, productoMapper::toResponse);
     }

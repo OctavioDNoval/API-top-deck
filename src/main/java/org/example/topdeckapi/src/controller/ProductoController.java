@@ -40,11 +40,11 @@ public class ProductoController {
             @RequestParam(defaultValue = "idProducto") String sortBy,
             @RequestParam(defaultValue = "desc") String direction,
             @RequestParam(defaultValue = "") String filter,
-            @RequestParam(defaultValue = "0") Long idTag,
-            @RequestParam(defaultValue = "0") Long idCategoria
+            @RequestParam(defaultValue = "") String idTag,
+            @RequestParam(defaultValue = "") String idCategoria
     ) {
-        Long categoria = (idCategoria == 0) ? null : idCategoria;
-        Long tag = (idTag == 0) ? null : idTag;
+        String tag = (idTag == null || idTag.trim().isEmpty() || "0".equals(idTag.trim())) ? null : idTag.trim();
+        String categoria = (idCategoria == null || idCategoria.trim().isEmpty() || "0".equals(idCategoria.trim())) ? null : idCategoria.trim();
         String search = (filter == null || filter.trim().isEmpty()) ? null : filter.trim();
 
         PaginacionResponse<ProductoResponse> paginacionResponse =
@@ -60,11 +60,11 @@ public class ProductoController {
             @RequestParam(defaultValue = "idProducto") String sortBy,
             @RequestParam(defaultValue = "desc") String direction,
             @RequestParam(defaultValue = "") String filter,
-            @RequestParam(defaultValue = "0") Long idTag,
-            @RequestParam(defaultValue = "0") Long idCategoria
+            @RequestParam(defaultValue = "") String idTag,
+            @RequestParam(defaultValue = "") String idCategoria
     ) {
-        Long categoria = (idCategoria == 0) ? null : idCategoria;
-        Long tag = (idTag == 0) ? null : idTag;
+        String tag = (idTag == null || idTag.trim().isEmpty() || "0".equals(idTag.trim())) ? null : idTag.trim();
+        String categoria = (idCategoria == null || idCategoria.trim().isEmpty() || "0".equals(idCategoria.trim())) ? null : idCategoria.trim();
         String search = (filter == null || filter.trim().isEmpty()) ? null : filter.trim();
 
         PaginacionResponse<ProductoResponse> paginacionResponse =

@@ -81,7 +81,7 @@ public class TagService {
 
     public TagResponse actualizarTag(String uuid, TagRequest newTag) {
         Tag tag = tagRepository.findByUuid(uuid).orElseThrow(() -> new ResourceNotFoundException("Tag not found"));
-        if(tagRepository.existsByNombre(newTag.getNombre())){
+        if(tagRepository.existsByNombreAndUuidNot(newTag.getNombre(), uuid)){
             throw new BussinesException("El nombre de tag ya existe en el sistema");
         }
         tag.setNombre(newTag.getNombre());
