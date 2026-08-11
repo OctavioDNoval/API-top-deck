@@ -41,9 +41,8 @@ public class CategoriaController {
     }
 
     @PostMapping("/admin/new")
-    @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<CategoriaResponse> save(@RequestBody @Valid CategoriaRequest newCategoria){
-        return ResponseEntity.ok(categoriaService.guardar(newCategoria));
+        return new ResponseEntity<>(categoriaService.guardar(newCategoria), HttpStatus.CREATED);
     }
 
     @DeleteMapping("/admin/delete/{id}")

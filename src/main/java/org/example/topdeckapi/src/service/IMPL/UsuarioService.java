@@ -58,14 +58,14 @@ public class UsuarioService implements IUsuarioService {
         Sort sort = buildSort (sortBy, direction);
         Pageable pageable = PageRequest.of(pagina - 1, tamanio, sort);
         Page<Usuario> paginaUsuarios = usuarioRepo.findAll(pageable);
-        return paginacionService.crearPaginacionResponse(paginaUsuarios,tamanio,pagina, usuarioMapper::toResponse);
+        return paginacionService.crearPaginacionResponse(paginaUsuarios,pagina,tamanio, usuarioMapper::toResponse);
     }
 
     public PaginacionResponse<UsuarioResponse> obtenerPaginadosConFiltro(Integer pagina, Integer tamanio, String sortBy, String direction, String filtro) {
         Sort sort = buildSort (sortBy, direction);
         Pageable pageable = PageRequest.of(pagina - 1, tamanio, sort);
         Page<Usuario> paginaUsuarios = usuarioRepo.findBySearch(filtro, pageable);
-        return paginacionService.crearPaginacionResponse(paginaUsuarios,tamanio,pagina, usuarioMapper::toResponse);
+        return paginacionService.crearPaginacionResponse(paginaUsuarios,pagina,tamanio, usuarioMapper::toResponse);
     }
 
     public UsuarioResponse obtenerPorId(String uuid){
@@ -113,8 +113,8 @@ public class UsuarioService implements IUsuarioService {
         usuario.setPassword(passwordEncoder.encode(newUsuario.getPassword()));
 
         ROL rol = newUsuario.getRol() != null ? newUsuario.getRol() : ROL.USER;
-        if (rol == ROL.GUESS) {
-            throw new BussinesException("No se puede crear un usuario con rol GUESS");
+        if (rol == ROL.GUEST) {
+            throw new BussinesException("No se puede crear un usuario con rol GUEST");
         }
         usuario.setRol(rol);
 
@@ -155,13 +155,13 @@ public class UsuarioService implements IUsuarioService {
 
         if (usuarioExistente.isPresent()) {
             Usuario usuario = usuarioExistente.get();
-            if (usuario.getRol() == ROL.GUESS) {
+            if (usuario.getRol() == ROL.GUEST) {
                 return usuario;
             }
             throw new EmailYaRegistradoException("El email pertenece a una cuenta ya registrada, Intente ingresando a su cuenta");
         }
         Usuario usuario = usuarioMapper.toEntity(newUsuario);
-        usuario.setRol(ROL.GUESS);
+        usuario.setRol(ROL.GUEST);
         return usuarioRepo.save(usuario);
     }
 

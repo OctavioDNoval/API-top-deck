@@ -24,9 +24,8 @@ public class EventosController {
     }
 
     @PostMapping("/admin/save")
-    @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<EventoResponse> save(@RequestBody @Valid EventoRequest dto){
-        return ResponseEntity.ok(eventosService.save(dto));
+        return new ResponseEntity<>(eventosService.save(dto), HttpStatus.CREATED);
     }
 
     @DeleteMapping("/admin/delete/{id}")

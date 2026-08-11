@@ -5,6 +5,7 @@ import org.example.topdeckapi.src.DTOs.response.ValidationErrorResponse;
 import org.example.topdeckapi.src.Exception.BussinesException;
 import org.example.topdeckapi.src.Exception.EmailYaRegistradoException;
 import org.example.topdeckapi.src.Exception.ResourceNotFoundException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -76,6 +77,23 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now()
         );
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    /*
+    * Handler para errores de integridad referencial
+    * (intentar borrar entidades con FK referenciadas)
+    * */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex, WebRequest request) {
+        String message = "No se puede eliminar el registro porque está siendo utilizado por otros datos";
+        ApiErrorResponse error = new ApiErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT.getReasonPhrase(),
+                message,
+                request.getDescription(false).replace("uri =", ""),
+                LocalDateTime.now()
+        );
+        return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
 
     /*

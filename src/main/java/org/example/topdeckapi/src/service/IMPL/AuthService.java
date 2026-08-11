@@ -33,11 +33,15 @@ public class AuthService {
 
 
     public AuthResponse register (UsuarioRequest dto){
+        if (!Boolean.TRUE.equals(dto.getTerminosAceptados())) {
+            throw new BussinesException("Debes aceptar los términos y condiciones");
+        }
+
         Optional<Usuario> existingUser = usuarioRepo.findByEmail(dto.getEmail());
 
         if (existingUser.isPresent()) {
             Usuario user = existingUser.get();
-            if (user.getRol() != ROL.GUESS) {
+            if (user.getRol() != ROL.GUEST) {
                 throw new BussinesException("El usuario con ese mail ya existe");
             }
             user.setRol(ROL.USER);

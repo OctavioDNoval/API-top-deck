@@ -111,9 +111,8 @@ public class ProductoController {
     }
 
     @PostMapping("/admin/post")
-    @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<ProductoResponse> post(@RequestBody@Valid ProductoRequest producto){
-        return ResponseEntity.ok(productoService.guardar(producto));
+        return new ResponseEntity<>(productoService.guardar(producto), HttpStatus.CREATED);
     }
 
     @GetMapping("/public/{id}")

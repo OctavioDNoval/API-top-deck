@@ -131,25 +131,135 @@ insert into categoria(uuid, nombre) values
     (UUID(), 'Figuras');
 
 insert into tag(uuid, nombre, img_url) values
-    (UUID(), 'Pokémon', null),
-    (UUID(), 'Dragon Ball', null),
-    (UUID(), 'One Piece', null),
-    (UUID(), 'Yu-Gi-Oh!', null),
-    (UUID(), 'Magic: The Gathering', null);
+                                           (UUID(), 'Pokémon', 'https://placehold.co/600x600?text=Pokemon'),
+                                           (UUID(), 'Dragon Ball Super', 'https://placehold.co/600x600?text=Dragon+Ball'),
+                                           (UUID(), 'One Piece', 'https://placehold.co/600x600?text=One+Piece'),
+                                           (UUID(), 'Yu-Gi-Oh!', 'https://placehold.co/600x600?text=Yu-Gi-Oh'),
+                                           (UUID(), 'Magic: The Gathering', 'https://placehold.co/600x600?text=Magic');
 
 update tag set nombre_normalizado = replace(replace(replace(replace(replace(replace(replace(replace(
     lower(nombre),
     'á','a'),'é','e'),'í','i'),'ó','o'),'ú','u'),'ü','u'),'ñ','n'),'-','')
 where nombre_normalizado is null;
 
-insert into producto(uuid, id_categoria, id_tag, nombre, descripcion, precio, stock, img_url, descuento) values
-    (UUID(), 1, 1, 'Sobre Evoluciones Prismáticas Pokémon', 'Sobre de 10 cartas de la colección Evoluciones Prismáticas', 8500.00, 50, null, 0),
-    (UUID(), 2, 1, 'Caja Evoluciones Prismáticas Pokémon', 'Caja sellada de 36 sobres de Evoluciones Prismáticas', 45000.00, 10, null, 5),
-    (UUID(), 3, 1, 'Baraja Liga Evoluciones Prismáticas', 'Baraja lista para jugar de la temporada Evoluciones Prismáticas', 12000.00, 20, null, 0),
-    (UUID(), 1, 2, 'Sobre Battle Spirits Saga Dragon Ball', 'Sobre de 12 cartas de Battle Spirits Saga Dragon Ball', 6500.00, 40, null, 0),
-    (UUID(), 2, 2, 'Caja Battle Spirits Saga Dragon Ball', 'Caja sellada de 24 sobres de Battle Spirits Saga', 35000.00, 8, null, 10),
-    (UUID(), 1, 3, 'Sobre Romance Dawn One Piece', 'Sobre de 12 cartas de la colección Romance Dawn', 7500.00, 30, null, 0),
-    (UUID(), 2, 3, 'Caja Romance Dawn One Piece', 'Caja sellada de 24 sobres de Romance Dawn', 40000.00, 5, null, 0),
-    (UUID(), 1, 4, 'Sobre Rage of the Abyss Yu-Gi-Oh!', 'Sobre de 9 cartas de Rage of the Abyss', 5500.00, 60, null, 0),
-    (UUID(), 1, 5, 'Sobre Innistrad Remastered Magic', 'Sobre de 15 cartas de Innistrad Remastered', 9000.00, 25, null, 0),
-    (UUID(), 4, 1, 'Album Pokémon 9 Bolsillos', 'Álbum de colección con fundas para 9 cartas por página', 3500.00, 100, null, 0);
+insert into producto(
+    uuid,
+    id_categoria,
+    id_tag,
+    nombre,
+    descripcion,
+    precio,
+    stock,
+    img_url,
+    descuento
+) values
+      (
+          UUID(),
+          1,
+          1,
+          'Sobre Evoluciones Prismáticas Pokémon',
+          'Sobre de 10 cartas de la colección Evoluciones Prismáticas',
+          8500.00,
+          50,
+          'https://placehold.co/600x600?text=Sobre+Pokemon',
+          0
+      ),
+      (
+          UUID(),
+          2,
+          1,
+          'Caja Evoluciones Prismáticas Pokémon',
+          'Caja sellada de 36 sobres de Evoluciones Prismáticas',
+          45000.00,
+          10,
+          'https://placehold.co/600x600?text=Caja+Pokemon',
+          5
+      ),
+      (
+          UUID(),
+          3,
+          1,
+          'Baraja Liga Evoluciones Prismáticas',
+          'Baraja lista para jugar de la temporada Evoluciones Prismáticas',
+          12000.00,
+          20,
+          'https://placehold.co/600x600?text=Baraja+Pokemon',
+          0
+      ),
+      (
+          UUID(),
+          1,
+          2,
+          'Sobre Battle Spirits Saga Dragon Ball',
+          'Sobre de 12 cartas de Battle Spirits Saga Dragon Ball',
+          6500.00,
+          40,
+          'https://placehold.co/600x600?text=Sobre+Dragon+Ball',
+          0
+      ),
+      (
+          UUID(),
+          2,
+          2,
+          'Caja Battle Spirits Saga Dragon Ball',
+          'Caja sellada de 24 sobres de Battle Spirits Saga',
+          35000.00,
+          8,
+          'https://placehold.co/600x600?text=Caja+Dragon+Ball',
+          10
+      ),
+      (
+          UUID(),
+          1,
+          3,
+          'Sobre Romance Dawn One Piece',
+          'Sobre de 12 cartas de la colección Romance Dawn',
+          7500.00,
+          30,
+          'https://placehold.co/600x600?text=Sobre+One+Piece',
+          0
+      ),
+      (
+          UUID(),
+          2,
+          3,
+          'Caja Romance Dawn One Piece',
+          'Caja sellada de 24 sobres de Romance Dawn',
+          40000.00,
+          5,
+          'https://placehold.co/600x600?text=Caja+One+Piece',
+          0
+      ),
+      (
+          UUID(),
+          1,
+          4,
+          'Sobre Rage of the Abyss Yu-Gi-Oh!',
+          'Sobre de 9 cartas de Rage of the Abyss',
+          5500.00,
+          60,
+          'https://placehold.co/600x600?text=Yu-Gi-Oh',
+          0
+      ),
+      (
+          UUID(),
+          1,
+          5,
+          'Sobre Innistrad Remastered Magic',
+          'Sobre de 15 cartas de Innistrad Remastered',
+          9000.00,
+          25,
+          'https://placehold.co/600x600?text=Magic',
+          0
+      ),
+      (
+          UUID(),
+          4,
+          1,
+          'Album Pokémon 9 Bolsillos',
+          'Álbum de colección con fundas para 9 cartas por página',
+          3500.00,
+          100,
+          'https://placehold.co/600x600?text=Album+Pokemon',
+          0
+      );

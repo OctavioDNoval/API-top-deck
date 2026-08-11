@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.auth.AuthResponse;
 import org.example.topdeckapi.src.DTOs.auth.LoginRequest;
@@ -23,7 +24,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register (@RequestBody UsuarioRequest dto){
+    public ResponseEntity<AuthResponse> register (@Valid @RequestBody UsuarioRequest dto){
         return ResponseEntity.ok(authService.register(dto));
     }
 
