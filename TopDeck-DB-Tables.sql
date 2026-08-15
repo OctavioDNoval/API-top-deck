@@ -40,7 +40,8 @@ create table usuario(
     rol enum('ADMIN','USER','GUEST'),
     ip_usuario varchar(255),
     version_terminos_y_condiciones_aceptadas varchar(255),
-    terminos_aceptados bit(1)
+    terminos_aceptados bit(1),
+    fecha_aceptacion_terminos datetime
 );
 
 create table direccion(
@@ -263,6 +264,13 @@ insert into producto(
           'https://placehold.co/600x600?text=Album+Pokemon',
           0
       );
+
+-- ═══════════════════════════════════════════
+-- Usuario administrador por defecto
+-- ═══════════════════════════════════════════
+
+INSERT INTO usuario (uuid, nombre, email, password, rol, terminos_aceptados) VALUES
+    (UUID(), 'orick', 'odnr2004@gmail.com', '$10$llXY7Eph6HQZxvYAhem5T.XX6U8vrdJ4o1sSpCrkJxcIrKVZEV3Au', 'ADMIN', b'1');
 
 -- ═══════════════════════════════════════════
 -- Indices para optimizar queries del dashboard

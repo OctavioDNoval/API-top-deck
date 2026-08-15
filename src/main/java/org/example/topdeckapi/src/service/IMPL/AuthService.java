@@ -49,6 +49,9 @@ public class AuthService {
             user.setNombre(dto.getNombre());
             user.setVersionTerminosYCondicionesAceptados(dto.getVersionTerminosYCondicionesAceptados());
             user.setTerminosAceptados(dto.getTerminosAceptados());
+            if (dto.getFechaAceptacionTerminos() != null) {
+                user.setFechaAceptacionTerminos(LocalDateTime.parse(dto.getFechaAceptacionTerminos()));
+            }
             user.setTelefono(dto.getTelefono());
 
             Usuario usuarioGuardado = usuarioRepo.save(user);
@@ -74,6 +77,9 @@ public class AuthService {
         Usuario u = usuarioMapper.toEntity(dto);
         u.setPassword(encoder.encode(dto.getPassword()));
         u.setRol(ROL.USER);
+        if (dto.getFechaAceptacionTerminos() != null) {
+            u.setFechaAceptacionTerminos(LocalDateTime.parse(dto.getFechaAceptacionTerminos()));
+        }
 
         Usuario usuarioGuardado = usuarioRepo.save(u);
 

@@ -11,6 +11,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.example.topdeckapi.src.Enumerados.ROL;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -58,5 +59,8 @@ public class Usuario {
 
     @Column(name = "terminos_aceptados")
     private Boolean terminosAceptados;
+
+    @Column(name = "fecha_aceptacion_terminos")
+    private LocalDateTime fechaAceptacionTerminos;
 
 }

@@ -29,5 +29,6 @@ public class UsuarioRequest {
     private String ipUsuario;
     private String versionTerminosYCondicionesAceptados = "0.0";
     private Boolean terminosAceptados = false;
+    private String fechaAceptacionTerminos;
     private ROL rol;
 }

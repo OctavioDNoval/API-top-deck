@@ -191,8 +191,17 @@ public class PedidoService implements IPedidoService {
 
     public PedidoResponse guardarPedidoEfimero (PedidoEfimeroRequest request){
         if(request.getDetalles().isEmpty()) throw new BussinesException("El carrito esta vacio");
+        if (!Boolean.TRUE.equals(request.getUsuario().getTerminosAceptados())) {
+            throw new BussinesException("Debes aceptar los términos y condiciones");
+        }
 
         Usuario usuario = usuarioService.crearUsuarioEfimero(request.getUsuario());
+
+        if (request.getUsuario().getFechaAceptacionTerminos() != null) {
+            usuario.setFechaAceptacionTerminos(LocalDateTime.parse(request.getUsuario().getFechaAceptacionTerminos()));
+            usuarioRepo.save(usuario);
+        }
+
         Direccion direccion = direccionService.guardarDireccionParaGuest(request.getDireccion(),usuario);
 
         List<DetallePedido> detalles = new ArrayList<>();
