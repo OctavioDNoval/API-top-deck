@@ -263,3 +263,23 @@ insert into producto(
           'https://placehold.co/600x600?text=Album+Pokemon',
           0
       );
+
+-- ═══════════════════════════════════════════
+-- Indices para optimizar queries del dashboard
+-- ═══════════════════════════════════════════
+
+-- pedido: acelera GROUP BY y WHERE por estado (6 queries del dashboard)
+CREATE INDEX idx_pedido_estado ON pedido(estado);
+
+-- detallepedido: acelera JOINs de top productos y revenue por tag
+CREATE INDEX idx_detalle_pedido_producto ON detallepedido(id_pedido, id_producto);
+
+-- producto: acelera filtros de stock y ofertas
+CREATE INDEX idx_producto_activo_stock ON producto(activo, stock);
+CREATE INDEX idx_producto_activo_descuento ON producto(activo, descuento);
+
+-- auditoria: acelera GROUP BY por accion
+CREATE INDEX idx_auditoria_accion ON auditoria(accion);
+
+-- evento: acelera GROUP BY por estado
+CREATE INDEX idx_evento_estado ON evento(estado);

@@ -21,4 +21,26 @@ public interface IPedidoRepo extends JpaRepository<Pedido,Long> {
     Page<Pedido> findBySearch(@Param("search") String search, Pageable pageable);
     Optional<Pedido> findByUuid(String uuid);
     List<Pedido> findByUsuario_IdUsuario(Long idUsuario);
+
+    @Query(value = "SELECT p.estado, COUNT(*) FROM pedido p GROUP BY p.estado", nativeQuery = true)
+    List<Object[]> contarPorEstado();
+
+    @Query(value = "SELECT DATE_FORMAT(p.fecha_pedido, '%Y-%m') AS periodo, COALESCE(SUM(p.total), 0) AS total, COUNT(*) AS cantidad " +
+            "FROM pedido p WHERE p.estado = 'CONFIRMADO' " +
+            "GROUP BY DATE_FORMAT(p.fecha_pedido, '%Y-%m') ORDER BY periodo", nativeQuery = true)
+    List<Object[]> ventasPorPeriodo();
+
+    @Query(value = "SELECT DAYOFWEEK(p.fecha_pedido) AS dia, COUNT(*) AS cantidad " +
+            "FROM pedido p WHERE p.estado = 'CONFIRMADO' " +
+            "GROUP BY DAYOFWEEK(p.fecha_pedido) ORDER BY dia", nativeQuery = true)
+    List<Object[]> pedidosPorDiaSemana();
+
+    @Query(value = "SELECT COALESCE(AVG(p.total), 0) FROM pedido p WHERE p.estado = 'CONFIRMADO'", nativeQuery = true)
+    Double ticketPromedio();
+
+    @Query(value = "SELECT COALESCE(SUM(p.total), 0) FROM pedido p WHERE p.estado = 'CONFIRMADO'", nativeQuery = true)
+    Double revenueTotal();
+
+    @Query(value = "SELECT COUNT(*) FROM pedido p WHERE p.estado = 'PENDIENTE'", nativeQuery = true)
+    Long contarPendientes();
 }

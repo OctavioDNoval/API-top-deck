@@ -40,4 +40,24 @@ public interface IProductoRepo extends JpaRepository<Producto,Long> {
 
     boolean existsByNombre(String nombre);
     Optional<Producto> findByUuid(String uuid);
+
+    @Query(value = "SELECT c.nombre, COUNT(*) FROM producto p " +
+            "INNER JOIN categoria c ON p.id_categoria = c.id_categoria " +
+            "GROUP BY c.nombre", nativeQuery = true)
+    List<Object[]> contarPorCategoria();
+
+    @Query(value = "SELECT t.nombre, COUNT(*) FROM producto p " +
+            "INNER JOIN tag t ON p.id_tag = t.id_tag " +
+            "GROUP BY t.nombre", nativeQuery = true)
+    List<Object[]> contarPorTag();
+
+    @Query(value = "SELECT " +
+            "SUM(CASE WHEN p.stock = 0 THEN 1 ELSE 0 END) AS sinStock, " +
+            "SUM(CASE WHEN p.stock > 0 AND p.stock < 10 THEN 1 ELSE 0 END) AS bajo, " +
+            "SUM(CASE WHEN p.stock >= 10 THEN 1 ELSE 0 END) AS ok " +
+            "FROM producto p WHERE p.activo = true", nativeQuery = true)
+    Object[] distribucionStock();
+
+    @Query(value = "SELECT COUNT(*) FROM producto p WHERE p.stock = 0 AND p.activo = true", nativeQuery = true)
+    Long contarSinStock();
 }

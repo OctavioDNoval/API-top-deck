@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -25,4 +26,7 @@ public interface IUsuarioRepo extends JpaRepository<Usuario,Long> {
     Page<Usuario> findBySearch(@Param("search") String search, Pageable pageable);
 
     Optional<Usuario> findByUuid(String uuid);
+
+    @Query(value = "SELECT u.rol, COUNT(*) FROM usuario u GROUP BY u.rol", nativeQuery = true)
+    List<Object[]> contarPorRol();
 }
