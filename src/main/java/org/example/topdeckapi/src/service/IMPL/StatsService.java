@@ -85,7 +85,8 @@ public class StatsService {
                 .toList();
 
         // ── Distribucion Stock ──
-        Object[] stockRaw = productoRepo.distribucionStock();
+        List<Object[]> stockList = productoRepo.distribucionStock();
+        Object[] stockRaw = stockList.isEmpty() ? new Object[]{0L, 0L, 0L} : stockList.get(0);
         StatsResponse.DistribucionStock stockDistribucion = new StatsResponse.DistribucionStock(
                 stockRaw[0] != null ? ((Number) stockRaw[0]).longValue() : 0,
                 stockRaw[1] != null ? ((Number) stockRaw[1]).longValue() : 0,

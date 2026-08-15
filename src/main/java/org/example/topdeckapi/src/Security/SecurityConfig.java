@@ -65,7 +65,7 @@ public class SecurityConfig {
                                 "/audit/admin/**",
                                 "/eventos/admin/**",
                                 "/pedidos/admin/**",
-                                "/admin/**"
+                                "/stats/admin/**"
                         ).hasRole("ADMIN")
                         .requestMatchers(
                                 "/carrito/user/**",

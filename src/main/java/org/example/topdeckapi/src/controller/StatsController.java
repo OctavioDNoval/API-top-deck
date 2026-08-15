@@ -9,13 +9,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/admin/stats")
+@RequestMapping("/stats")
 @RequiredArgsConstructor
 public class StatsController {
 
     private final StatsService statsService;
 
-    @GetMapping
+    @GetMapping("/admin")
     public ResponseEntity<StatsResponse> obtenerEstadisticas() {
         return ResponseEntity.ok(statsService.obtenerEstadisticas());
     }

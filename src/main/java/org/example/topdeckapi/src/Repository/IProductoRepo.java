@@ -56,7 +56,7 @@ public interface IProductoRepo extends JpaRepository<Producto,Long> {
             "SUM(CASE WHEN p.stock > 0 AND p.stock < 10 THEN 1 ELSE 0 END) AS bajo, " +
             "SUM(CASE WHEN p.stock >= 10 THEN 1 ELSE 0 END) AS ok " +
             "FROM producto p WHERE p.activo = true", nativeQuery = true)
-    Object[] distribucionStock();
+    List<Object[]> distribucionStock();
 
     @Query(value = "SELECT COUNT(*) FROM producto p WHERE p.stock = 0 AND p.activo = true", nativeQuery = true)
     Long contarSinStock();

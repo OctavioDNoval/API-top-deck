@@ -37,7 +37,7 @@ create table usuario(
     email varchar(255) not null unique,
     password varchar(255),
     telefono varchar(255) unique,
-    rol enum('ADMIN','USER','GUESS'),
+    rol enum('ADMIN','USER','GUEST'),
     ip_usuario varchar(255),
     version_terminos_y_condiciones_aceptadas varchar(255),
     terminos_aceptados bit(1)
