@@ -68,9 +68,12 @@ public class JwtService {
         try{
             Claims claims = extractAllClaims(token);
             String role = claims.get("role", String.class);
+            if (role == null || role.isBlank()) {
+                return null;
+            }
             return role.startsWith("ROLE_") ? role : "ROLE_" + role;
         }catch(Exception e){
-            return "ROLE_USER";
+            return null;
         }
     }
 
@@ -96,5 +99,26 @@ public class JwtService {
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
+    }
+
+    public String generateRefreshToken(String token) {
+        Claims claims = extractAllClaims(token);
+        String email = claims.getSubject();
+        String role = claims.get("role", String.class);
+
+        Map<String, Object> newClaims = new HashMap<>();
+        newClaims.put("role", role);
+
+        return Jwts.builder()
+                .setClaims(newClaims)
+                .setSubject(email)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public long getExpiration() {
+        return expiration;
     }
 }

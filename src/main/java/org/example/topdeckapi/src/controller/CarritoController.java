@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.request.DetalleCarritoRequest;
 import org.example.topdeckapi.src.DTOs.response.CarritoResponse;
@@ -48,7 +49,7 @@ public class CarritoController {
     // }
 
     @PostMapping("/user/agregarDetalle")
-    public ResponseEntity<DetalleCarritoResponse> agregarDetalle (@RequestBody DetalleCarritoRequest detalleCarritoRequest){
+    public ResponseEntity<DetalleCarritoResponse> agregarDetalle (@Valid @RequestBody DetalleCarritoRequest detalleCarritoRequest){
         DetalleCarritoResponse detalle = carritoService.agregarAlCarrito(detalleCarritoRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(detalle);
     }

@@ -18,6 +18,8 @@ public interface IUsuarioRepo extends JpaRepository<Usuario,Long> {
 
     boolean existsByEmail(String email);
 
+    boolean existsByEmailAndIdUsuarioNot(String email, Long idUsuario);
+
     boolean existsByEmailAndRol(String email, ROL rol);
 
     @Query("SELECT u FROM Usuario u WHERE " +

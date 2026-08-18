@@ -7,7 +7,9 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -40,6 +42,10 @@ public interface IProductoRepo extends JpaRepository<Producto,Long> {
 
     boolean existsByNombre(String nombre);
     Optional<Producto> findByUuid(String uuid);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Producto p WHERE p.idProducto = :id")
+    Optional<Producto> findByIdForUpdate(@Param("id") Long id);
 
     @Query(value = "SELECT c.nombre, COUNT(*) FROM producto p " +
             "INNER JOIN categoria c ON p.id_categoria = c.id_categoria " +

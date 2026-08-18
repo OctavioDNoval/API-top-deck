@@ -1,6 +1,7 @@
 package org.example.topdeckapi.src.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.auth.AuthResponse;
 import org.example.topdeckapi.src.DTOs.auth.LoginRequest;
@@ -19,7 +20,7 @@ public class AuthController {
     private final JwtService jwtService;
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
         return ResponseEntity.ok(authService.login(loginRequest));
     }
 
@@ -34,7 +35,7 @@ public class AuthController {
             String cleanToken = token.replace("Bearer ", "").trim();
 
             if (jwtService.isTokenValid(cleanToken)) {
-                return ResponseEntity.ok(cleanToken); // Devuelve el token limpio
+                return ResponseEntity.ok(cleanToken);
             } else {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
@@ -42,5 +43,11 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body("Token inválido: " + e.getMessage());
         }
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@RequestHeader("Authorization") String token){
+        String cleanToken = token.replace("Bearer ", "").trim();
+        return ResponseEntity.ok(authService.refreshToken(cleanToken));
     }
 }

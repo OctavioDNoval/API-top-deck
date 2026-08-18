@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +21,7 @@ public class DireccionController {
     private final DireccionService direccionService;
 
     @PostMapping("/user/save")
-    public ResponseEntity<DireccionResponse> saveDireccion (@RequestBody DireccionRequest dto){
+    public ResponseEntity<DireccionResponse> saveDireccion (@Valid @RequestBody DireccionRequest dto){
         DireccionResponse d = direccionService.guardar(dto);
         return ResponseEntity.ok(d);
     }

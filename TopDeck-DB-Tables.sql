@@ -270,7 +270,7 @@ insert into producto(
 -- ═══════════════════════════════════════════
 
 INSERT INTO usuario (uuid, nombre, email, password, rol, terminos_aceptados) VALUES
-    (UUID(), 'orick', 'odnr2004@gmail.com', '$10$llXY7Eph6HQZxvYAhem5T.XX6U8vrdJ4o1sSpCrkJxcIrKVZEV3Au', 'ADMIN', b'1');
+    (UUID(), 'orick', 'odnr2004@gmail.com', '$2a$10$59LK7r4kI/igkLH1.anN.OSx5T6DjHiCKw87GeOmx4W8/Ow6D.KK6', 'ADMIN', b'1');
 
 -- ═══════════════════════════════════════════
 -- Indices para optimizar queries del dashboard

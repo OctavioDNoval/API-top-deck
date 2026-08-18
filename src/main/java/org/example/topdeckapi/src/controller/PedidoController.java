@@ -1,8 +1,10 @@
 package org.example.topdeckapi.src.controller;
 
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.topdeckapi.src.DTOs.request.NuevoEstadoRequest;
 import org.example.topdeckapi.src.DTOs.request.PedidoEfimeroRequest;
 import org.example.topdeckapi.src.DTOs.request.PedidoRequest;
 import org.example.topdeckapi.src.DTOs.response.DetallePedidoResponse;
@@ -45,7 +47,7 @@ public class PedidoController {
     }
 
     @PostMapping("/user/newPedido")
-    public ResponseEntity<PedidoResponse> newPedido(@RequestBody PedidoRequest newPedido){
+    public ResponseEntity<PedidoResponse> newPedido(@Valid @RequestBody PedidoRequest newPedido){
         log.info("PedidoRequest completo: {}", newPedido);
 
         return ResponseEntity.ok(pedidoService.guardar(newPedido));
@@ -57,13 +59,13 @@ public class PedidoController {
     }
 
     @PostMapping("/public/pedidoEfimero")
-    public ResponseEntity<PedidoResponse> pedidoEfimero(@RequestBody PedidoEfimeroRequest newPedido){
+    public ResponseEntity<PedidoResponse> pedidoEfimero(@Valid @RequestBody PedidoEfimeroRequest newPedido){
         return ResponseEntity.ok(pedidoService.guardarPedidoEfimero(newPedido));
     }
 
     @PatchMapping("/admin/{idPedido}/newState")
-    public ResponseEntity<PedidoResponse> actualizarEstadoPedido(@PathVariable String idPedido, @RequestBody String newEstado) {
-        PedidoResponse pedidoResponse = pedidoService.actualizarEstado(idPedido, newEstado);
+    public ResponseEntity<PedidoResponse> actualizarEstadoPedido(@PathVariable String idPedido, @Valid @RequestBody NuevoEstadoRequest request) {
+        PedidoResponse pedidoResponse = pedidoService.actualizarEstado(idPedido, request.getEstado());
         return ResponseEntity.ok(pedidoResponse);
     }
 

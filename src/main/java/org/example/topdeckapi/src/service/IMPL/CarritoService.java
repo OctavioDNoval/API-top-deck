@@ -121,6 +121,9 @@ public class CarritoService implements ICarritoService {
 
     private Carrito crearCarritoParaUsuarioAutenticado(){
         Usuario usuarioAuth = usuarioService.obtenerUsuarioAutenticado();
+        if (usuarioAuth == null) {
+            throw new AccessDeniedException("Usuario no autenticado");
+        }
         return carritoRepository.findByUsuario(usuarioAuth)
                 .orElseGet(() -> {
                     Carrito nuevoCarrito = new Carrito();

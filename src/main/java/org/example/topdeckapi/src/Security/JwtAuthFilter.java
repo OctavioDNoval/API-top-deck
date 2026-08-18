@@ -59,9 +59,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             if (jwtService.isTokenValid(token, userDetails)) {
                 String role = jwtService.extractRole(token);
 
-
-                if (!role.startsWith("ROLE_")) {
-                    role = "ROLE_" + role;
+                if (role == null) {
+                    log.warn("Token válido pero sin rol válido para: {}", email);
+                    filterChain.doFilter(request, response);
+                    return;
                 }
 
                 SimpleGrantedAuthority authority = new SimpleGrantedAuthority(role);

@@ -17,12 +17,16 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class AuthService {
 
     private final IUsuarioRepo usuarioRepo;
@@ -50,7 +54,9 @@ public class AuthService {
             user.setVersionTerminosYCondicionesAceptados(dto.getVersionTerminosYCondicionesAceptados());
             user.setTerminosAceptados(dto.getTerminosAceptados());
             if (dto.getFechaAceptacionTerminos() != null) {
-                user.setFechaAceptacionTerminos(LocalDateTime.parse(dto.getFechaAceptacionTerminos()));
+                user.setFechaAceptacionTerminos(
+                    Instant.parse(dto.getFechaAceptacionTerminos()).atZone(ZoneId.systemDefault()).toLocalDateTime()
+                );
             }
             user.setTelefono(dto.getTelefono());
 
@@ -78,7 +84,9 @@ public class AuthService {
         u.setPassword(encoder.encode(dto.getPassword()));
         u.setRol(ROL.USER);
         if (dto.getFechaAceptacionTerminos() != null) {
-            u.setFechaAceptacionTerminos(LocalDateTime.parse(dto.getFechaAceptacionTerminos()));
+            u.setFechaAceptacionTerminos(
+                Instant.parse(dto.getFechaAceptacionTerminos()).atZone(ZoneId.systemDefault()).toLocalDateTime()
+            );
         }
 
         Usuario usuarioGuardado = usuarioRepo.save(u);
@@ -117,5 +125,19 @@ public class AuthService {
         UsuarioResponse uDTO = usuarioMapper.toResponse(u);
 
         return new AuthResponse(token,uDTO);
+    }
+
+    public AuthResponse refreshToken(String currentToken) {
+        if (!jwtService.isTokenValid(currentToken)) {
+            throw new BussinesException("Token inválido o expirado");
+        }
+
+        String email = jwtService.extractEmail(currentToken);
+        Usuario usuario = usuarioRepo.findByEmail(email)
+                .orElseThrow(() -> new UsuarioNotFoundException("Usuario no encontrado"));
+
+        String newToken = jwtService.generateRefreshToken(currentToken);
+        UsuarioResponse uResponse = usuarioMapper.toResponse(usuario);
+        return new AuthResponse(newToken, uResponse);
     }
 }

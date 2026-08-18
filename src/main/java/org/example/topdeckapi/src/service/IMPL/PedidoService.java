@@ -30,7 +30,9 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -163,7 +165,9 @@ public class PedidoService implements IPedidoService {
 
         if(estado == ESTADO_PEDIDO.CONFIRMADO && estadoAnterior != ESTADO_PEDIDO.CONFIRMADO){
             for(DetallePedido detalle: detalles){
-                Producto p = detalle.getProducto();
+                Long productoId = detalle.getProducto().getIdProducto();
+                Producto p = productoRepo.findByIdForUpdate(productoId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
                 int cantidad = detalle.getCantidad() != null ? detalle.getCantidad() : 0;
                 if(cantidad <= 0){
                     throw new BussinesException("La cantidad de un detalle del pedido no es valida");
@@ -177,7 +181,9 @@ public class PedidoService implements IPedidoService {
             }
         }else if(estadoAnterior == ESTADO_PEDIDO.CONFIRMADO && estado == ESTADO_PEDIDO.RECHAZADO){
             for(DetallePedido detalle: detalles){
-                Producto p = detalle.getProducto();
+                Long productoId = detalle.getProducto().getIdProducto();
+                Producto p = productoRepo.findByIdForUpdate(productoId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
                 int cantidad = detalle.getCantidad() != null ? detalle.getCantidad() : 0;
                 p.setStock((p.getStock() != null ? p.getStock() : 0) + cantidad);
                 productoRepo.save(p);
@@ -198,7 +204,9 @@ public class PedidoService implements IPedidoService {
         Usuario usuario = usuarioService.crearUsuarioEfimero(request.getUsuario());
 
         if (request.getUsuario().getFechaAceptacionTerminos() != null) {
-            usuario.setFechaAceptacionTerminos(LocalDateTime.parse(request.getUsuario().getFechaAceptacionTerminos()));
+            usuario.setFechaAceptacionTerminos(
+                Instant.parse(request.getUsuario().getFechaAceptacionTerminos()).atZone(ZoneId.systemDefault()).toLocalDateTime()
+            );
             usuarioRepo.save(usuario);
         }
 
@@ -258,6 +266,9 @@ public class PedidoService implements IPedidoService {
     @Transactional
     public List<PedidoResponse> obtenerPedidosPorUsuario() {
         Usuario u = usuarioService.obtenerUsuarioAutenticado();
+        if (u == null) {
+            throw new ResourceNotFoundException("Usuario no autenticado");
+        }
         return pedidoRepo.findByUsuario_IdUsuario(u.getIdUsuario())
                 .stream()
                 .map(pedidoMapper::toResponse)

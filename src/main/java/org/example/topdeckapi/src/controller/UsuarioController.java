@@ -21,6 +21,11 @@ public class UsuarioController {
 
     //=======================GET========================
 
+    @GetMapping("/me")
+    public ResponseEntity<UsuarioResponse> getMe(){
+        return ResponseEntity.ok(usuarioService.obtenerPerfilAutenticado());
+    }
+
     @GetMapping("/admin/obtenerPaginados")
     public ResponseEntity<PaginacionResponse<UsuarioResponse>>  getAll(
             @RequestParam(defaultValue = "1") Integer pagina,

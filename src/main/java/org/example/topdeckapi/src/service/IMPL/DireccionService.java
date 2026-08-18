@@ -152,6 +152,9 @@ public class DireccionService implements IDireccionService {
     @Transactional(readOnly = true)
     public List<DireccionResponse> direccionesPorUsuario (){
         Usuario u = usuarioService.obtenerUsuarioAutenticado();
+        if (u == null) {
+            throw new ResourceNotFoundException("Usuario no autenticado");
+        }
 
         return direccionRepo.findByUsuario_IdUsuario(u.getIdUsuario())
                 .stream()

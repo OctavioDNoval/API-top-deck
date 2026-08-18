@@ -76,31 +76,31 @@ public class UsuarioService implements IUsuarioService {
         );
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public UsuarioResponse obtenerPerfilAutenticado(){
+        Usuario usuario = obtenerUsuarioAutenticado();
+        return usuarioMapper.toResponse(usuario);
+    }
+
     public Usuario obtenerUsuarioAutenticado(){
-        try {
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-            if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) {
-                log.debug("No hay usuario autenticado o es anónimo");
-                return null;
-            }
-
-            String email = auth.getName();
-            log.debug("Email del usuario autenticado: {}", email);
-
-            Usuario usuario = usuarioRepo.findByEmail(email).orElse(null);
-
-            if (usuario != null) {
-                log.debug("Usuario encontrado: {}, Rol: {}", usuario.getEmail(), usuario.getRol());
-            } else {
-                log.warn("Usuario no encontrado en BD con email: {}", email);
-            }
-
-            return usuario;
-        } catch (Exception e) {
-            System.err.println("Error al obtener usuario autenticado: " + e.getMessage());
+        if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) {
+            log.debug("No hay usuario autenticado o es anónimo");
             return null;
         }
+
+        String email = auth.getName();
+        log.debug("Email del usuario autenticado: {}", email);
+
+        Usuario usuario = usuarioRepo.findByEmail(email)
+                .orElseThrow(() -> {
+                    log.warn("Usuario no encontrado en BD con email: {}", email);
+                    return new ResourceNotFoundException("Usuario autenticado no encontrado en el sistema");
+                });
+
+        log.debug("Usuario encontrado: {}, Rol: {}", usuario.getEmail(), usuario.getRol());
+        return usuario;
     }
 
     //METODOS PARA CREAR DATOS
@@ -128,7 +128,7 @@ public class UsuarioService implements IUsuarioService {
         );
 
         if(request.getEmail() != null
-            && usuarioRepo.existsByEmail(request.getEmail())){
+            && usuarioRepo.existsByEmailAndIdUsuarioNot(request.getEmail(), usuario.getIdUsuario())){
             throw new BussinesException("El email ya existe en el sistema");
         }
 

@@ -40,7 +40,6 @@ public class Usuario {
     @Email(message = "El email debe tener formato valido")
     private String email;
 
-    @JsonIgnore
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(name = "password")
     private String password;
