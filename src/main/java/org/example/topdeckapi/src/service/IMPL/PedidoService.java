@@ -21,6 +21,7 @@ import org.example.topdeckapi.src.Exception.ResourceNotFoundException;
 import org.example.topdeckapi.src.Repository.*;
 import org.example.topdeckapi.src.model.*;
 import org.example.topdeckapi.src.service.Interface.IPedidoService;
+import org.example.topdeckapi.src.util.FechaUtils;
 import org.hibernate.Hibernate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -30,9 +31,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,6 +53,7 @@ public class PedidoService implements IPedidoService {
     private final UsuarioService usuarioService;
     private final DireccionService direccionService;
     private final DetallePedidoMapper detallePedidoMapper;
+    private final AuditService auditService;
 
     private Sort buildSort (String sortBy, String direction){
         Map<String,String> mapeoCampos = Map.of(
@@ -103,6 +103,10 @@ public class PedidoService implements IPedidoService {
         Direccion direccionAsociada = direccionRepo.findByUuid(newPedido.getIdDireccion())
                 .orElseThrow(()-> new ResourceNotFoundException("Direccion asociada al pedido no encontrada"));
 
+        if (!direccionAsociada.getUsuario().getIdUsuario().equals(usuarioAuth.getIdUsuario())) {
+            throw new AccessDeniedException("La dirección no pertenece al usuario autenticado");
+        }
+
         pedido.setIpUsuario(newPedido.getIpUsuario());
         pedido.setFechaPedido(LocalDateTime.now());
         pedido.setEstado(ESTADO_PEDIDO.PENDIENTE);
@@ -113,6 +117,10 @@ public class PedidoService implements IPedidoService {
                 .map(dp->{
                     Producto producto = productoRepo.findByUuid(dp.getIdProducto())
                             .orElseThrow(()-> new ResourceNotFoundException("Producto no encontrado"));
+
+                    if (Boolean.FALSE.equals(producto.getActivo())) {
+                        throw new BussinesException("El producto no está disponible");
+                    }
 
                     int cantidad = dp.getCantidad() != null ? dp.getCantidad() : 0;
                     if(cantidad <= 0){
@@ -144,6 +152,7 @@ public class PedidoService implements IPedidoService {
 
         pedidoGuardado.setDetalles(detallePedidosGuardado);
 
+        auditService.registrar("INSERT", "pedido");
         return pedidoMapper.toResponse(pedidoRepo.save(pedidoGuardado));
     }
 
@@ -192,6 +201,7 @@ public class PedidoService implements IPedidoService {
 
         pedido.setEstado(estado);
         Pedido pedidoActualizado = pedidoRepo.save(pedido);
+        auditService.registrar("UPDATE", "pedido");
         return pedidoMapper.toResponse(pedidoActualizado);
     }
 
@@ -205,7 +215,7 @@ public class PedidoService implements IPedidoService {
 
         if (request.getUsuario().getFechaAceptacionTerminos() != null) {
             usuario.setFechaAceptacionTerminos(
-                Instant.parse(request.getUsuario().getFechaAceptacionTerminos()).atZone(ZoneId.systemDefault()).toLocalDateTime()
+                FechaUtils.parseFechaTerminos(request.getUsuario().getFechaAceptacionTerminos())
             );
             usuarioRepo.save(usuario);
         }
@@ -218,6 +228,10 @@ public class PedidoService implements IPedidoService {
             Producto producto = productoRepo.findByUuid(detallePedidoRequest.getIdProducto())
                     .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado: " + detallePedidoRequest.getIdProducto()));
             log.info("Producto {}", producto);
+
+            if (Boolean.FALSE.equals(producto.getActivo())) {
+                throw new BussinesException("El producto no está disponible");
+            }
 
             int cantidad = dp.getCantidad() != null ? dp.getCantidad() : 0;
             if(cantidad <= 0){
@@ -260,6 +274,7 @@ public class PedidoService implements IPedidoService {
                 Hibernate.initialize(detalle.getProducto())
         );
 
+        auditService.registrar("INSERT", "pedido");
         return pedidoMapper.toResponse(pedidoTerminado);
     }
 
@@ -278,6 +293,7 @@ public class PedidoService implements IPedidoService {
     public boolean delete(String uuid){
         Pedido pedido = pedidoRepo.findByUuid(uuid)
                 .orElseThrow(()-> new PedidoNotFoundException("Pedido no encontrado"));
+        auditService.registrar("DELETE", "pedido");
         pedidoRepo.delete(pedido);
         return true;
     }

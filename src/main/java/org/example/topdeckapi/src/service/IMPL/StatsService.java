@@ -101,7 +101,7 @@ public class StatsService {
                 ))
                 .toList();
 
-        // ── Usuarios por Mes (no se renderiza en dashboard actual, se deja vacio) ──
+        // ── Usuarios por Mes (requiere columna de alta en tabla usuario, no existe aun) ──
         List<StatsResponse.RegistroPorMes> usuariosPorMes = List.of();
 
         // ── Logs por Accion ──
@@ -112,8 +112,13 @@ public class StatsService {
                 ))
                 .toList();
 
-        // ── Logs por Periodo (no se renderiza en dashboard actual, se deja vacio) ──
-        List<StatsResponse.RegistroPorMes> logsPorPeriodo = List.of();
+        // ── Logs por Periodo ──
+        List<StatsResponse.RegistroPorMes> logsPorPeriodo = auditRepository.logsPorPeriodo().stream()
+                .map(arr -> new StatsResponse.RegistroPorMes(
+                        (String) arr[0],
+                        ((Number) arr[1]).longValue()
+                ))
+                .toList();
 
         // ── Eventos por Estado ──
         List<StatsResponse.ConteoNombre> eventosPorEstado = eventoRepository.contarPorEstado().stream()

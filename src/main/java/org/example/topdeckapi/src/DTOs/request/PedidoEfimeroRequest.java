@@ -17,7 +17,7 @@ import java.util.List;
 public class PedidoEfimeroRequest {
     @NotNull(message = "Los datos del usuario son obligatorios")
     @Valid
-    private UsuarioRequest usuario;
+    private UsuarioEfimeroRequest usuario;
 
     @NotNull(message = "Los datos de la dirección son obligatorios")
     @Valid

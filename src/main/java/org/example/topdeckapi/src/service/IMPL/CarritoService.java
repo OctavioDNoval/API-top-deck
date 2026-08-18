@@ -68,6 +68,12 @@ public class CarritoService implements ICarritoService {
             throw new AccessDeniedException("No tienes acceso a este detalle de carrito");
         }
 
+        Producto producto = dc.getProducto();
+        int stock = producto.getStock() != null ? producto.getStock() : 0;
+        if (nuevaCantidad > stock) {
+            throw new BussinesException("Stock insuficiente para el producto " + producto.getNombre());
+        }
+
         dc.setCantidad(nuevaCantidad);
         detalleCarritoRepository.save(dc);
         return detalleCarritoMapper.toResponse(dc);
@@ -93,10 +99,30 @@ public class CarritoService implements ICarritoService {
         Producto p = productoRepo.findByUuid(detalleCarritoRequest.getIdProducto())
                 .orElseThrow(()-> new ProductNotFoundException("Producto no encontrado"));
 
+        if (Boolean.FALSE.equals(p.getActivo())) {
+            throw new BussinesException("El producto no está disponible");
+        }
+
+        int stock = p.getStock() != null ? p.getStock() : 0;
+        int cantidadRequest = detalleCarritoRequest.getCantidad() != null ? detalleCarritoRequest.getCantidad() : 0;
+        if (cantidadRequest <= 0) {
+            throw new BussinesException("La cantidad debe ser mayor a 0");
+        }
+        if (cantidadRequest > stock) {
+            throw new BussinesException("Stock insuficiente para el producto " + p.getNombre());
+        }
+
         Carrito c;
         if(detalleCarritoRequest.getIdCarrito() != null && !detalleCarritoRequest.getIdCarrito().isEmpty()){
-            c = carritoRepository.findByUuid(detalleCarritoRequest.getIdCarrito())
-                    .orElseGet(() -> crearCarritoParaUsuarioAutenticado());
+            c = carritoRepository.findByUuid(detalleCarritoRequest.getIdCarrito()).orElse(null);
+            if (c == null) {
+                c = crearCarritoParaUsuarioAutenticado();
+            } else {
+                Usuario usuarioAuth = usuarioService.obtenerUsuarioAutenticado();
+                if (usuarioAuth == null || !c.getUsuario().getIdUsuario().equals(usuarioAuth.getIdUsuario())) {
+                    throw new AccessDeniedException("No tienes acceso a este carrito");
+                }
+            }
         } else {
             c = crearCarritoParaUsuarioAutenticado();
         }
@@ -105,7 +131,11 @@ public class CarritoService implements ICarritoService {
                 .orElse(null);
 
         if(detalleExistente != null){
-            detalleExistente.setCantidad(detalleCarritoRequest.getCantidad() +  detalleExistente.getCantidad());
+            int nuevaCantidad = detalleCarritoRequest.getCantidad() + detalleExistente.getCantidad();
+            if (nuevaCantidad > stock) {
+                throw new BussinesException("Stock insuficiente para el producto " + p.getNombre());
+            }
+            detalleExistente.setCantidad(nuevaCantidad);
             DetalleCarrito detalleGuardado = detalleCarritoRepository.save(detalleExistente);
             return detalleCarritoMapper.toResponse(detalleGuardado);
         }

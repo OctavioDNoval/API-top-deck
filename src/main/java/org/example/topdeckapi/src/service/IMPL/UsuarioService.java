@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.example.topdeckapi.src.DTOs.mappers.UsuarioMapper;
+import org.example.topdeckapi.src.DTOs.request.UsuarioEfimeroRequest;
 import org.example.topdeckapi.src.DTOs.request.UsuarioRequest;
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
 import org.example.topdeckapi.src.DTOs.response.UsuarioResponse;
@@ -38,6 +39,7 @@ public class UsuarioService implements IUsuarioService {
     private final PasswordEncoder passwordEncoder;
     private final UsuarioMapper usuarioMapper;
     private final PaginacionService paginacionService;
+    private final AuditService auditService;
 
     //METODOS PARA OBTENER DATOS PAGINADOS Y DATOS PRECISOS
 
@@ -119,6 +121,7 @@ public class UsuarioService implements IUsuarioService {
         usuario.setRol(rol);
 
         Usuario usuarioGuardado = usuarioRepo.save(usuario);
+        auditService.registrar("INSERT", "usuario");
         return usuarioMapper.toResponse(usuarioGuardado);
     }
 
@@ -147,10 +150,11 @@ public class UsuarioService implements IUsuarioService {
         }
 
         Usuario usuarioGuardado = usuarioRepo.save(usuarioActualizado);
+        auditService.registrar("UPDATE", "usuario");
         return usuarioMapper.toResponse(usuarioGuardado);
     }
 
-    public Usuario crearUsuarioEfimero(UsuarioRequest newUsuario){
+    public Usuario crearUsuarioEfimero(UsuarioEfimeroRequest newUsuario){
         Optional<Usuario> usuarioExistente = usuarioRepo.findByEmail(newUsuario.getEmail());
 
         if (usuarioExistente.isPresent()) {
@@ -160,14 +164,23 @@ public class UsuarioService implements IUsuarioService {
             }
             throw new EmailYaRegistradoException("El email pertenece a una cuenta ya registrada, Intente ingresando a su cuenta");
         }
-        Usuario usuario = usuarioMapper.toEntity(newUsuario);
+
+        Usuario usuario = new Usuario();
+        usuario.setNombre(newUsuario.getNombre());
+        usuario.setEmail(newUsuario.getEmail());
+        usuario.setIpUsuario(newUsuario.getIpUsuario());
+        usuario.setVersionTerminosYCondicionesAceptados(newUsuario.getVersionTerminosYCondicionesAceptados());
+        usuario.setTerminosAceptados(newUsuario.getTerminosAceptados());
         usuario.setRol(ROL.GUEST);
-        return usuarioRepo.save(usuario);
+        Usuario guardado = usuarioRepo.save(usuario);
+        auditService.registrar("INSERT", "usuario");
+        return guardado;
     }
 
     public boolean deleteUsuario(String uuid){
         Usuario usuario = usuarioRepo.findByUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        auditService.registrar("DELETE", "usuario");
         usuarioRepo.delete(usuario);
         return true;
     }

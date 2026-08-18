@@ -14,7 +14,6 @@ import org.example.topdeckapi.src.Exception.ResourceNotFoundException;
 import org.example.topdeckapi.src.Repository.ICategoriasRepo;
 import org.example.topdeckapi.src.Repository.IProductoRepo;
 import org.example.topdeckapi.src.Repository.ITagRepository;
-import org.example.topdeckapi.src.Security.AuditUtils;
 import org.example.topdeckapi.src.model.Categoria;
 import org.example.topdeckapi.src.model.Producto;
 import org.example.topdeckapi.src.model.Tag;
@@ -37,10 +36,10 @@ public class ProductoService implements IProductoService {
     private final IProductoRepo productoRepo;
     private final ICategoriasRepo  categoriasRepo;
     private final ITagRepository tagRepository;
-    private final AuditUtils  auditUtils;
     private final PaginacionService paginationService;
     private final ProductoMapper productoMapper;
     private final UsuarioService usuarioService;
+    private final AuditService auditService;
 
     private Sort buildSort(String sortBy, String direction){
         Map<String,String> mapeoCampos = Map.of(
@@ -133,7 +132,7 @@ public class ProductoService implements IProductoService {
         nuevoProducto.setTag(tag);
         nuevoProducto.setActivo(true);
         Producto productoGuardado = productoRepo.save(nuevoProducto);
-        auditUtils.setCurrentUserForAudit();
+        auditService.registrar("INSERT", "producto");
         return productoMapper.toResponse(productoGuardado);
     }
 
@@ -145,8 +144,14 @@ public class ProductoService implements IProductoService {
     }
 
     public ProductoResponse buscarPorId(String uuid) {
-        return productoMapper.toResponse(productoRepo.findByUuid(uuid)
-                .orElseThrow(() -> new ResourceNotFoundException("No existe el producto")));
+        Producto p = productoRepo.findByUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("No existe el producto"));
+
+        if (Boolean.FALSE.equals(p.getActivo())) {
+            throw new ResourceNotFoundException("No existe el producto");
+        }
+
+        return productoMapper.toResponse(p);
     }
 
     public ProductoResponse actualizarProducto(String uuid, ProductoRequest newProducto) {
@@ -163,12 +168,12 @@ public class ProductoService implements IProductoService {
             }
         }
         if(newProducto.getIdCategoria() != null &&
-                !p.getCategoria().getUuid().equals(newProducto.getIdCategoria())){
+                (p.getCategoria() == null || !p.getCategoria().getUuid().equals(newProducto.getIdCategoria()))){
             Categoria categoria = resolveCategoria(newProducto.getIdCategoria());
             p.setCategoria(categoria);
         }
         if(newProducto.getIdTag() != null &&
-                !p.getTag().getUuid().equals(newProducto.getIdTag())){
+                (p.getTag() == null || !p.getTag().getUuid().equals(newProducto.getIdTag()))){
             Tag tag = resolveTag(newProducto.getIdTag());
             p.setTag(tag);
         }
@@ -187,7 +192,7 @@ public class ProductoService implements IProductoService {
         Optional.ofNullable(newProducto.getDescuento())
                 .ifPresent(p::setDescuento);
 
-        auditUtils.setCurrentUserForAudit();
+        auditService.registrar("UPDATE", "producto");
         Producto productoActualizado = productoRepo.save(p);
         return productoMapper.toResponse(productoActualizado);
     }
@@ -198,13 +203,14 @@ public class ProductoService implements IProductoService {
 
         boolean estadoActual = p.getActivo();
         p.setActivo(!estadoActual);
+        auditService.registrar("UPDATE", "producto");
         return productoMapper.toResponse(productoRepo.save(p));
     }
 
     public boolean borrarProducto(String uuid) {
         Producto p = productoRepo.findByUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("No existe el producto"));
-        auditUtils.setCurrentUserForAudit();
+        auditService.registrar("DELETE", "producto");
         productoRepo.delete(p);
         return true;
     }

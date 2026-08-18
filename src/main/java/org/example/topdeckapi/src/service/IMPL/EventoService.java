@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 public class EventoService {
     private final IEventoRepository eventoRepository;
     private final EventoMapper eventoMapper;
+    private final AuditService auditService;
 
     @Scheduled(cron = "0 0 0 * * ?")
     public void actualizarEstadoEventoAutomaticamente (){
@@ -33,7 +34,7 @@ public class EventoService {
             if(evento.getEstado() != nuevoEstado){
                 evento.setEstado(nuevoEstado);
                 eventoRepository.save(evento);
-                System.out.println("EVENTO ACTUALIZADO: " + evento.getIdEvento() + nuevoEstado);
+                auditService.registrar("UPDATE", "evento");
             }
         }
     }
@@ -65,12 +66,14 @@ public class EventoService {
         evento.setEstado(ESTADO_EVENTO.PROXIMAMENTE);
 
         Evento eventoGuardado = eventoRepository.save(evento);
+        auditService.registrar("INSERT", "evento");
         return eventoMapper.toResponse(eventoGuardado);
     }
 
     public boolean delete(String uuid){
         Evento evento = eventoRepository.findByUuid(uuid)
                 .orElseThrow(() -> new org.example.topdeckapi.src.Exception.ResourceNotFoundException("Evento no encontrado"));
+        auditService.registrar("DELETE", "evento");
         eventoRepository.delete(evento);
         return true;
     }

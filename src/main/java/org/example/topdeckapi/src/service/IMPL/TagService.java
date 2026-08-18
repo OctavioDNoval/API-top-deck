@@ -8,7 +8,6 @@ import org.example.topdeckapi.src.DTOs.response.TagResponse;
 import org.example.topdeckapi.src.Exception.BussinesException;
 import org.example.topdeckapi.src.Exception.ResourceNotFoundException;
 import org.example.topdeckapi.src.Repository.ITagRepository;
-import org.example.topdeckapi.src.Security.AuditUtils;
 import org.example.topdeckapi.src.model.Categoria;
 import org.example.topdeckapi.src.model.Tag;
 
@@ -22,7 +21,7 @@ import java.util.stream.Collectors;
 @Transactional
 public class TagService {
     private final ITagRepository tagRepository;
-    private final AuditUtils auditUtils;
+    private final AuditService auditService;
     private final TagMapper tagMapper;
 
     public List<TagResponse> getAllTags() {
@@ -45,7 +44,9 @@ public class TagService {
                     Tag tag = new Tag();
                     tag.setNombre(nombre);
                     tag.setNombreNormalizado(nombreNormalizado);
-                    return tagRepository.save(tag);
+                    Tag guardado = tagRepository.save(tag);
+                    auditService.registrar("INSERT", "tag");
+                    return guardado;
                 });
 
         return t.getUuid();
@@ -74,7 +75,7 @@ public class TagService {
         tag.setNombreNormalizado(normalizar(request.getNombre()));
         tag.setImgUrl(request.getImgUrl());
         Tag tagGuardado = tagRepository.save(tag);
-        auditUtils.setCurrentUserForAudit();
+        auditService.registrar("INSERT", "tag");
 
         return tagMapper.toResponse(tagGuardado);
     }
@@ -90,7 +91,7 @@ public class TagService {
             tag.setImgUrl(newTag.getImgUrl());
         }
         Tag tagGuardado = tagRepository.save(tag);
-        auditUtils.setCurrentUserForAudit();
+        auditService.registrar("UPDATE", "tag");
         return tagMapper.toResponse(tagGuardado);
     }
 
@@ -98,7 +99,7 @@ public class TagService {
     public boolean delete(String uuid) {
         Tag tag = tagRepository.findByUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("Tag not found"));
-        auditUtils.setCurrentUserForAudit();
+        auditService.registrar("DELETE", "tag");
         tagRepository.delete(tag);
         return true;
     }

@@ -27,6 +27,7 @@ public class DireccionService implements IDireccionService {
     private final DireccionMapper direccionMapper;
     private final IUsuarioRepo usuarioRepo;
     private final UsuarioService usuarioService;
+    private final AuditService auditService;
 
     @Transactional(readOnly = true)
     public List<DireccionResponse> getAll(){
@@ -43,8 +44,10 @@ public class DireccionService implements IDireccionService {
     }
 
     public DireccionResponse guardar(DireccionRequest dto) {
-        Usuario usuario = usuarioRepo.findByUuid(dto.getIdUsuario())
-                .orElseThrow(()-> new UsuarioNotFoundException("Usuario no encontrado"));
+        Usuario usuario = usuarioService.obtenerUsuarioAutenticado();
+        if (usuario == null) {
+            throw new UsuarioNotFoundException("Usuario no autenticado");
+        }
 
         Optional<Direccion> duplicada = direccionRepo
                 .findByDireccionAndAlturaAndPisoAndCiudadAndProvinciaAndPaisAndCodigoPostalAndUsuario_IdUsuario(
@@ -85,6 +88,7 @@ public class DireccionService implements IDireccionService {
 
 
         Direccion direccionGuardada = direccionRepo.save(direccion);
+        auditService.registrar("INSERT", "direccion");
         return direccionMapper.toResponse(direccionGuardada);
     }
 
@@ -123,15 +127,12 @@ public class DireccionService implements IDireccionService {
     public DireccionResponse update(DireccionRequest request, String uuid) {
         return direccionRepo.findByUuid(uuid)
                 .map(d->{
-                    direccionMapper.updateEntity(d, request);
-
-                    if(request.getIdUsuario() != null
-                            && (d.getUsuario() == null || !request.getIdUsuario().equals(d.getUsuario().getUuid()))){
-                        Usuario u = usuarioRepo.findByUuid(request.getIdUsuario())
-                                .orElseThrow(()-> new UsuarioNotFoundException("Usuario no encontrado"));
-
-                        d.setUsuario(u);
+                    Usuario usuarioAuth = usuarioService.obtenerUsuarioAutenticado();
+                    if (usuarioAuth == null || !d.getUsuario().getIdUsuario().equals(usuarioAuth.getIdUsuario())) {
+                        throw new org.springframework.security.access.AccessDeniedException("No tienes acceso a esta dirección");
                     }
+
+                    direccionMapper.updateEntity(d, request);
 
                     if (Boolean.TRUE.equals(request.getPrincipal())) {
                         List<Direccion> existentes = direccionRepo.findByUsuario_IdUsuario(d.getUsuario().getIdUsuario());

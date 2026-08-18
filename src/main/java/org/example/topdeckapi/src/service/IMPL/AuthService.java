@@ -13,15 +13,14 @@ import org.example.topdeckapi.src.Repository.ICarritoRepository;
 import org.example.topdeckapi.src.Repository.IUsuarioRepo;
 import org.example.topdeckapi.src.model.Carrito;
 import org.example.topdeckapi.src.model.Usuario;
+import org.example.topdeckapi.src.util.FechaUtils;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Optional;
 
 @Service
@@ -34,6 +33,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final ICarritoRepository  carritoRepo;
     private final UsuarioMapper usuarioMapper;
+    private final AuditService auditService;
 
 
     public AuthResponse register (UsuarioRequest dto){
@@ -55,12 +55,14 @@ public class AuthService {
             user.setTerminosAceptados(dto.getTerminosAceptados());
             if (dto.getFechaAceptacionTerminos() != null) {
                 user.setFechaAceptacionTerminos(
-                    Instant.parse(dto.getFechaAceptacionTerminos()).atZone(ZoneId.systemDefault()).toLocalDateTime()
+                    FechaUtils.parseFechaTerminos(dto.getFechaAceptacionTerminos())
                 );
             }
             user.setTelefono(dto.getTelefono());
 
             Usuario usuarioGuardado = usuarioRepo.save(user);
+
+            auditService.registrar("UPDATE", "usuario");
 
             Optional<Carrito> existingCarrito = carritoRepo.findByUsuario(usuarioGuardado);
             if (existingCarrito.isEmpty()) {
@@ -85,11 +87,13 @@ public class AuthService {
         u.setRol(ROL.USER);
         if (dto.getFechaAceptacionTerminos() != null) {
             u.setFechaAceptacionTerminos(
-                Instant.parse(dto.getFechaAceptacionTerminos()).atZone(ZoneId.systemDefault()).toLocalDateTime()
+                FechaUtils.parseFechaTerminos(dto.getFechaAceptacionTerminos())
             );
         }
 
         Usuario usuarioGuardado = usuarioRepo.save(u);
+
+        auditService.registrar("INSERT", "usuario");
 
         Carrito nuevoCarrito = new Carrito();
         nuevoCarrito.setUsuario(usuarioGuardado);

@@ -7,7 +7,6 @@ import org.example.topdeckapi.src.DTOs.request.CategoriaRequest;
 import org.example.topdeckapi.src.DTOs.response.CategoriaResponse;
 import org.example.topdeckapi.src.Exception.ResourceNotFoundException;
 import org.example.topdeckapi.src.Repository.ICategoriasRepo;
-import org.example.topdeckapi.src.Security.AuditUtils;
 import org.example.topdeckapi.src.model.Categoria;
 import org.example.topdeckapi.src.service.Interface.ICategoriaService;
 
@@ -22,7 +21,7 @@ import java.util.stream.Collectors;
 public class CategoriaService implements ICategoriaService {
     private final ICategoriasRepo categoriasRepo;
     private final CategoriaMapper categoriaMapper;
-    private final AuditUtils auditUtils;
+    private final AuditService auditService;
 
     public List<CategoriaResponse> findAll() {
         return categoriasRepo.findAll().stream()
@@ -42,7 +41,9 @@ public class CategoriaService implements ICategoriaService {
                 .orElseGet(()->{
                     Categoria categoria = new Categoria();
                     categoria.setNombre(nombre);
-                    return categoriasRepo.save(categoria);
+                    Categoria guardada = categoriasRepo.save(categoria);
+                    auditService.registrar("INSERT", "categoria");
+                    return guardada;
                 });
 
         return c.getUuid();
@@ -51,8 +52,8 @@ public class CategoriaService implements ICategoriaService {
     public CategoriaResponse guardar(CategoriaRequest newCategoria) {
         Categoria categoria = new Categoria();
         categoria.setNombre(newCategoria.getNombre());
-        auditUtils.setCurrentUserForAudit();
         Categoria categoriaGuardada = categoriasRepo.save(categoria);
+        auditService.registrar("INSERT", "categoria");
         return categoriaMapper.toResponse(categoriaGuardada);
     }
 
@@ -63,13 +64,14 @@ public class CategoriaService implements ICategoriaService {
             c.setNombre(categoria.getNombre());
         }
         Categoria categoriaGuardada = categoriasRepo.save(c);
+        auditService.registrar("UPDATE", "categoria");
         return categoriaMapper.toResponse(categoriaGuardada);
     }
 
     public boolean borrarCategoria(String uuid) {
         Categoria c = categoriasRepo.findByUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("Categoria no encontrada"));
-        auditUtils.setCurrentUserForAudit();
+        auditService.registrar("DELETE", "categoria");
         categoriasRepo.delete(c);
         return true;
     }
