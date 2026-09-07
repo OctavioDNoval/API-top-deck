@@ -22,6 +22,8 @@ public interface IUsuarioRepo extends JpaRepository<Usuario,Long> {
 
     boolean existsByEmailAndRol(String email, ROL rol);
 
+    List<Usuario> findByRol(ROL rol);
+
     @Query("SELECT u FROM Usuario u WHERE " +
             "LOWER(u.nombre) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) ")

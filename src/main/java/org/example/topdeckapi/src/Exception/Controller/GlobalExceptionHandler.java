@@ -27,12 +27,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BussinesException.class)
     public ResponseEntity<ApiErrorResponse> resolveBussinesException(BussinesException ex, WebRequest request) {
         log.warn("Business exception en {}: {}", request.getDescription(false), ex.getMessage());
+        String code = (ex instanceof EmailYaRegistradoException) ? "EMAIL_YA_REGISTRADO" : null;
         ApiErrorResponse error = new ApiErrorResponse(
                 HttpStatus.CONFLICT.value(),
                 HttpStatus.CONFLICT.getReasonPhrase(),
                 ex.getMessage(),
                 request.getDescription(false).replace("uri =", ""),
-                LocalDateTime.now()
+                LocalDateTime.now(),
+                code
         );
         return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }

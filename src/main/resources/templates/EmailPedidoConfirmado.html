@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Pedido Confirmado</title>
+	</head>
+	<body
+		style="
+			margin: 0;
+			padding: 0;
+			background-color: #0a0a0a;
+			font-family:
+				system-ui,
+				-apple-system,
+				&quot;Segoe UI&quot;,
+				Roboto,
+				Helvetica,
+				Arial,
+				sans-serif;
+			color: #ffffff;
+		"
+	>
+		<!-- WRAPPER -->
+		<table
+			width="100%"
+			cellpadding="0"
+			cellspacing="0"
+			border="0"
+			bgcolor="#0a0a0a"
+		>
+			<tr>
+				<td align="center" style="padding: 24px 12px">
+					<!-- CONTENEDOR PRINCIPAL -->
+					<table
+						width="100%"
+						cellpadding="0"
+						cellspacing="0"
+						border="0"
+						bgcolor="#1a1a1a"
+						style="max-width: 600px; border: 1px solid #333333"
+					>
+						<!-- TÍTULO -->
+						<tr>
+							<td style="padding: 30px 24px 10px; text-align: center">
+								<h1
+									style="
+										margin: 0;
+										color: #ffffff;
+										font-size: 22px;
+										font-weight: 700;
+									"
+								>
+									Tu pedido está confirmado!
+								</h1>
+							</td>
+						</tr>
+
+						<!-- SUBTÍTULO -->
+						<tr>
+							<td style="padding: 8px 24px 20px; text-align: center">
+								<p style="margin: 0; font-size: 15px; color: #b0b0b0">
+									Hola
+									<strong style="color: #ffffff" th:text="${nombre}"
+										>Nombre</strong
+									>, tu pedido está
+									<strong style="color: #ff7a00">preparándose</strong>.
+								</p>
+							</td>
+						</tr>
+
+						<!-- DIVIDER -->
+						<tr>
+							<td style="padding: 0 24px">
+								<table width="100%" cellpadding="0" cellspacing="0" border="0">
+									<tr>
+										<td
+											style="
+												height: 1px;
+												background-color: #333333;
+												font-size: 0;
+												line-height: 0;
+											"
+										>
+											&nbsp;
+										</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+
+						<!-- DETALLES DEL PEDIDO -->
+						<tr>
+							<td style="padding: 24px">
+								<table
+									width="100%"
+									cellpadding="0"
+									cellspacing="0"
+									border="0"
+									style="background-color: #0a0a0a; border: 1px solid #333333"
+								>
+									<tr>
+										<td style="padding: 16px">
+											<table
+												width="100%"
+												cellpadding="0"
+												cellspacing="0"
+												border="0"
+											>
+												<tr>
+													<td
+														style="
+															padding: 4px 0;
+															color: #b0b0b0;
+															font-size: 13px;
+														"
+													>
+														N° de pedido
+													</td>
+													<td
+														align="right"
+														style="
+															padding: 4px 0;
+															color: #ffffff;
+															font-size: 13px;
+															font-weight: 600;
+														"
+														th:text="${nroPedido}"
+													>
+														uuid
+													</td>
+												</tr>
+												<tr>
+													<td
+														style="
+															padding: 4px 0;
+															color: #b0b0b0;
+															font-size: 13px;
+														"
+													>
+														Fecha
+													</td>
+													<td
+														align="right"
+														style="
+															padding: 4px 0;
+															color: #ffffff;
+															font-size: 13px;
+														"
+														th:text="${fecha}"
+													>
+														fecha
+													</td>
+												</tr>
+											</table>
+										</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+
+						<!-- ITEMS -->
+						<tr>
+							<td style="padding: 0 24px 8px">
+								<table width="100%" cellpadding="0" cellspacing="0" border="0">
+									<tr>
+										<th
+											align="left"
+											style="
+												padding: 8px 10px;
+												color: #b0b0b0;
+												font-size: 12px;
+												font-weight: 600;
+												border-bottom: 1px solid #333333;
+											"
+										>
+											Producto
+										</th>
+										<th
+											align="center"
+											style="
+												padding: 8px 10px;
+												color: #b0b0b0;
+												font-size: 12px;
+												font-weight: 600;
+												border-bottom: 1px solid #333333;
+											"
+										>
+											Cant.
+										</th>
+										<th
+											align="right"
+											style="
+												padding: 8px 10px;
+												color: #b0b0b0;
+												font-size: 12px;
+												font-weight: 600;
+												border-bottom: 1px solid #333333;
+											"
+										>
+											Subtotal
+										</th>
+									</tr>
+									<tr th:each="item : ${items}">
+										<td
+											align="left"
+											style="
+												padding: 10px;
+												color: #ffffff;
+												font-size: 14px;
+												border-bottom: 1px solid #333333;
+											"
+											th:text="${item.nombre}"
+										>
+											Nombre
+										</td>
+										<td
+											align="center"
+											style="
+												padding: 10px;
+												color: #b0b0b0;
+												font-size: 14px;
+												border-bottom: 1px solid #333333;
+											"
+											th:text="${item.cantidad}"
+										>
+											1
+										</td>
+										<td
+											align="right"
+											style="
+												padding: 10px;
+												color: #ffffff;
+												font-size: 14px;
+												border-bottom: 1px solid #333333;
+											"
+											th:text="${item.subtotal}"
+										>
+											$0.00
+										</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+
+						<!-- TOTAL -->
+						<tr>
+							<td style="padding: 16px 24px 24px">
+								<table
+									width="100%"
+									cellpadding="0"
+									cellspacing="0"
+									border="0"
+									style="background-color: #ff7a00"
+								>
+									<tr>
+										<td style="padding: 16px 20px">
+											<table
+												width="100%"
+												cellpadding="0"
+												cellspacing="0"
+												border="0"
+											>
+												<tr>
+													<td
+														style="
+															color: #ffffff;
+															font-size: 14px;
+															font-weight: 600;
+														"
+													>
+														Total
+													</td>
+													<td
+														align="right"
+														style="
+															color: #ffffff;
+															font-size: 20px;
+															font-weight: 700;
+														"
+														th:text="${total}"
+													>
+														$0.00
+													</td>
+												</tr>
+											</table>
+										</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+
+						<!-- INFORMACIÓN DE CONTACTO -->
+						<tr>
+							<td style="padding: 24px; background-color: #0a0a0a">
+								<table width="100%" cellpadding="0" cellspacing="0" border="0">
+									<tr>
+										<td align="center" style="padding: 4px 0">
+											<span
+												style="color: #b0b0b0; font-size: 13px"
+												th:text="${emailContacto}"
+												>contacto@topdeck.com</span
+											>
+										</td>
+									</tr>
+									<tr>
+										<td align="center" style="padding: 4px 0">
+											<span
+												style="color: #b0b0b0; font-size: 13px"
+												th:text="${telefonoContacto}"
+												>telefono</span
+											>
+										</td>
+									</tr>
+									<tr>
+										<td align="center" style="padding: 4px 0">
+											<span
+												style="color: #b0b0b0; font-size: 13px"
+												th:text="${direccion}"
+												>direccion</span
+											>
+										</td>
+									</tr>
+									<tr>
+										<td align="center" style="padding: 4px 0">
+											<span
+												style="color: #b0b0b0; font-size: 13px"
+												th:text="${horarioAtencion}"
+												>horario</span
+											>
+										</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+
+						<!-- FOOTER -->
+						<tr>
+							<td
+								align="center"
+								style="padding: 16px 20px; background-color: #000000"
+							>
+								<p style="margin: 0; color: #b0b0b0; font-size: 11px">
+									No válido como factura · TopDeck
+								</p>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</table>
+	</body>
+</html>

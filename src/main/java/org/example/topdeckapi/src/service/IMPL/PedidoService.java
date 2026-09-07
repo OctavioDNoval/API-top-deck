@@ -15,6 +15,7 @@ import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
 import org.example.topdeckapi.src.DTOs.response.PedidoResponse;
 
 import org.example.topdeckapi.src.Enumerados.ESTADO_PEDIDO;
+import org.example.topdeckapi.src.Enumerados.ROL;
 import org.example.topdeckapi.src.Exception.BussinesException;
 import org.example.topdeckapi.src.Exception.PedidoNotFoundException;
 import org.example.topdeckapi.src.Exception.ResourceNotFoundException;
@@ -54,6 +55,7 @@ public class PedidoService implements IPedidoService {
     private final DireccionService direccionService;
     private final DetallePedidoMapper detallePedidoMapper;
     private final AuditService auditService;
+    private final EmailService emailService;
 
     private Sort buildSort (String sortBy, String direction){
         Map<String,String> mapeoCampos = Map.of(
@@ -153,7 +155,9 @@ public class PedidoService implements IPedidoService {
         pedidoGuardado.setDetalles(detallePedidosGuardado);
 
         auditService.registrar("INSERT", "pedido");
-        return pedidoMapper.toResponse(pedidoRepo.save(pedidoGuardado));
+        Pedido pedidoFinal = pedidoRepo.save(pedidoGuardado);
+        notificarNuevoPedidoAdmins(pedidoFinal);
+        return pedidoMapper.toResponse(pedidoFinal);
     }
 
     public PedidoResponse actualizarEstado(String uuidPedido, String nuevoEstado){
@@ -202,6 +206,11 @@ public class PedidoService implements IPedidoService {
         pedido.setEstado(estado);
         Pedido pedidoActualizado = pedidoRepo.save(pedido);
         auditService.registrar("UPDATE", "pedido");
+
+        if (estado == ESTADO_PEDIDO.CONFIRMADO && estadoAnterior != ESTADO_PEDIDO.CONFIRMADO) {
+            enviarConfirmacionPedido(pedidoActualizado);
+        }
+
         return pedidoMapper.toResponse(pedidoActualizado);
     }
 
@@ -275,6 +284,7 @@ public class PedidoService implements IPedidoService {
         );
 
         auditService.registrar("INSERT", "pedido");
+        notificarNuevoPedidoAdmins(pedidoTerminado);
         return pedidoMapper.toResponse(pedidoTerminado);
     }
 
@@ -303,5 +313,22 @@ public class PedidoService implements IPedidoService {
         int descuento = producto.getDescuento() != null ? producto.getDescuento() : 0;
         int cant = cantidad != null ? cantidad : 0;
         return precio * cant * (1 - descuento / 100.0);
+    }
+
+    private void notificarNuevoPedidoAdmins(Pedido pedido) {
+        try {
+            List<Usuario> admins = usuarioRepo.findByRol(ROL.ADMIN);
+            emailService.enviarNuevoPedidoAdmin(admins, pedido);
+        } catch (Exception e) {
+            log.error("Error al notificar nuevo pedido a admins: {}", e.getMessage());
+        }
+    }
+
+    private void enviarConfirmacionPedido(Pedido pedido) {
+        try {
+            emailService.enviarPedidoConfirmado(pedido.getUsuario(), pedido);
+        } catch (Exception e) {
+            log.error("Error al enviar confirmacion de pedido: {}", e.getMessage());
+        }
     }
 }
