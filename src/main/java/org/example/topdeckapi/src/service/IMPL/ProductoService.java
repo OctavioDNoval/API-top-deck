@@ -220,9 +220,10 @@ public class ProductoService implements IProductoService {
 
         Producto nuevoProducto = productoMapper.toEntity(producto);
         Tag tag = resolveTag(producto.getIdTag());
-        Categoria categoria = resolveCategoria(producto.getIdCategoria());
 
-        nuevoProducto.setCategoria(categoria);
+        if (producto.getIdCategoria() != null && !producto.getIdCategoria().isBlank()) {
+            nuevoProducto.setCategoria(resolveCategoria(producto.getIdCategoria()));
+        }
         nuevoProducto.setTag(tag);
         nuevoProducto.setActivo(true);
 

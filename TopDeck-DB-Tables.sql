@@ -143,8 +143,7 @@ INSERT INTO categoria(nombre) VALUES
     ('Cajas'),
     ('Barajas'),
     ('Accesorios'),
-    ('Figuras'),
-    ('Single');
+    ('Figuras');
 
 INSERT INTO tag(nombre, img_url) VALUES
     ('Pokémon', 'https://placehold.co/600x600?text=Pokemon'),
