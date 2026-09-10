@@ -137,7 +137,7 @@ public class StatsService {
                 .toList();
 
         // ── Pedidos por Dia de la Semana ──
-        // DAYOFWEEK: 1=Domingo, 2=Lunes, ..., 7=Sabado
+        // PostgreSQL DOW+1: 1=Domingo, 2=Lunes, ..., 7=Sabado (igual que MySQL DAYOFWEEK)
         List<StatsResponse.ConteoNombre> pedidosPorDiaSemana = pedidoRepo.pedidosPorDiaSemana().stream()
                 .map(arr -> {
                     int dayIndex = ((Number) arr[0]).intValue();

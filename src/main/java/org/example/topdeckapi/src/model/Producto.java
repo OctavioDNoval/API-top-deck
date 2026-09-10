@@ -39,7 +39,7 @@ public class Producto {
     @Column(name = "nombre")
     private String nombre;
 
-    @Column(name = "descripcion")
+    @Column(name = "descripcion", columnDefinition = "TEXT")
     private String descripcion;
 
     @Column (name = "precio")
@@ -56,5 +56,8 @@ public class Producto {
 
     @Column(name = "activo")
     private Boolean activo;
+
+    @Column(name = "tipo_producto", nullable = false)
+    private String tipoProducto = "PRODUCTO";
 
 }

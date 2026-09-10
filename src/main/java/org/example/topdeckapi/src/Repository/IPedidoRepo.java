@@ -25,14 +25,14 @@ public interface IPedidoRepo extends JpaRepository<Pedido,Long> {
     @Query(value = "SELECT p.estado, COUNT(*) FROM pedido p GROUP BY p.estado", nativeQuery = true)
     List<Object[]> contarPorEstado();
 
-    @Query(value = "SELECT DATE_FORMAT(p.fecha_pedido, '%Y-%m') AS periodo, COALESCE(SUM(p.total), 0) AS total, COUNT(*) AS cantidad " +
+    @Query(value = "SELECT TO_CHAR(p.fecha_pedido, 'YYYY-MM') AS periodo, COALESCE(SUM(p.total), 0) AS total, COUNT(*) AS cantidad " +
             "FROM pedido p WHERE p.estado = 'CONFIRMADO' " +
-            "GROUP BY DATE_FORMAT(p.fecha_pedido, '%Y-%m') ORDER BY periodo", nativeQuery = true)
+            "GROUP BY TO_CHAR(p.fecha_pedido, 'YYYY-MM') ORDER BY periodo", nativeQuery = true)
     List<Object[]> ventasPorPeriodo();
 
-    @Query(value = "SELECT DAYOFWEEK(p.fecha_pedido) AS dia, COUNT(*) AS cantidad " +
+    @Query(value = "SELECT (EXTRACT(DOW FROM p.fecha_pedido) + 1) AS dia, COUNT(*) AS cantidad " +
             "FROM pedido p WHERE p.estado = 'CONFIRMADO' " +
-            "GROUP BY DAYOFWEEK(p.fecha_pedido) ORDER BY dia", nativeQuery = true)
+            "GROUP BY EXTRACT(DOW FROM p.fecha_pedido) ORDER BY dia", nativeQuery = true)
     List<Object[]> pedidosPorDiaSemana();
 
     @Query(value = "SELECT COALESCE(AVG(p.total), 0) FROM pedido p WHERE p.estado = 'CONFIRMADO'", nativeQuery = true)

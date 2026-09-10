@@ -18,8 +18,8 @@ public interface IAuditRepository extends JpaRepository<Audit,Long> {
     @Query(value = "SELECT a.accion, COUNT(*) FROM auditoria a GROUP BY a.accion", nativeQuery = true)
     List<Object[]> contarPorAccion();
 
-    @Query(value = "SELECT DATE_FORMAT(a.fecha_audit, '%Y-%m') AS mes, COUNT(*) FROM auditoria a " +
-            "GROUP BY DATE_FORMAT(a.fecha_audit, '%Y-%m') ORDER BY mes", nativeQuery = true)
+    @Query(value = "SELECT TO_CHAR(a.fecha_audit, 'YYYY-MM') AS mes, COUNT(*) FROM auditoria a " +
+            "GROUP BY TO_CHAR(a.fecha_audit, 'YYYY-MM') ORDER BY mes", nativeQuery = true)
     List<Object[]> logsPorPeriodo();
 
     Page<Audit> findByAccionIgnoreCase(String accion, Pageable pageable);

@@ -19,22 +19,26 @@ public interface IProductoRepo extends JpaRepository<Producto,Long> {
 
 
     @Query("SELECT p FROM Producto p WHERE " +
-            "(:search IS NULL OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(p.descripcion) LIKE LOWER(CONCAT('%', :search, '%'))) AND " +
+            "(:searchPattern IS NULL OR LOWER(p.nombre) LIKE :searchPattern OR LOWER(p.descripcion) LIKE :searchPattern) AND " +
             "(:idCategoria IS NULL OR p.categoria.idCategoria = :idCategoria) AND " +
-            "(:idTag IS NULL OR p.tag.idTag = :idTag)")
-    Page<Producto> findByFiltros(@Param("search") String search,
+            "(:idTag IS NULL OR p.tag.idTag = :idTag) AND " +
+            "(:tipoProducto IS NULL OR p.tipoProducto = :tipoProducto)")
+    Page<Producto> findByFiltros(@Param("searchPattern") String searchPattern,
                                  @Param("idCategoria") Long idCategoria,
                                  @Param("idTag") Long idTag,
+                                 @Param("tipoProducto") String tipoProducto,
                                  Pageable pageable);
 
     @Query("SELECT p FROM Producto p WHERE " +
-            "(:search IS NULL OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(p.descripcion) LIKE LOWER(CONCAT('%', :search, '%'))) AND " +
+            "(:searchPattern IS NULL OR LOWER(p.nombre) LIKE :searchPattern OR LOWER(p.descripcion) LIKE :searchPattern) AND " +
             "(:idCategoria IS NULL OR p.categoria.idCategoria = :idCategoria) AND " +
             "(:idTag IS NULL OR p.tag.idTag = :idTag) AND " +
+            "(:tipoProducto IS NULL OR p.tipoProducto = :tipoProducto) AND " +
             "p.activo = true ")
-    Page<Producto> findByFiltrosAndActivo(@Param("search") String search,
+    Page<Producto> findByFiltrosAndActivo(@Param("searchPattern") String searchPattern,
                                           @Param("idCategoria") Long idCategoria,
                                           @Param("idTag") Long idTag,
+                                          @Param("tipoProducto") String tipoProducto,
                                           Pageable pageable);
 
     @Query("SELECT p FROM Producto p WHERE p.descuento > 0 AND p.activo = true")

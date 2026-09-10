@@ -11,6 +11,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -37,4 +39,9 @@ public class ProductoRequest {
     @Min(value = 0, message = "El descuento no puede ser negativo")
     @Max(value = 100, message = "El descuento no puede superar el 100%")
     private Integer descuento;
+
+    @Builder.Default
+    private String tipoProducto = "PRODUCTO";
+
+    private Map<String, Object> atributos;
 }

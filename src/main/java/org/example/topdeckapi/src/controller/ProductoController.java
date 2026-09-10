@@ -4,6 +4,7 @@ package org.example.topdeckapi.src.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.request.ProductoRequest;
+import org.example.topdeckapi.src.DTOs.response.FacetaResponse;
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
 import org.example.topdeckapi.src.DTOs.response.ProductoResponse;
 import org.example.topdeckapi.src.service.IMPL.ProductoService;
@@ -14,6 +15,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -48,7 +51,7 @@ public class ProductoController {
         String search = (filter == null || filter.trim().isEmpty()) ? null : filter.trim();
 
         PaginacionResponse<ProductoResponse> paginacionResponse =
-                productoService.obtenerPaginadosConFiltro(pagina, tamanio, sortBy, direction, search, categoria, tag, false);
+                productoService.obtenerPaginadosConFiltro(pagina, tamanio, sortBy, direction, search, categoria, tag, false, "PRODUCTO");
 
         return ResponseEntity.ok(paginacionResponse);
     }
@@ -68,9 +71,51 @@ public class ProductoController {
         String search = (filter == null || filter.trim().isEmpty()) ? null : filter.trim();
 
         PaginacionResponse<ProductoResponse> paginacionResponse =
-                productoService.obtenerPaginadosConFiltro(pagina, tamanio, sortBy, direction, search, categoria, tag, true);
+                productoService.obtenerPaginadosConFiltro(pagina, tamanio, sortBy, direction, search, categoria, tag, true, null);
 
         return ResponseEntity.ok(paginacionResponse);
+    }
+
+    @GetMapping("/public/singles")
+    public ResponseEntity<PaginacionResponse<ProductoResponse>> obtenerSingles(
+            @RequestParam(defaultValue = "1") Integer pagina,
+            @RequestParam(defaultValue = "15") Integer tamanio,
+            @RequestParam(defaultValue = "idProducto") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction,
+            @RequestParam(defaultValue = "") String filter,
+            @RequestParam(defaultValue = "") String idTag,
+            @RequestParam(value = "attr", required = false) List<String> attr
+    ) {
+        String tag = (idTag == null || idTag.trim().isEmpty() || "0".equals(idTag.trim())) ? null : idTag.trim();
+        Map<String, List<String>> atributos = parseAtributos(attr);
+
+        PaginacionResponse<ProductoResponse> paginacionResponse =
+                productoService.obtenerSinglesConFiltro(pagina, tamanio, sortBy, direction, filter, tag, atributos);
+
+        return ResponseEntity.ok(paginacionResponse);
+    }
+
+    @GetMapping("/public/singles/facetas")
+    public ResponseEntity<List<FacetaResponse>> obtenerFacetasSingles(
+            @RequestParam(defaultValue = "") String idTag
+    ) {
+        String tag = (idTag == null || idTag.trim().isEmpty() || "0".equals(idTag.trim())) ? null : idTag.trim();
+        return ResponseEntity.ok(productoService.obtenerFacetasSingles(tag));
+    }
+
+    private Map<String, List<String>> parseAtributos(List<String> attr) {
+        Map<String, List<String>> atributos = new LinkedHashMap<>();
+        if (attr == null) return atributos;
+        for (String par : attr) {
+            if (par == null) continue;
+            int idx = par.indexOf(':');
+            if (idx <= 0) continue;
+            String clave = par.substring(0, idx).trim();
+            String valor = par.substring(idx + 1).trim();
+            if (clave.isEmpty() || valor.isEmpty()) continue;
+            atributos.computeIfAbsent(clave, k -> new ArrayList<>()).add(valor);
+        }
+        return atributos;
     }
 
     @GetMapping("/public/ofertas")

@@ -6,16 +6,21 @@ import lombok.RequiredArgsConstructor;
 
 import org.example.topdeckapi.src.DTOs.mappers.ProductoMapper;
 import org.example.topdeckapi.src.DTOs.request.ProductoRequest;
+import org.example.topdeckapi.src.DTOs.response.FacetaResponse;
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
 import org.example.topdeckapi.src.DTOs.response.ProductoResponse;
+import org.example.topdeckapi.src.DTOs.response.ValorFacetaResponse;
 
 import org.example.topdeckapi.src.Exception.BussinesException;
 import org.example.topdeckapi.src.Exception.ResourceNotFoundException;
 import org.example.topdeckapi.src.Repository.ICategoriasRepo;
 import org.example.topdeckapi.src.Repository.IProductoRepo;
+import org.example.topdeckapi.src.Repository.IProductoSinglesRepository;
+import org.example.topdeckapi.src.Repository.ProductoSinglesQueryRepository;
 import org.example.topdeckapi.src.Repository.ITagRepository;
 import org.example.topdeckapi.src.model.Categoria;
 import org.example.topdeckapi.src.model.Producto;
+import org.example.topdeckapi.src.model.ProductoSingles;
 import org.example.topdeckapi.src.model.Tag;
 
 import org.example.topdeckapi.src.service.Interface.IProductoService;
@@ -25,6 +30,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,12 +41,23 @@ import java.util.Optional;
 @Transactional
 public class ProductoService implements IProductoService {
     private final IProductoRepo productoRepo;
+    private final IProductoSinglesRepository productoSinglesRepo;
+    private final ProductoSinglesQueryRepository productoSinglesQueryRepo;
     private final ICategoriasRepo  categoriasRepo;
     private final ITagRepository tagRepository;
     private final PaginacionService paginationService;
     private final ProductoMapper productoMapper;
     private final UsuarioService usuarioService;
     private final AuditService auditService;
+
+    private static final List<String> FACET_DENYLIST = List.of(
+            "id_tcg", "nombre", "codigo", "set_codigo", "set_slug",
+            "imagen_small", "imagen_large", "url_tcgplayer", "_raw",
+            "CardText", "Card Text", "Attack 1", "Attack 2", "Attack 3", "Attack 4",
+            "Ability", "Effect", "Rules", "FlavorText", "Flavor Text",
+            "Description", "Lore", "Text");
+
+    private static final int MAX_VALORES_FACETA = 60;
 
     private Sort buildSort(String sortBy, String direction){
         Map<String,String> mapeoCampos = Map.of(
@@ -61,7 +79,8 @@ public class ProductoService implements IProductoService {
             String filter,
             String idCategoria,
             String idTag,
-            boolean isAdmin) {
+            boolean isAdmin,
+            String tipoProducto) {
 
         Sort sort = buildSort(sortBy, direction);
         Pageable pageable = PageRequest.of(pagina - 1, tamanio, sort);
@@ -80,14 +99,76 @@ public class ProductoService implements IProductoService {
             resolvedCategoriaId = categoria.getIdCategoria();
         }
 
+        String searchPattern = search != null ? "%" + search.toLowerCase() + "%" : null;
+
         Page<Producto> paginaProducto;
 
         if(isAdmin) {
-            paginaProducto = productoRepo.findByFiltros(search, resolvedCategoriaId, resolvedTagId, pageable);
+            paginaProducto = productoRepo.findByFiltros(searchPattern, resolvedCategoriaId, resolvedTagId, tipoProducto, pageable);
         } else {
-            paginaProducto = productoRepo.findByFiltrosAndActivo(search, resolvedCategoriaId, resolvedTagId, pageable);
+            paginaProducto = productoRepo.findByFiltrosAndActivo(searchPattern, resolvedCategoriaId, resolvedTagId, tipoProducto, pageable);
         }
-        return paginationService.crearPaginacionResponse(paginaProducto, pagina, tamanio, productoMapper::toResponse);
+        return paginationService.crearPaginacionResponse(paginaProducto, pagina, tamanio,
+                p -> enrichWithAtributos(productoMapper.toResponse(p), p));
+    }
+
+    public PaginacionResponse<ProductoResponse> obtenerSinglesConFiltro(
+            Integer pagina,
+            Integer tamanio,
+            String sortBy,
+            String direction,
+            String filter,
+            String idTag,
+            Map<String, List<String>> atributos) {
+
+        String search = (filter == null || filter.trim().isEmpty()) ? null : filter.trim();
+        String searchPattern = search != null ? "%" + search.toLowerCase() + "%" : null;
+
+        Long resolvedTagId = null;
+        if (idTag != null && !idTag.isEmpty()) {
+            resolvedTagId = resolveTag(idTag).getIdTag();
+        }
+
+        Map<String, String> mapeoCampos = Map.of(
+                "nombre", "nombre",
+                "precio", "precio",
+                "uuid", "uuid");
+        String columna = mapeoCampos.getOrDefault(sortBy, "uuid");
+        boolean ascending = "asc".equalsIgnoreCase(direction);
+
+        Page<Producto> paginaProducto = productoSinglesQueryRepo.buscarSingles(
+                searchPattern, resolvedTagId, atributos, columna, ascending, pagina - 1, tamanio);
+
+        return paginationService.crearPaginacionResponse(paginaProducto, pagina, tamanio,
+                p -> enrichWithAtributos(productoMapper.toResponse(p), p));
+    }
+
+    public List<FacetaResponse> obtenerFacetasSingles(String idTag) {
+        Long resolvedTagId = null;
+        if (idTag != null && !idTag.isEmpty()) {
+            resolvedTagId = resolveTag(idTag).getIdTag();
+        }
+
+        List<Object[]> filas = productoSinglesQueryRepo.obtenerFacetas(resolvedTagId, FACET_DENYLIST);
+
+        Map<String, List<ValorFacetaResponse>> agrupado = new LinkedHashMap<>();
+        for (Object[] fila : filas) {
+            String atributo = (String) fila[0];
+            String valor = (String) fila[1];
+            Long cantidad = ((Number) fila[2]).longValue();
+            agrupado.computeIfAbsent(atributo, k -> new ArrayList<>())
+                    .add(new ValorFacetaResponse(valor, cantidad));
+        }
+
+        List<FacetaResponse> facetas = new ArrayList<>();
+        for (Map.Entry<String, List<ValorFacetaResponse>> entry : agrupado.entrySet()) {
+            List<ValorFacetaResponse> valores = entry.getValue();
+            if (valores.size() > MAX_VALORES_FACETA) {
+                valores = valores.subList(0, MAX_VALORES_FACETA);
+            }
+            facetas.add(new FacetaResponse(entry.getKey(), valores));
+        }
+        return facetas;
     }
 
     private boolean isUuid(String value) {
@@ -121,9 +202,22 @@ public class ProductoService implements IProductoService {
     }
 
     public ProductoResponse guardar(ProductoRequest producto) {
-        if(productoRepo.existsByNombre(producto.getNombre())){
+        String tipo = producto.getTipoProducto();
+        boolean esSingle = "SINGLE".equalsIgnoreCase(tipo);
+
+        if (esSingle) {
+            Object idTcg = producto.getAtributos() != null ? producto.getAtributos().get("id_tcg") : null;
+            if (idTcg != null) {
+                if (productoSinglesRepo.existsByAtributoIdTcg(idTcg.toString())) {
+                    throw new BussinesException("La carta ya está cargada");
+                }
+            } else if (productoRepo.existsByNombre(producto.getNombre())) {
+                throw new BussinesException("El producto ya existe");
+            }
+        } else if (productoRepo.existsByNombre(producto.getNombre())) {
             throw new BussinesException("El producto ya existe");
         }
+
         Producto nuevoProducto = productoMapper.toEntity(producto);
         Tag tag = resolveTag(producto.getIdTag());
         Categoria categoria = resolveCategoria(producto.getIdCategoria());
@@ -131,15 +225,27 @@ public class ProductoService implements IProductoService {
         nuevoProducto.setCategoria(categoria);
         nuevoProducto.setTag(tag);
         nuevoProducto.setActivo(true);
+
+        nuevoProducto.setTipoProducto(tipo != null ? tipo : "PRODUCTO");
+
         Producto productoGuardado = productoRepo.save(nuevoProducto);
+
+        if ("SINGLE".equalsIgnoreCase(nuevoProducto.getTipoProducto())
+                && producto.getAtributos() != null && !producto.getAtributos().isEmpty()) {
+            ProductoSingles single = new ProductoSingles();
+            single.setProducto(productoGuardado);
+            single.setAtributos(producto.getAtributos());
+            productoSinglesRepo.save(single);
+        }
+
         auditService.registrar("INSERT", "producto");
-        return productoMapper.toResponse(productoGuardado);
+        return enrichWithAtributos(productoMapper.toResponse(productoGuardado), productoGuardado);
     }
 
     public List<ProductoResponse> obtenerOfertas() {
         Pageable pageable = PageRequest.of(0, 8, Sort.by(Sort.Direction.DESC, "descuento"));
         return productoRepo.findOfertas(pageable).stream()
-                .map(productoMapper::toResponse)
+                .map(p -> enrichWithAtributos(productoMapper.toResponse(p), p))
                 .toList();
     }
 
@@ -151,7 +257,7 @@ public class ProductoService implements IProductoService {
             throw new ResourceNotFoundException("No existe el producto");
         }
 
-        return productoMapper.toResponse(p);
+        return enrichWithAtributos(productoMapper.toResponse(p), p);
     }
 
     public ProductoResponse actualizarProducto(String uuid, ProductoRequest newProducto) {
@@ -194,7 +300,20 @@ public class ProductoService implements IProductoService {
 
         auditService.registrar("UPDATE", "producto");
         Producto productoActualizado = productoRepo.save(p);
-        return productoMapper.toResponse(productoActualizado);
+
+        if ("SINGLE".equalsIgnoreCase(p.getTipoProducto())
+                && newProducto.getAtributos() != null && !newProducto.getAtributos().isEmpty()) {
+            ProductoSingles single = productoSinglesRepo.findByProducto_IdProducto(p.getIdProducto())
+                    .orElseGet(() -> {
+                        ProductoSingles s = new ProductoSingles();
+                        s.setProducto(p);
+                        return s;
+                    });
+            single.setAtributos(newProducto.getAtributos());
+            productoSinglesRepo.save(single);
+        }
+
+        return enrichWithAtributos(productoMapper.toResponse(productoActualizado), productoActualizado);
     }
 
     public ProductoResponse cambiarEstadoProducto(String uuidProducto){
@@ -204,7 +323,7 @@ public class ProductoService implements IProductoService {
         boolean estadoActual = p.getActivo();
         p.setActivo(!estadoActual);
         auditService.registrar("UPDATE", "producto");
-        return productoMapper.toResponse(productoRepo.save(p));
+        return enrichWithAtributos(productoMapper.toResponse(productoRepo.save(p)), p);
     }
 
     public boolean borrarProducto(String uuid) {
@@ -213,6 +332,14 @@ public class ProductoService implements IProductoService {
         auditService.registrar("DELETE", "producto");
         productoRepo.delete(p);
         return true;
+    }
+
+    private ProductoResponse enrichWithAtributos(ProductoResponse response, Producto producto) {
+        if ("SINGLE".equalsIgnoreCase(producto.getTipoProducto())) {
+            productoSinglesRepo.findByProducto_IdProducto(producto.getIdProducto())
+                    .ifPresent(single -> response.setAtributos(single.getAtributos()));
+        }
+        return response;
     }
 
 

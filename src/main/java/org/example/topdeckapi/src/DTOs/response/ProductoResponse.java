@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -19,10 +21,14 @@ public class ProductoResponse {
     private String imgUrl;
     private Integer descuento;
     private Boolean activo;
+    private String tipoProducto;
 
     //Datos de la categoria
     private CategoriaResponse categoria;
 
     //Datos del tag
     private TagResponse tag;
+
+    //Atributos de singles (solo para tipoProducto = SINGLE)
+    private Map<String, Object> atributos;
 }
