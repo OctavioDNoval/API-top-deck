@@ -31,6 +31,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +56,13 @@ public class ProductoService implements IProductoService {
             "imagen_small", "imagen_large", "url_tcgplayer", "_raw",
             "CardText", "Card Text", "Attack 1", "Attack 2", "Attack 3", "Attack 4",
             "Ability", "Effect", "Rules", "FlavorText", "Flavor Text",
-            "Description", "Lore", "Text");
+            "Description", "Lore", "Text",
+            "OracleText", "Oracle Text", "Oracle",
+            "Number", "CardNumber", "Card Number", "CollectorNumber", "Collector Number",
+            "Power", "Toughness", "Loyalty", "Artist",
+            "Keywords", "Watermark", "Layout", "Flavor",
+            "ReleaseDate", "Release Date", "FrameVersion", "Frame Version",
+            "ManaCost", "Mana Cost", "ManaValue", "Mana Value", "CMC", "Cost");
 
     private static final int MAX_VALORES_FACETA = 60;
 
@@ -168,7 +175,19 @@ public class ProductoService implements IProductoService {
             }
             facetas.add(new FacetaResponse(entry.getKey(), valores));
         }
+        facetas.sort(Comparator
+                .comparingInt((FacetaResponse f) -> prioridadFaceta(f.getAtributo()))
+                .thenComparing(FacetaResponse::getAtributo));
         return facetas;
+    }
+
+    private static final List<String> FACET_PRIORITY = List.of(
+            "set", "rarity", "color", "colors", "type", "card type");
+
+    private int prioridadFaceta(String atributo) {
+        String key = atributo == null ? "" : atributo.toLowerCase();
+        int index = FACET_PRIORITY.indexOf(key);
+        return index == -1 ? FACET_PRIORITY.size() : index;
     }
 
     private boolean isUuid(String value) {
