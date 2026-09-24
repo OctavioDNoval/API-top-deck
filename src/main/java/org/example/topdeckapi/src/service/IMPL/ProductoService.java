@@ -346,6 +346,15 @@ public class ProductoService implements IProductoService {
         return enrichWithAtributos(productoMapper.toResponse(productoRepo.save(p)), p);
     }
 
+    public ProductoResponse listarProducto(String uuidProducto){
+        Producto p = productoRepo.findByUuid(uuidProducto)
+                .orElseThrow(() -> new ResourceNotFoundException("No existe el producto"));
+
+        p.setActivo(true);
+        auditService.registrar("UPDATE", "producto");
+        return enrichWithAtributos(productoMapper.toResponse(productoRepo.save(p)), p);
+    }
+
     public boolean borrarProducto(String uuid) {
         Producto p = productoRepo.findByUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("No existe el producto"));

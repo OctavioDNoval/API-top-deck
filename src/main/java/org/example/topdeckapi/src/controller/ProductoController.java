@@ -177,6 +177,11 @@ public class ProductoController {
         return ResponseEntity.ok(productoService.cambiarEstadoProducto(idProducto));
     }
 
+    @PatchMapping("/admin/relistar/{idProducto}")
+    public ResponseEntity<ProductoResponse> relistar(@PathVariable("idProducto") String idProducto){
+        return ResponseEntity.ok(productoService.listarProducto(idProducto));
+    }
+
     @DeleteMapping("/admin/delete/{id}")
     public ResponseEntity<Void> delete(@PathVariable("id") String id){
         boolean isDeleted = productoService.borrarProducto(id);

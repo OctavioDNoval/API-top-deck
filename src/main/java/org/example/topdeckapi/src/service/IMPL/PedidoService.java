@@ -174,6 +174,19 @@ public class PedidoService implements IPedidoService {
         }
 
         ESTADO_PEDIDO estadoAnterior = pedido.getEstado();
+
+        boolean mismoEstado = estado == estadoAnterior;
+        boolean transicionValida = mismoEstado
+                || (estadoAnterior == ESTADO_PEDIDO.PENDIENTE
+                    && (estado == ESTADO_PEDIDO.CONFIRMADO || estado == ESTADO_PEDIDO.RECHAZADO))
+                || (estadoAnterior == ESTADO_PEDIDO.CONFIRMADO && estado == ESTADO_PEDIDO.RECHAZADO);
+
+        if (!transicionValida) {
+            throw new BussinesException(
+                    "Transición de estado no permitida: " + estadoAnterior + " -> " + estado
+            );
+        }
+
         List<DetallePedido> detalles = pedido.getDetalles();
 
         if(estado == ESTADO_PEDIDO.CONFIRMADO && estadoAnterior != ESTADO_PEDIDO.CONFIRMADO){

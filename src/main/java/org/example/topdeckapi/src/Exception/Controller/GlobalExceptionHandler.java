@@ -14,6 +14,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
@@ -124,13 +125,26 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiErrorResponse> resolveAccessDenied(AccessDeniedException ex, WebRequest request) {
+        log.warn("Acceso denegado en {}: {}", request.getDescription(false), ex.getMessage());
+        ApiErrorResponse error = new ApiErrorResponse(
+                HttpStatus.FORBIDDEN.value(),
+                HttpStatus.FORBIDDEN.getReasonPhrase(),
+                "No tienes acceso a este recurso",
+                request.getDescription(false).replace("uri =", ""),
+                LocalDateTime.now()
+        );
+        return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> resolveException(Exception ex, WebRequest request) {
         log.error("Error inesperado en {}: {}", request.getDescription(false), ex.getMessage(), ex);
         ApiErrorResponse error = new ApiErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
-                "Ha ocurrido un error inesperado: " + ex.getMessage(),
+                "Ocurrió un error inesperado. Intente nuevamente más tarde",
                 request.getDescription(false).replace("uri =", ""),
                 LocalDateTime.now()
         );
