@@ -5,6 +5,7 @@ import org.example.topdeckapi.src.DTOs.auth.AuthResponse;
 import org.example.topdeckapi.src.DTOs.auth.LoginRequest;
 import org.example.topdeckapi.src.DTOs.mappers.UsuarioMapper;
 import org.example.topdeckapi.src.DTOs.request.UsuarioRequest;
+import org.example.topdeckapi.src.DTOs.request.VerificarCuentaRequest;
 import org.example.topdeckapi.src.DTOs.response.UsuarioResponse;
 import org.example.topdeckapi.src.Enumerados.ROL;
 import org.example.topdeckapi.src.Exception.BussinesException;
@@ -20,7 +21,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Base64;
+import java.util.HexFormat;
 import java.util.Optional;
 
 @Service
@@ -34,9 +42,19 @@ public class AuthService {
     private final ICarritoRepository  carritoRepo;
     private final UsuarioMapper usuarioMapper;
     private final AuditService auditService;
+    private final EmailService emailService;
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final Duration VALIDEZ_TOKEN_RECLAMO = Duration.ofHours(24);
+    private static final Duration ESPERA_REENVIO = Duration.ofMinutes(2);
 
 
-    public AuthResponse register (UsuarioRequest dto){
+    /*
+    * Returns empty when the email belongs to a GUEST: the account is not
+    * upgraded here (anyone could type that email). Instead a one-time link is
+    * mailed to the owner, who sets the password in confirmarReclamoGuest.
+    * */
+    public Optional<AuthResponse> register (UsuarioRequest dto){
         if (!Boolean.TRUE.equals(dto.getTerminosAceptados())) {
             throw new BussinesException("Debes aceptar los términos y condiciones");
         }
@@ -48,38 +66,8 @@ public class AuthService {
             if (user.getRol() != ROL.GUEST) {
                 throw new BussinesException("El usuario con ese mail ya existe");
             }
-            user.setRol(ROL.USER);
-            user.setPassword(encoder.encode(dto.getPassword()));
-            user.setNombre(dto.getNombre());
-            user.setVersionTerminosYCondicionesAceptados(dto.getVersionTerminosYCondicionesAceptados());
-            user.setTerminosAceptados(dto.getTerminosAceptados());
-            if (dto.getFechaAceptacionTerminos() != null) {
-                user.setFechaAceptacionTerminos(
-                    FechaUtils.parseFechaTerminos(dto.getFechaAceptacionTerminos())
-                );
-            }
-            user.setTelefono(dto.getTelefono());
-
-            Usuario usuarioGuardado = usuarioRepo.save(user);
-
-            auditService.registrar("UPDATE", "usuario");
-
-            Optional<Carrito> existingCarrito = carritoRepo.findByUsuario(usuarioGuardado);
-            if (existingCarrito.isEmpty()) {
-                Carrito nuevoCarrito = new Carrito();
-                nuevoCarrito.setUsuario(usuarioGuardado);
-                nuevoCarrito.setFechaCreacion(LocalDateTime.now());
-                carritoRepo.save(nuevoCarrito);
-            }
-
-            UserDetails userDetails = User.withUsername(usuarioGuardado.getEmail())
-                    .password("")
-                    .roles(usuarioGuardado.getRol().name())
-                    .build();
-
-            String token = jwtService.generateToken(userDetails);
-            UsuarioResponse uResponse = usuarioMapper.toResponse(usuarioGuardado);
-            return new AuthResponse(token, uResponse);
+            iniciarReclamoGuest(user);
+            return Optional.empty();
         }
 
         Usuario u = usuarioMapper.toEntity(dto);
@@ -108,7 +96,78 @@ public class AuthService {
         String token = jwtService.generateToken(userDetails);
 
         UsuarioResponse uResponse = usuarioMapper.toResponse(usuarioGuardado);
-        return new AuthResponse(token,uResponse);
+        return Optional.of(new AuthResponse(token,uResponse));
+    }
+
+    private void iniciarReclamoGuest(Usuario guest) {
+        LocalDateTime ahora = LocalDateTime.now();
+        LocalDateTime expira = guest.getTokenVerificacionExpira();
+        // Avoid mail-bombing: a link issued in the last few minutes is still pending.
+        if (expira != null && expira.minus(VALIDEZ_TOKEN_RECLAMO).plus(ESPERA_REENVIO).isAfter(ahora)) {
+            return;
+        }
+
+        byte[] bytes = new byte[32];
+        SECURE_RANDOM.nextBytes(bytes);
+        String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+
+        guest.setTokenVerificacionHash(sha256(token));
+        guest.setTokenVerificacionExpira(ahora.plus(VALIDEZ_TOKEN_RECLAMO));
+        usuarioRepo.save(guest);
+
+        try {
+            emailService.enviarVerificacionCuenta(guest, token);
+        } catch (Exception e) {
+            throw new BussinesException("No pudimos enviarte el email de verificación. Intentá de nuevo más tarde");
+        }
+    }
+
+    public AuthResponse confirmarReclamoGuest(VerificarCuentaRequest dto) {
+        if (!Boolean.TRUE.equals(dto.getTerminosAceptados())) {
+            throw new BussinesException("Debes aceptar los términos y condiciones");
+        }
+
+        Usuario user = usuarioRepo.findByTokenVerificacionHash(sha256(dto.getToken()))
+                .filter(u -> u.getRol() == ROL.GUEST)
+                .filter(u -> u.getTokenVerificacionExpira() != null
+                        && u.getTokenVerificacionExpira().isAfter(LocalDateTime.now()))
+                .orElseThrow(() -> new BussinesException("El link de verificación es inválido o expiró"));
+
+        user.setRol(ROL.USER);
+        user.setPassword(encoder.encode(dto.getPassword()));
+        user.setTerminosAceptados(true);
+        user.setVersionTerminosYCondicionesAceptados(dto.getVersionTerminosYCondicionesAceptados());
+        user.setIpUsuario(dto.getIpUsuario());
+        if (dto.getFechaAceptacionTerminos() != null) {
+            user.setFechaAceptacionTerminos(FechaUtils.parseFechaTerminos(dto.getFechaAceptacionTerminos()));
+        }
+        user.setTokenVerificacionHash(null);
+        user.setTokenVerificacionExpira(null);
+
+        Usuario usuarioGuardado = usuarioRepo.save(user);
+        auditService.registrar("UPDATE", "usuario");
+
+        if (carritoRepo.findByUsuario(usuarioGuardado).isEmpty()) {
+            Carrito nuevoCarrito = new Carrito();
+            nuevoCarrito.setUsuario(usuarioGuardado);
+            nuevoCarrito.setFechaCreacion(LocalDateTime.now());
+            carritoRepo.save(nuevoCarrito);
+        }
+
+        String token = jwtService.generateToken(User.withUsername(usuarioGuardado.getEmail())
+                .password("")
+                .roles(usuarioGuardado.getRol().name())
+                .build());
+        return new AuthResponse(token, usuarioMapper.toResponse(usuarioGuardado));
+    }
+
+    private static String sha256(String value) {
+        try {
+            byte[] hash = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     public AuthResponse login (LoginRequest request){

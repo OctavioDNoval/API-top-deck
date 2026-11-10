@@ -1,7 +1,7 @@
 package org.example.topdeckapi.src.controller;
 
 import jakarta.validation.Valid;
-import jakarta.validation.Valid;
+import org.example.topdeckapi.src.DTOs.request.VerificarCuentaRequest;
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.auth.AuthResponse;
 import org.example.topdeckapi.src.DTOs.auth.LoginRequest;
@@ -11,6 +11,8 @@ import org.example.topdeckapi.src.service.IMPL.JwtService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -25,8 +27,18 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register (@Valid @RequestBody UsuarioRequest dto){
-        return ResponseEntity.ok(authService.register(dto));
+    public ResponseEntity<?> register (@Valid @RequestBody UsuarioRequest dto){
+        return authService.register(dto)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.ACCEPTED).body(Map.of(
+                        "verificacionPendiente", true,
+                        "message", "Ya hiciste pedidos con este email. Te enviamos un link para activar tu cuenta."
+                )));
+    }
+
+    @PostMapping("/verificar-cuenta")
+    public ResponseEntity<AuthResponse> verificarCuenta(@Valid @RequestBody VerificarCuentaRequest dto){
+        return ResponseEntity.ok(authService.confirmarReclamoGuest(dto));
     }
 
     @GetMapping("/validate/start")

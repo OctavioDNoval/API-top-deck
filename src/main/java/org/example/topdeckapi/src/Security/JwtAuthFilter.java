@@ -10,15 +10,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.topdeckapi.src.service.IMPL.CustomUserDetailsService;
 import org.example.topdeckapi.src.service.IMPL.JwtService;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -54,28 +53,26 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
+            UserDetails userDetails;
+            try {
+                userDetails = customUserDetailsService.loadUserByUsername(email);
+            } catch (UsernameNotFoundException e) {
+                // Token for a user that no longer exists: treat as anonymous.
+                filterChain.doFilter(request, response);
+                return;
+            }
 
             if (jwtService.isTokenValid(token, userDetails)) {
-                String role = jwtService.extractRole(token);
-
-                if (role == null) {
-                    log.warn("Token válido pero sin rol válido para: {}", email);
-                    filterChain.doFilter(request, response);
-                    return;
-                }
-
-                SimpleGrantedAuthority authority = new SimpleGrantedAuthority(role);
-
+                // Authorities come from the database, never from the token claim:
+                // a forged or stale "role" claim must not grant privileges.
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
                                 userDetails,
                                 null,
-                                List.of(authority));
+                                userDetails.getAuthorities());
 
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 log.debug("Autenticando a: {} con roles: {}", email, authToken.getAuthorities());
-                log.debug("Rol extraído del token: {}", role);
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }

@@ -62,4 +62,13 @@ public class Usuario {
     @Column(name = "fecha_aceptacion_terminos")
     private LocalDateTime fechaAceptacionTerminos;
 
+    // SHA-256 of the one-time token sent by email to claim a GUEST account.
+    @JsonIgnore
+    @Column(name = "token_verificacion_hash", length = 64)
+    private String tokenVerificacionHash;
+
+    @JsonIgnore
+    @Column(name = "token_verificacion_expira")
+    private LocalDateTime tokenVerificacionExpira;
+
 }

@@ -91,6 +91,13 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+        <!-- Mints Firebase custom tokens so only admins can write to Storage -->
+        <dependency>
+            <groupId>com.google.firebase</groupId>
+            <artifactId>firebase-admin</artifactId>
+            <version>9.4.3</version>
+        </dependency>
+
         <!-- JWT (Java JWT) -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

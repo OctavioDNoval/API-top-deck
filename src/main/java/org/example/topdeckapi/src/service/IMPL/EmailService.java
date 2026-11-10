@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -88,6 +90,30 @@ public class EmailService {
                 log.error("No se pudo notificar al admin {}: {}", admin.getEmail(), e.getMessage());
             }
         }
+    }
+
+    /*
+    * Envia el link para que el duenio de un email GUEST active su cuenta.
+    * Se llama desde AuthService.register cuando el email ya tiene pedidos como invitado.
+    * */
+    public void enviarVerificacionCuenta(Usuario usuario, String token) {
+        String frontUrl = contactConfig.getFrontUrl() != null
+                ? contactConfig.getFrontUrl().replaceAll("/+$", "")
+                : "";
+        String link = frontUrl + "/verificar-cuenta?token="
+                + URLEncoder.encode(token, StandardCharsets.UTF_8);
+
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("nombre", usuario.getNombre());
+        variables.put("link", link);
+        buildDatosContacto(variables);
+        variables.put("logoUrl", obtenerLogoUrl());
+
+        enviarEmailTemplate(
+                usuario.getEmail(),
+                "Activá tu cuenta de TopDeck",
+                "EmailVerificarCuenta",
+                variables);
     }
 
     private void buildDatosPedido(Pedido pedido, Map<String, Object> variables) {

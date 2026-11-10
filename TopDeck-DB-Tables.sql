@@ -53,7 +53,9 @@ CREATE TABLE usuario(
     ip_usuario VARCHAR(255),
     version_terminos_y_condiciones_aceptadas VARCHAR(255),
     terminos_aceptados BOOLEAN,
-    fecha_aceptacion_terminos TIMESTAMP
+    fecha_aceptacion_terminos TIMESTAMP,
+    token_verificacion_hash VARCHAR(64),
+    token_verificacion_expira TIMESTAMP
 );
 
 CREATE TABLE direccion(

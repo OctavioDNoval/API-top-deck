@@ -86,3 +86,6 @@ temp/
 /src/main/resources/application.properties
 /src/main/resources/application.yml
 target/classes/application.properties
+
+# Firebase service account (secret)
+*service-account*.json
