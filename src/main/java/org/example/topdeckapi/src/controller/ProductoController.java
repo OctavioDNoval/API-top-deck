@@ -69,14 +69,21 @@ public class ProductoController {
             @RequestParam(defaultValue = "desc") String direction,
             @RequestParam(defaultValue = "") String filter,
             @RequestParam(defaultValue = "") String idTag,
-            @RequestParam(defaultValue = "") String idCategoria
+            @RequestParam(defaultValue = "") String idCategoria,
+            @RequestParam(defaultValue = "") String tipo,
+            @RequestParam(defaultValue = "") String estado
     ) {
         String tag = (idTag == null || idTag.trim().isEmpty() || "0".equals(idTag.trim())) ? null : idTag.trim();
         String categoria = (idCategoria == null || idCategoria.trim().isEmpty() || "0".equals(idCategoria.trim())) ? null : idCategoria.trim();
         String search = (filter == null || filter.trim().isEmpty()) ? null : filter.trim();
+        // tipo: PRODUCTO | SINGLE ; estado: activo | inactivo (anything else = all)
+        String tipoProducto = "PRODUCTO".equalsIgnoreCase(tipo) || "SINGLE".equalsIgnoreCase(tipo)
+                ? tipo.toUpperCase() : null;
+        Boolean activo = "activo".equalsIgnoreCase(estado) ? Boolean.TRUE
+                : "inactivo".equalsIgnoreCase(estado) ? Boolean.FALSE : null;
 
         PaginacionResponse<ProductoResponse> paginacionResponse =
-                productoService.obtenerPaginadosConFiltro(pagina, tamanio, sortBy, direction, search, categoria, tag, true, null);
+                productoService.obtenerPaginadosConFiltro(pagina, tamanio, sortBy, direction, search, categoria, tag, true, tipoProducto, activo);
 
         return ResponseEntity.ok(paginacionResponse);
     }

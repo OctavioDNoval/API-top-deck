@@ -70,10 +70,13 @@ public class ProductoService implements IProductoService {
         Map<String,String> mapeoCampos = Map.of(
                 "nombre", "nombre",
                 "precio", "precio",
+                "stock", "stock",
+                "idProducto", "idProducto",
                 "uuid", "uuid"
         );
 
-        String campoReal = mapeoCampos.getOrDefault(sortBy, "uuid");
+        // Default: newest first (sorting by uuid gave a random-looking order).
+        String campoReal = mapeoCampos.getOrDefault(sortBy, "idProducto");
         Sort.Direction dir = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
         return Sort.by(dir, campoReal);
     }
@@ -88,6 +91,22 @@ public class ProductoService implements IProductoService {
             String idTag,
             boolean isAdmin,
             String tipoProducto) {
+        return obtenerPaginadosConFiltro(pagina, tamanio, sortBy, direction, filter, idCategoria, idTag,
+                isAdmin, tipoProducto, null);
+    }
+
+    /** activo: null = all (admin only), true = listed, false = unlisted. */
+    public PaginacionResponse<ProductoResponse> obtenerPaginadosConFiltro(
+            Integer pagina,
+            Integer tamanio,
+            String sortBy,
+            String direction,
+            String filter,
+            String idCategoria,
+            String idTag,
+            boolean isAdmin,
+            String tipoProducto,
+            Boolean activo) {
 
         Sort sort = buildSort(sortBy, direction);
         Pageable pageable = PageRequest.of(pagina - 1, tamanio, sort);
@@ -111,7 +130,7 @@ public class ProductoService implements IProductoService {
         Page<Producto> paginaProducto;
 
         if(isAdmin) {
-            paginaProducto = productoRepo.findByFiltros(searchPattern, resolvedCategoriaId, resolvedTagId, tipoProducto, pageable);
+            paginaProducto = productoRepo.findByFiltros(searchPattern, resolvedCategoriaId, resolvedTagId, tipoProducto, activo, pageable);
         } else {
             paginaProducto = productoRepo.findByFiltrosAndActivo(searchPattern, resolvedCategoriaId, resolvedTagId, tipoProducto, pageable);
         }

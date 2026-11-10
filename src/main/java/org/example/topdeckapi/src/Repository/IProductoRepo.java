@@ -22,11 +22,13 @@ public interface IProductoRepo extends JpaRepository<Producto,Long> {
             "(:searchPattern IS NULL OR LOWER(p.nombre) LIKE :searchPattern OR LOWER(p.descripcion) LIKE :searchPattern) AND " +
             "(:idCategoria IS NULL OR p.categoria.idCategoria = :idCategoria) AND " +
             "(:idTag IS NULL OR p.tag.idTag = :idTag) AND " +
-            "(:tipoProducto IS NULL OR p.tipoProducto = :tipoProducto)")
+            "(:tipoProducto IS NULL OR p.tipoProducto = :tipoProducto) AND " +
+            "(:activo IS NULL OR p.activo = :activo)")
     Page<Producto> findByFiltros(@Param("searchPattern") String searchPattern,
                                  @Param("idCategoria") Long idCategoria,
                                  @Param("idTag") Long idTag,
                                  @Param("tipoProducto") String tipoProducto,
+                                 @Param("activo") Boolean activo,
                                  Pageable pageable);
 
     @Query("SELECT p FROM Producto p WHERE " +
