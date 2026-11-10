@@ -335,10 +335,13 @@ public class PedidoService implements IPedidoService {
 
     /** Keeps the customer's phone on their profile the first time they give one. */
     private void guardarTelefonoSiFalta(Usuario usuario, String telefono) {
-        if (usuario != null && (usuario.getTelefono() == null || usuario.getTelefono().isBlank())) {
-            usuario.setTelefono(telefono.trim());
-            usuarioRepo.save(usuario);
-        }
+        if (usuario == null || (usuario.getTelefono() != null && !usuario.getTelefono().isBlank())) return;
+        String limpio = telefono.trim();
+        // telefono is UNIQUE: two customers can share a phone (family, shop), so
+        // only copy it when nobody else has it. The order keeps it either way.
+        if (usuarioRepo.existsByTelefono(limpio)) return;
+        usuario.setTelefono(limpio);
+        usuarioRepo.save(usuario);
     }
 
     private BigDecimal calcularTotal(List<DetallePedido> detalles) {

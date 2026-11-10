@@ -41,6 +41,12 @@ public class EmailService {
     private final ContactConfig contactConfig;
     private final MailDispatcher mailDispatcher;
 
+    // DEVELOPMENT ONLY: writes account links (confirm / reset / claim) to the log and
+    // does not fail when the mail cannot be sent, so flows can be tested without SMTP.
+    // Never enable it in production: anyone reading the logs could take over accounts.
+    @Value("${app.email.log-links:false}")
+    private boolean logLinks;
+
     @Value("${spring.mail.username}")
     private String remitenteEmail;
 
@@ -115,11 +121,74 @@ public class EmailService {
         buildDatosContacto(variables);
         variables.put("logoUrl", obtenerLogoUrl());
 
-        enviarEmailTemplate(
-                usuario.getEmail(),
-                "Activá tu cuenta de TopDeck",
-                "EmailVerificarCuenta",
-                variables);
+        logLinkDev(usuario.getEmail(), link);
+        enviarSincronoODev(usuario.getEmail(), "Activá tu cuenta de TopDeck", "EmailVerificarCuenta", variables);
+    }
+
+    private String linkFront(String ruta, String token) {
+        String frontUrl = contactConfig.getFrontUrl() != null
+                ? contactConfig.getFrontUrl().replaceAll("/+$", "")
+                : "";
+        return frontUrl + ruta + URLEncoder.encode(token, StandardCharsets.UTF_8);
+    }
+
+    private void logLinkDev(String destinatario, String link) {
+        if (logLinks) log.warn("[DEV app.email.log-links] Link para {}: {}", destinatario, link);
+    }
+
+    private void enviarSincronoODev(String destinatario, String asunto, String template, Map<String, Object> variables) {
+        try {
+            enviarEmailTemplate(destinatario, asunto, template, variables);
+        } catch (RuntimeException e) {
+            if (!logLinks) throw e;
+        }
+    }
+
+    private Map<String, Object> variablesAccion(Usuario usuario, String titulo, String mensaje,
+                                                String link, String textoBoton, String nota) {
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("nombre", usuario.getNombre());
+        variables.put("titulo", titulo);
+        variables.put("mensaje", mensaje);
+        variables.put("link", link);
+        variables.put("textoBoton", textoBoton);
+        variables.put("nota", nota);
+        buildDatosContacto(variables);
+        variables.put("logoUrl", obtenerLogoUrl());
+        return variables;
+    }
+
+    /** Link that confirms the email of a newly registered account. Sent synchronously so a failure is reported. */
+    public void enviarConfirmacionRegistro(Usuario usuario, String token) {
+        String link = linkFront("/verificar-cuenta?tipo=registro&token=", token);
+        logLinkDev(usuario.getEmail(), link);
+        enviarSincronoODev(usuario.getEmail(), "Confirmá tu cuenta de TopDeck", "EmailAccionCuenta",
+                variablesAccion(usuario, "Confirmá tu cuenta",
+                        "gracias por registrarte en TopDeck. Confirmá que este email es tuyo para empezar a usar tu cuenta.",
+                        link,
+                        "Confirmar mi cuenta",
+                        "El link vence en 24 horas. Si no te registraste, ignorá este email."));
+    }
+
+    /** Password reset link. Async: the response never depends on whether the account exists. */
+    public void enviarRestablecerContrasena(Usuario usuario, String token) {
+        String link = linkFront("/restablecer-contrasena?token=", token);
+        logLinkDev(usuario.getEmail(), link);
+        enviarEmailTemplateAsync(usuario.getEmail(), "Restablecé tu contraseña de TopDeck", "EmailAccionCuenta",
+                variablesAccion(usuario, "Restablecé tu contraseña",
+                        "recibimos un pedido para cambiar la contraseña de tu cuenta. Elegí una nueva desde este link.",
+                        link,
+                        "Elegir nueva contraseña",
+                        "El link vence en 1 hora y sirve una sola vez. Si no lo pediste, ignorá este email: tu contraseña no cambia."));
+    }
+
+    /** Someone tried to register an email that already has an account: tell the owner instead of the requester. */
+    public void enviarAvisoCuentaExistente(Usuario usuario) {
+        enviarEmailTemplateAsync(usuario.getEmail(), "Ya tenés una cuenta en TopDeck", "EmailAccionCuenta",
+                variablesAccion(usuario, "Ya tenés una cuenta",
+                        "alguien intentó registrarse en TopDeck con este email, que ya tiene una cuenta. Si fuiste vos, ingresá con tu contraseña o restablecela desde la pantalla de ingreso.",
+                        null, null,
+                        "Si no fuiste vos, no tenés que hacer nada: nadie puede entrar sin tu contraseña."));
     }
 
     private void buildDatosPedido(Pedido pedido, Map<String, Object> variables) {

@@ -153,11 +153,14 @@ public class UsuarioService implements IUsuarioService {
             String telefono = request.getTelefono().trim();
             usuario.setTelefono(telefono.isEmpty() ? null : telefono);
         }
-        if (request.getRol() != null) {
+        // A new password or a role change closes the user's open sessions.
+        if (request.getRol() != null && request.getRol() != usuario.getRol()) {
             usuario.setRol(request.getRol());
+            usuario.invalidarSesiones();
         }
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
             usuario.setPassword(passwordEncoder.encode(request.getPassword()));
+            usuario.invalidarSesiones();
         }
 
         Usuario usuarioGuardado = usuarioRepo.save(usuario);
@@ -170,7 +173,9 @@ public class UsuarioService implements IUsuarioService {
 
         if (usuarioExistente.isPresent()) {
             Usuario usuario = usuarioExistente.get();
-            if (usuario.getRol() == ROL.GUEST) {
+            // An unconfirmed account may have been registered by someone else, so it
+            // must not block the real owner from buying as a guest with their email.
+            if (usuario.getRol() == ROL.GUEST || !usuario.isEmailConfirmado()) {
                 return usuario;
             }
             throw new EmailYaRegistradoException("El email pertenece a una cuenta ya registrada, Intente ingresando a su cuenta");

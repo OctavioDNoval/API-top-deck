@@ -33,6 +33,10 @@ public interface IUsuarioRepo extends JpaRepository<Usuario,Long> {
 
     Optional<Usuario> findByTokenVerificacionHash(String tokenVerificacionHash);
 
+    Optional<Usuario> findByTokenResetHash(String tokenResetHash);
+
+    boolean existsByTelefono(String telefono);
+
     @Query(value = "SELECT u.rol, COUNT(*) FROM usuario u GROUP BY u.rol", nativeQuery = true)
     List<Object[]> contarPorRol();
 }

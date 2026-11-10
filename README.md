@@ -207,13 +207,34 @@ La auditoria no usa triggers: cada service llama a `AuditService.registrar(...)`
 ## Seguridad
 
 ### Autenticacion (JWT)
-- Token JWT con expiracion de 1 hora, renovable con `POST /auth/refresh`
+- Token JWT con expiracion de 1 hora, renovable con `POST /auth/refresh`, pero **nunca mas de 7 dias desde el login** (claim `auth_time`, que se conserva al renovar)
 - Algoritmo: HS256
-- Claims: email (subject), rol (informativo)
+- Claims: email (subject), rol (informativo), `sv` (version de sesion) y `auth_time`
+- **Revocacion**: cada usuario tiene `sesion_version`. `JwtAuthFilter` rechaza el token si su `sv` no coincide. La version sube con `POST /auth/logout` (cierra la sesion en todos los dispositivos), al restablecer la contraseña y cuando un admin cambia la contraseña o el rol del usuario.
+- Cuentas con el email sin confirmar (`email_verificado = false`) no obtienen sesion. `null` = cuenta anterior a esta funcion, se toma como confirmada.
 - Header: `Authorization: Bearer <token>`
 - **El rol NO se toma del token**: `JwtAuthFilter` carga el usuario de la DB en cada request y usa su rol actual. Un token firmado con un rol falso no da permisos, y un cambio de rol aplica en la siguiente request.
 - Si el token es de un usuario borrado, la request sigue como anonima.
 - **Login**: email inexistente y password incorrecta responden lo mismo (**401** "Email o contraseña incorrectos") y tardan lo mismo (se compara contra un hash de relleno), asi no se puede averiguar que emails estan registrados. Las cuentas GUEST no tienen password y nunca pueden loguearse.
+- **Fuerza bruta**: ademas del limite por IP (`RateLimitFilter`), `LoginAttemptService` bloquea un email 15 minutos tras 5 contraseñas incorrectas en 15 minutos (**429**). Se cuenta aunque el email no exista, para no revelar nada. Vive en memoria (un reinicio lo limpia).
+- **Contraseñas**: entre 8 y 72 caracteres (72 es el limite real de bcrypt).
+
+### Registro con confirmacion de email
+1. `POST /auth/register` responde **siempre 202** con el mismo mensaje, exista o no el email (no permite averiguar quien tiene cuenta):
+   - email nuevo: crea la cuenta `USER` con `email_verificado = false` y manda `EmailAccionCuenta.html` con `${APP_FRONT_URL}/verificar-cuenta?tipo=registro&token=...` (24 h, solo se guarda el SHA-256);
+   - cuenta sin confirmar: reenvia el link **sin tocar sus datos** (nadie puede cambiar la contraseña pendiente de otro);
+   - cuenta confirmada: le manda al dueño un aviso "ya tenes una cuenta" (como mucho uno cada 30 min);
+   - GUEST: flujo de reclamo (abajo).
+2. `POST /auth/confirmar-email` `{ token, password }` pide **la contraseña elegida al registrarse**: si otra persona registro ese email primero, el dueño real no la conoce y no puede confirmar esa cuenta; usa "olvide mi contraseña", que prueba que el buzon es suyo y le deja elegir la propia.
+3. Login con la cuenta sin confirmar → **403** y se reenvia el link.
+4. Un pedido como invitado con el email de una cuenta sin confirmar se acepta (no bloquea al dueño real).
+
+### Olvide mi contraseña
+- `POST /auth/olvide-contrasena` `{ email }` → **siempre 202** con el mismo mensaje. Solo si la cuenta existe (y no es GUEST) se manda el link `${APP_FRONT_URL}/restablecer-contrasena?token=...` (1 h, un solo uso, SHA-256 en `token_reset_hash`, no se reenvia antes de 2 min).
+- `POST /auth/restablecer-contrasena` `{ token, password }` → cambia la contraseña, confirma el email, cierra las demas sesiones y devuelve un JWT nuevo.
+
+### Desarrollo sin SMTP
+`app.email.log-links=true` (solo en el `application.properties` local) escribe en el log los links de confirmacion / restablecimiento / reclamo y no corta el registro si el mail falla. **Nunca en produccion**: quien lea los logs podria tomar cuentas. `application-prod.properties` no lo define (queda en `false`).
 
 ### Autorizacion (Roles)
 | Rol | Descripcion |
@@ -271,10 +292,14 @@ Ventana fija por IP y por regla, en memoria (alcanza con una sola instancia de l
 | Metodo | Path | Descripcion |
 |---|---|---|
 | POST | `/auth/login` | Login con email/password, retorna JWT |
-| POST | `/auth/register` | Registro. 200 + JWT, o 202 si el email era de un GUEST (ver arriba) |
+| POST | `/auth/register` | Registro. Siempre 202 sin token: hay que confirmar el email (ver arriba) |
+| POST | `/auth/confirmar-email` | Confirma una cuenta nueva: `{ token, password }` → JWT |
 | POST | `/auth/verificar-cuenta` | Confirma el reclamo de un GUEST: `{ token, password, terminosAceptados, ... }` |
+| POST | `/auth/olvide-contrasena` | `{ email }` → siempre 202; manda el link si la cuenta existe |
+| POST | `/auth/restablecer-contrasena` | `{ token, password }` → JWT; cierra las demas sesiones |
+| POST | `/auth/logout` | Cierra todas las sesiones del usuario (204) |
 | GET | `/auth/validate/start` | Valida token Bearer existente |
-| POST | `/auth/refresh` | Renueva un token vigente |
+| POST | `/auth/refresh` | Renueva un token vigente, hasta 7 dias desde el login |
 | GET | `/products/public/obtenerPaginados` | Productos sellados paginados (solo activos). Params: `pagina`, `tamanio`, `sortBy`, `direction`, `filter`, `idTag`, `idCategoria` |
 | GET | `/products/public/singles` | Singles paginados. Params: los de arriba + `attr=clave:valor` (repetible) |
 | GET | `/products/public/singles/facetas` | Facetas (atributos y valores con conteo) de singles. Param: `idTag` |

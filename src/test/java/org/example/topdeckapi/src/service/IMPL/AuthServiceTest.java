@@ -3,6 +3,7 @@ package org.example.topdeckapi.src.service.IMPL;
 import org.example.topdeckapi.src.DTOs.auth.AuthResponse;
 import org.example.topdeckapi.src.DTOs.auth.LoginRequest;
 import org.example.topdeckapi.src.DTOs.mappers.UsuarioMapper;
+import org.example.topdeckapi.src.DTOs.request.RestablecerContrasenaRequest;
 import org.example.topdeckapi.src.DTOs.request.UsuarioRequest;
 import org.example.topdeckapi.src.DTOs.request.VerificarCuentaRequest;
 import org.example.topdeckapi.src.Enumerados.ROL;
@@ -20,6 +21,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HexFormat;
 import java.util.Optional;
@@ -43,6 +46,8 @@ class AuthServiceTest {
     private EmailService emailService;
     private PasswordEncoder encoder;
     private AuthService authService;
+    private JwtService jwtService;
+    private UsuarioMapper usuarioMapper;
 
     @BeforeEach
     void setUp() {
@@ -50,8 +55,10 @@ class AuthServiceTest {
         carritoRepo = mock(ICarritoRepository.class);
         emailService = mock(EmailService.class);
         encoder = new BCryptPasswordEncoder(4);
-        authService = new AuthService(usuarioRepo, encoder, new JwtService(SECRET), carritoRepo,
-                mock(UsuarioMapper.class), mock(AuditService.class), emailService);
+        jwtService = new JwtService(SECRET);
+        usuarioMapper = mock(UsuarioMapper.class);
+        authService = new AuthService(usuarioRepo, encoder, jwtService, carritoRepo,
+                usuarioMapper, mock(AuditService.class), emailService, new LoginAttemptService());
         authService.initDummyHash();
         when(usuarioRepo.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
         when(carritoRepo.findByUsuario(any())).thenReturn(Optional.empty());
@@ -129,9 +136,8 @@ class AuthServiceTest {
         Usuario guest = usuario("guest@example.com", ROL.GUEST, null);
         when(usuarioRepo.findByEmail("guest@example.com")).thenReturn(Optional.of(guest));
 
-        Optional<AuthResponse> result = authService.register(registro("guest@example.com"));
+        authService.register(registro("guest@example.com"));
 
-        assertThat(result).isEmpty();
         assertThat(guest.getRol()).isEqualTo(ROL.GUEST);
         assertThat(guest.getPassword()).isNull();
         assertThat(guest.getTokenVerificacionExpira()).isAfter(LocalDateTime.now().plusHours(23));
@@ -155,19 +161,159 @@ class AuthServiceTest {
     }
 
     @Test
-    void registeringWithAnExistingUserEmailFails() {
-        when(usuarioRepo.findByEmail("user@example.com"))
-                .thenReturn(Optional.of(usuario("user@example.com", ROL.USER, "hash")));
+    void registeringAnExistingAccountRevealsNothingAndOnlyNotifiesTheOwner() {
+        Usuario existente = usuario("user@example.com", ROL.USER, "hash-original");
+        when(usuarioRepo.findByEmail("user@example.com")).thenReturn(Optional.of(existente));
 
-        assertThatThrownBy(() -> authService.register(registro("user@example.com")))
+        authService.register(registro("user@example.com")); // no exception: same answer as a new email
+
+        assertThat(existente.getPassword()).isEqualTo("hash-original");
+        verify(emailService).enviarAvisoCuentaExistente(existente);
+        verify(emailService, never()).enviarConfirmacionRegistro(any(), anyString());
+    }
+
+    // ---------- registration with email confirmation ----------
+
+    @Test
+    void newRegistrationIsUnconfirmedAndMailsAConfirmationLink() throws Exception {
+        when(usuarioRepo.findByEmail("nuevo@example.com")).thenReturn(Optional.empty());
+        when(usuarioMapper.toEntity(any(UsuarioRequest.class))).thenAnswer(inv -> {
+            Usuario u = new Usuario();
+            u.setEmail("nuevo@example.com");
+            return u;
+        });
+
+        authService.register(registro("nuevo@example.com"));
+
+        ArgumentCaptor<Usuario> guardado = ArgumentCaptor.forClass(Usuario.class);
+        ArgumentCaptor<String> token = ArgumentCaptor.forClass(String.class);
+        verify(emailService).enviarConfirmacionRegistro(guardado.capture(), token.capture());
+        Usuario u = guardado.getValue();
+        assertThat(u.getRol()).isEqualTo(ROL.USER);
+        assertThat(u.getEmailVerificado()).isFalse();
+        assertThat(u.getTokenVerificacionHash()).isEqualTo(sha256(token.getValue()));
+    }
+
+    @Test
+    void unconfirmedAccountCannotLogInAndGetsTheLinkAgain() {
+        Usuario u = usuario("nuevo@example.com", ROL.USER, encoder.encode("correcta1"));
+        u.setEmailVerificado(false);
+        when(usuarioRepo.findByEmail("nuevo@example.com")).thenReturn(Optional.of(u));
+
+        assertThat(catchStatus(() -> authService.login(login("nuevo@example.com", "correcta1")))
+                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        verify(emailService).enviarConfirmacionRegistro(eq(u), anyString());
+    }
+
+    @Test
+    void reRegisteringAnUnconfirmedAccountDoesNotChangeItsPassword() {
+        Usuario u = usuario("victima@example.com", ROL.USER, "hash-de-la-victima");
+        u.setEmailVerificado(false);
+        when(usuarioRepo.findByEmail("victima@example.com")).thenReturn(Optional.of(u));
+
+        authService.register(registro("victima@example.com"));
+
+        assertThat(u.getPassword()).isEqualTo("hash-de-la-victima");
+        assertThat(u.getNombre()).isEqualTo("Test");
+    }
+
+    @Test
+    void confirmingNeedsThePasswordChosenAtRegistration() throws Exception {
+        // Someone else registered this email; the real owner opens the link but
+        // does not know that password, so the stranger's account is not confirmed.
+        Usuario u = usuario("victima@example.com", ROL.USER, encoder.encode("del-atacante"));
+        u.setEmailVerificado(false);
+        u.setTokenVerificacionHash(sha256("link"));
+        u.setTokenVerificacionExpira(LocalDateTime.now().plusHours(1));
+        when(usuarioRepo.findByTokenVerificacionHash(sha256("link"))).thenReturn(Optional.of(u));
+
+        assertThatThrownBy(() -> authService.confirmarEmail("link", "la-mia-123"))
                 .isInstanceOf(BussinesException.class);
-        verify(emailService, never()).enviarVerificacionCuenta(any(), anyString());
+        assertThat(u.getEmailVerificado()).isFalse();
+
+        AuthResponse ok = authService.confirmarEmail("link", "del-atacante");
+        assertThat(ok.getToken()).isNotBlank();
+        assertThat(u.getEmailVerificado()).isTrue();
+        assertThat(u.getTokenVerificacionHash()).isNull();
+    }
+
+    // ---------- brute force ----------
+
+    @Test
+    void fiveWrongPasswordsLockTheAccountEvenForTheRightOne() {
+        when(usuarioRepo.findByEmail("user@example.com"))
+                .thenReturn(Optional.of(usuario("user@example.com", ROL.USER, encoder.encode("correcta1"))));
+        for (int i = 0; i < 5; i++) {
+            catchStatus(() -> authService.login(login("user@example.com", "mala")));
+        }
+
+        assertThat(catchStatus(() -> authService.login(login("user@example.com", "correcta1")))
+                .getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    // ---------- sessions ----------
+
+    @Test
+    void refreshKeepsTheLoginTimeAndStopsAfterLogout() {
+        Usuario u = usuario("user@example.com", ROL.USER, "hash");
+        u.setSesionVersion(0);
+        when(usuarioRepo.findByEmail("user@example.com")).thenReturn(Optional.of(u));
+        Instant login = Instant.now().minus(Duration.ofDays(2));
+        String token = jwtService.generarToken(u, login);
+
+        String renovado = authService.refreshToken(token).getToken();
+        assertThat(jwtService.authTime(jwtService.leerClaims(renovado)).getEpochSecond()).isEqualTo(login.getEpochSecond());
+
+        authService.logout("user@example.com");
+        assertThat(catchStatus(() -> authService.refreshToken(renovado)).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void refreshIsRefusedPastSevenDays() {
+        Usuario u = usuario("user@example.com", ROL.USER, "hash");
+        when(usuarioRepo.findByEmail("user@example.com")).thenReturn(Optional.of(u));
+        String viejo = jwtService.generarToken(u, Instant.now().minus(Duration.ofDays(8)));
+
+        assertThat(catchStatus(() -> authService.refreshToken(viejo)).getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    // ---------- password reset ----------
+
+    @Test
+    void forgotPasswordForUnknownEmailSendsNothing() {
+        when(usuarioRepo.findByEmail("nadie@example.com")).thenReturn(Optional.empty());
+
+        authService.olvideContrasena("nadie@example.com");
+
+        verify(emailService, never()).enviarRestablecerContrasena(any(), anyString());
+    }
+
+    @Test
+    void resetLinkSetsPasswordOnceAndClosesOtherSessions() throws Exception {
+        Usuario u = usuario("user@example.com", ROL.USER, encoder.encode("vieja1234"));
+        u.setSesionVersion(3);
+        when(usuarioRepo.findByEmail("user@example.com")).thenReturn(Optional.of(u));
+
+        authService.olvideContrasena("user@example.com");
+        ArgumentCaptor<String> token = ArgumentCaptor.forClass(String.class);
+        verify(emailService).enviarRestablecerContrasena(eq(u), token.capture());
+        assertThat(u.getTokenResetHash()).isEqualTo(sha256(token.getValue()));
+        when(usuarioRepo.findByTokenResetHash(sha256(token.getValue()))).thenReturn(Optional.of(u));
+
+        RestablecerContrasenaRequest req = new RestablecerContrasenaRequest(token.getValue(), "nueva-clave-1");
+        authService.restablecerContrasena(req);
+
+        assertThat(encoder.matches("nueva-clave-1", u.getPassword())).isTrue();
+        assertThat(u.getSesionVersion()).isEqualTo(4);
+        assertThat(u.getTokenResetHash()).isNull();
+        when(usuarioRepo.findByTokenResetHash(sha256(token.getValue()))).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> authService.restablecerContrasena(req)).isInstanceOf(BussinesException.class);
     }
 
     private static VerificarCuentaRequest confirmacion(String token) {
         VerificarCuentaRequest r = new VerificarCuentaRequest();
         r.setToken(token);
-        r.setPassword("nueva123");
+        r.setPassword("nueva1234");
         r.setTerminosAceptados(true);
         return r;
     }
@@ -183,7 +329,7 @@ class AuthServiceTest {
 
         assertThat(response.getToken()).isNotBlank();
         assertThat(guest.getRol()).isEqualTo(ROL.USER);
-        assertThat(encoder.matches("nueva123", guest.getPassword())).isTrue();
+        assertThat(encoder.matches("nueva1234", guest.getPassword())).isTrue();
         assertThat(guest.getTokenVerificacionHash()).isNull();
         assertThat(guest.getTokenVerificacionExpira()).isNull();
     }

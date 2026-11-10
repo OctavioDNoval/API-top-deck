@@ -71,4 +71,36 @@ public class Usuario {
     @Column(name = "token_verificacion_expira")
     private LocalDateTime tokenVerificacionExpira;
 
+    // False until the owner opens the confirmation link. Null = account created
+    // before email confirmation existed, treated as verified.
+    @JsonIgnore
+    @Column(name = "email_verificado")
+    private Boolean emailVerificado;
+
+    // Bumped on logout, password change or role change: every JWT carries the
+    // version it was issued with, so older tokens stop working at once.
+    @JsonIgnore
+    @Column(name = "sesion_version")
+    private Integer sesionVersion;
+
+    @JsonIgnore
+    @Column(name = "token_reset_hash", length = 64)
+    private String tokenResetHash;
+
+    @JsonIgnore
+    @Column(name = "token_reset_expira")
+    private LocalDateTime tokenResetExpira;
+
+    public boolean isEmailConfirmado() {
+        return !Boolean.FALSE.equals(emailVerificado);
+    }
+
+    public int getSesionVersionActual() {
+        return sesionVersion != null ? sesionVersion : 0;
+    }
+
+    public void invalidarSesiones() {
+        sesionVersion = getSesionVersionActual() + 1;
+    }
+
 }
