@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.example.topdeckapi.src.Enumerados.ESTADO_PEDIDO;
+import org.example.topdeckapi.src.Enumerados.TIPO_ENTREGA;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,6 +21,8 @@ public class PedidoResponse {
     private ESTADO_PEDIDO estado;
     private BigDecimal total;
     private String ipUsuario;
+    private TIPO_ENTREGA tipoEntrega;
+    private String telefonoContacto;
 
     //Datos del usuario
     private UsuarioResponse usuario;

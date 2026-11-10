@@ -1,5 +1,7 @@
 package org.example.topdeckapi.src.service.IMPL;
 
+import org.example.topdeckapi.src.model.Direccion;
+import org.example.topdeckapi.src.Enumerados.TIPO_ENTREGA;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -75,6 +77,8 @@ public class EmailService {
         Map<String, Object> variables = new HashMap<>();
         variables.put("nombreCliente", pedido.getUsuario().getNombre());
         variables.put("emailCliente", pedido.getUsuario().getEmail());
+        variables.put("telefonoCliente", pedido.getTelefonoContacto() != null ? pedido.getTelefonoContacto() : "No informado");
+        variables.put("entregaCliente", describirEntrega(pedido));
 
         buildDatosPedido(pedido, variables);
         buildDatosContacto(variables);
@@ -217,5 +221,18 @@ public class EmailService {
         }
         log.warn("Base URL no configurada en app.base-url, se omite el logo en el mail");
         return "";
+    }
+
+    private String describirEntrega(Pedido pedido) {
+        if (pedido.getTipoEntrega() == TIPO_ENTREGA.RETIRO) {
+            return "Retiro en el local";
+        }
+        Direccion d = pedido.getDireccion();
+        if (d == null) {
+            return "Envío a domicilio";
+        }
+        String piso = d.getPiso() != null && !d.getPiso().isBlank() ? ", " + d.getPiso() : "";
+        return "Envío: " + d.getDireccion() + " " + d.getAltura() + piso + ", " + d.getCiudad()
+                + ", " + d.getProvincia() + " (CP " + d.getCodigoPostal() + ")";
     }
 }

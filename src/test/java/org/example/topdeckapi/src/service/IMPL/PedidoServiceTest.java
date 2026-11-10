@@ -4,6 +4,7 @@ import org.example.topdeckapi.src.DTOs.mappers.PedidoMapper;
 import org.example.topdeckapi.src.DTOs.request.DetallePedidoRequest;
 import org.example.topdeckapi.src.DTOs.request.PedidoRequest;
 import org.example.topdeckapi.src.Enumerados.ESTADO_PEDIDO;
+import org.example.topdeckapi.src.Enumerados.TIPO_ENTREGA;
 import org.example.topdeckapi.src.Exception.BussinesException;
 import org.example.topdeckapi.src.Repository.IDetallePedidoRepo;
 import org.example.topdeckapi.src.Repository.IDireccionRepo;
@@ -92,6 +93,8 @@ class PedidoServiceTest {
     private static PedidoRequest pedido(DetallePedidoRequest... lineas) {
         PedidoRequest r = new PedidoRequest();
         r.setIdDireccion("dir-1");
+        r.setTipoEntrega(TIPO_ENTREGA.ENVIO);
+        r.setTelefonoContacto("11 5555-1234");
         r.setDetalles(List.of(lineas));
         return r;
     }
@@ -125,6 +128,48 @@ class PedidoServiceTest {
     void zeroQuantityIsRejected() {
         assertThatThrownBy(() -> pedidoService.guardar(pedido(linea("prod-1", 0))))
                 .isInstanceOf(BussinesException.class);
+    }
+
+    private Pedido pedidoCapturado() {
+        ArgumentCaptor<Pedido> captor = ArgumentCaptor.forClass(Pedido.class);
+        verify(pedidoRepo, org.mockito.Mockito.atLeastOnce()).save(captor.capture());
+        return captor.getValue();
+    }
+
+    @Test
+    void pickupOrderNeedsNoAddressAndKeepsThePhone() {
+        PedidoRequest r = pedido(linea("prod-1", 1));
+        r.setIdDireccion(null);
+        r.setTipoEntrega(TIPO_ENTREGA.RETIRO);
+
+        pedidoService.guardar(r);
+
+        Pedido guardado = pedidoCapturado();
+        assertThat(guardado.getTipoEntrega()).isEqualTo(TIPO_ENTREGA.RETIRO);
+        assertThat(guardado.getDireccion()).isNull();
+        assertThat(guardado.getTelefonoContacto()).isEqualTo("11 5555-1234");
+        verify(direccionRepo, never()).findByUuid(any());
+    }
+
+    @Test
+    void shippingOrderWithoutAddressIsRejected() {
+        PedidoRequest r = pedido(linea("prod-1", 1));
+        r.setIdDireccion(" ");
+
+        assertThatThrownBy(() -> pedidoService.guardar(r))
+                .isInstanceOf(BussinesException.class)
+                .hasMessageContaining("dirección");
+    }
+
+    @Test
+    void phoneIsSavedOnTheProfileOnlyWhenMissing() {
+        usuario.setTelefono("223 111-2222");
+        pedidoService.guardar(pedido(linea("prod-1", 1)));
+        assertThat(usuario.getTelefono()).isEqualTo("223 111-2222");
+
+        usuario.setTelefono(null);
+        pedidoService.guardar(pedido(linea("prod-1", 1)));
+        assertThat(usuario.getTelefono()).isEqualTo("11 5555-1234");
     }
 
     private Pedido pedidoGuardado(ESTADO_PEDIDO estado, int cantidad) {

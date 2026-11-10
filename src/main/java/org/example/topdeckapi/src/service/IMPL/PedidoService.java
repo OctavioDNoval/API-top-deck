@@ -17,6 +17,7 @@ import org.example.topdeckapi.src.DTOs.request.PedidoRequest;
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
 import org.example.topdeckapi.src.DTOs.response.PedidoResponse;
 
+import org.example.topdeckapi.src.Enumerados.TIPO_ENTREGA;
 import org.example.topdeckapi.src.Enumerados.ESTADO_PEDIDO;
 import org.example.topdeckapi.src.Enumerados.ROL;
 import org.example.topdeckapi.src.Exception.BussinesException;
@@ -105,11 +106,17 @@ public class PedidoService implements IPedidoService {
 
         Pedido pedido = new Pedido();
 
-        Direccion direccionAsociada = direccionRepo.findByUuid(newPedido.getIdDireccion())
-                .orElseThrow(()-> new ResourceNotFoundException("Direccion asociada al pedido no encontrada"));
+        Direccion direccionAsociada = null;
+        if (newPedido.getTipoEntrega() == TIPO_ENTREGA.ENVIO) {
+            if (newPedido.getIdDireccion() == null || newPedido.getIdDireccion().isBlank()) {
+                throw new BussinesException("Elegí una dirección de envío");
+            }
+            direccionAsociada = direccionRepo.findByUuid(newPedido.getIdDireccion())
+                    .orElseThrow(()-> new ResourceNotFoundException("Direccion asociada al pedido no encontrada"));
 
-        if (!direccionAsociada.getUsuario().getIdUsuario().equals(usuarioAuth.getIdUsuario())) {
-            throw new AccessDeniedException("La dirección no pertenece al usuario autenticado");
+            if (!direccionAsociada.getUsuario().getIdUsuario().equals(usuarioAuth.getIdUsuario())) {
+                throw new AccessDeniedException("La dirección no pertenece al usuario autenticado");
+            }
         }
 
         pedido.setIpUsuario(newPedido.getIpUsuario());
@@ -117,6 +124,9 @@ public class PedidoService implements IPedidoService {
         pedido.setEstado(ESTADO_PEDIDO.PENDIENTE);
         pedido.setUsuario(usuarioAuth);
         pedido.setDireccion(direccionAsociada);
+        pedido.setTipoEntrega(newPedido.getTipoEntrega());
+        pedido.setTelefonoContacto(newPedido.getTelefonoContacto().trim());
+        guardarTelefonoSiFalta(usuarioAuth, newPedido.getTelefonoContacto());
 
         List<DetallePedido> detalles = construirDetalles(newPedido.getDetalles());
         pedido.setTotal(calcularTotal(detalles));
@@ -208,7 +218,14 @@ public class PedidoService implements IPedidoService {
             usuarioRepo.save(usuario);
         }
 
-        Direccion direccion = direccionService.guardarDireccionParaGuest(request.getDireccion(),usuario);
+        Direccion direccion = null;
+        if (request.getTipoEntrega() == TIPO_ENTREGA.ENVIO) {
+            if (request.getDireccion() == null) {
+                throw new BussinesException("Completá la dirección de envío");
+            }
+            direccion = direccionService.guardarDireccionParaGuest(request.getDireccion(), usuario);
+        }
+        guardarTelefonoSiFalta(usuario, request.getTelefonoContacto());
 
         List<DetallePedido> detalles = construirDetalles(request.getDetalles());
         BigDecimal total = calcularTotal(detalles);
@@ -219,6 +236,8 @@ public class PedidoService implements IPedidoService {
                 .fechaPedido(LocalDateTime.now())
                 .estado(ESTADO_PEDIDO.PENDIENTE)
                 .ipUsuario(request.getIpUsuario())
+                .tipoEntrega(request.getTipoEntrega())
+                .telefonoContacto(request.getTelefonoContacto().trim())
                 .total(total)
                 .build();
 
@@ -312,6 +331,14 @@ public class PedidoService implements IPedidoService {
                     .build());
         });
         return detalles;
+    }
+
+    /** Keeps the customer's phone on their profile the first time they give one. */
+    private void guardarTelefonoSiFalta(Usuario usuario, String telefono) {
+        if (usuario != null && (usuario.getTelefono() == null || usuario.getTelefono().isBlank())) {
+            usuario.setTelefono(telefono.trim());
+            usuarioRepo.save(usuario);
+        }
     }
 
     private BigDecimal calcularTotal(List<DetallePedido> detalles) {
