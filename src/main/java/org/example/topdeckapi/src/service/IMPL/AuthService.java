@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.service.IMPL;
 
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.auth.AuthResponse;
 import org.example.topdeckapi.src.DTOs.auth.LoginRequest;
@@ -18,8 +19,10 @@ import org.example.topdeckapi.src.util.FechaUtils;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -30,6 +33,7 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -47,6 +51,14 @@ public class AuthService {
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final Duration VALIDEZ_TOKEN_RECLAMO = Duration.ofHours(24);
     private static final Duration ESPERA_REENVIO = Duration.ofMinutes(2);
+
+    // Compared against when the email does not exist, to keep login timing uniform.
+    private String dummyPasswordHash;
+
+    @PostConstruct
+    void initDummyHash() {
+        dummyPasswordHash = encoder.encode(UUID.randomUUID().toString());
+    }
 
 
     /*
@@ -171,11 +183,15 @@ public class AuthService {
     }
 
     public AuthResponse login (LoginRequest request){
-        Usuario u = usuarioRepo.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UsuarioNotFoundException("Usuario con ese mail no encontrado"));
+        Usuario u = usuarioRepo.findByEmail(request.getEmail()).orElse(null);
 
-        if(!encoder.matches(request.getPassword(), u.getPassword())){
-            throw new BussinesException("Contraseña o Email incorrectos");
+        // Same status, message and (roughly) timing whether the email exists or not,
+        // so the endpoint cannot be used to find out which emails are registered.
+        // GUEST accounts have no password and can never log in.
+        String hash = (u != null && u.getPassword() != null) ? u.getPassword() : dummyPasswordHash;
+        boolean passwordOk = encoder.matches(request.getPassword(), hash);
+        if (u == null || u.getPassword() == null || !passwordOk) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email o contraseña incorrectos");
         }
 
         String token = jwtService.generateToken(

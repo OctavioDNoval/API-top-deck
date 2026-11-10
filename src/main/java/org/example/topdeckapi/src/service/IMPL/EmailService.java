@@ -36,6 +36,7 @@ public class EmailService {
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
     private final ContactConfig contactConfig;
+    private final MailDispatcher mailDispatcher;
 
     @Value("${spring.mail.username}")
     private String remitenteEmail;
@@ -53,7 +54,7 @@ public class EmailService {
 
         variables.put("logoUrl", obtenerLogoUrl());
 
-        enviarEmailTemplate(
+        enviarEmailTemplateAsync(
                 usuario.getEmail(),
                 "Tu pedido " + pedido.getUuid() + " esta confirmado",
                 "EmailPedidoConfirmado",
@@ -81,7 +82,7 @@ public class EmailService {
 
         for (Usuario admin : admins) {
             try {
-                enviarEmailTemplate(
+                enviarEmailTemplateAsync(
                         admin.getEmail(),
                         "Nuevo pedido " + pedido.getUuid(),
                         "EmailNuevoPedido",
@@ -155,7 +156,27 @@ public class EmailService {
         }
     }
 
+    /*
+    * Renders now (in the caller thread, where lazy entities are still loaded) and
+    * hands the finished message to a bounded pool, so slow SMTP or a burst of
+    * orders never blocks requests.
+    * */
+    private void enviarEmailTemplateAsync(String destinatario, String asunto, String template, Map<String, Object> variables) {
+        mailDispatcher.enviar(construirMensaje(destinatario, asunto, template, variables), asunto, destinatario);
+    }
+
     private void enviarEmailTemplate(String destinatario, String asunto, String template, Map<String, Object> variables) {
+        MimeMessage mimeMessage = construirMensaje(destinatario, asunto, template, variables);
+        try {
+            mailSender.send(mimeMessage);
+            log.info("Mail enviado: {} -> {}", asunto, destinatario);
+        } catch (Exception e) {
+            log.error("Error enviando email template a {}: {}", destinatario, e.getMessage());
+            throw new RuntimeException("Error enviando email", e);
+        }
+    }
+
+    private MimeMessage construirMensaje(String destinatario, String asunto, String template, Map<String, Object> variables) {
         try {
             Context context = new Context();
             context.setVariables(variables);
@@ -175,12 +196,10 @@ public class EmailService {
                     ? contactConfig.getEmail().getNombreRemitente()
                     : "TopDeck";
             helper.setFrom(remitenteEmail, nombreRemitente);
-
-            mailSender.send(mimeMessage);
-            log.info("Mail enviado: {} -> {}", asunto, destinatario);
+            return mimeMessage;
         } catch (Exception e) {
-            log.error("Error enviando email template a {}: {}", destinatario, e.getMessage());
-            throw new RuntimeException("Error enviando email", e);
+            log.error("Error armando email {} para {}: {}", template, destinatario, e.getMessage());
+            throw new RuntimeException("Error armando email", e);
         }
     }
 

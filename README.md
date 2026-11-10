@@ -213,6 +213,7 @@ La auditoria no usa triggers: cada service llama a `AuditService.registrar(...)`
 - Header: `Authorization: Bearer <token>`
 - **El rol NO se toma del token**: `JwtAuthFilter` carga el usuario de la DB en cada request y usa su rol actual. Un token firmado con un rol falso no da permisos, y un cambio de rol aplica en la siguiente request.
 - Si el token es de un usuario borrado, la request sigue como anonima.
+- **Login**: email inexistente y password incorrecta responden lo mismo (**401** "Email o contraseña incorrectos") y tardan lo mismo (se compara contra un hash de relleno), asi no se puede averiguar que emails estan registrados. Las cuentas GUEST no tienen password y nunca pueden loguearse.
 
 ### Autorizacion (Roles)
 | Rol | Descripcion |
@@ -237,13 +238,27 @@ Las imagenes (productos, tags, carrusel, singles) se suben desde el front direct
 - El front hace `signInWithCustomToken` y las reglas (`Front-Top-Deck/storage.rules`) exigen `request.auth.token.admin == true` para escribir.
 - Requiere `FIREBASE_CREDENTIALS_PATH` apuntando al JSON de una service account. Sin eso el endpoint responde **503** y los admins no pueden subir imagenes.
 
+### IP del cliente (`ClientIpResolver`)
+Un solo lugar decide la IP del cliente, para el rate limit y para la IP que se guarda al aceptar los TyC (registro, pedidos, activacion). **La IP siempre la toma el servidor**: el campo `ipUsuario` que mande el front se ignora.
+
+| `app.trust-proxy` (`APP_TRUST_PROXY`) | IP usada |
+|---|---|
+| `false` (default) | La de la conexion (`getRemoteAddr`). Los headers `X-Forwarded-For` / `X-Real-IP` se ignoran |
+| `true` | `X-Real-IP`, si no el ultimo valor de `X-Forwarded-For`, si no la de la conexion |
+
+`true` solo es seguro si la API **unicamente** es accesible a traves del nginx propio (`Front-Top-Deck/nginx.conf`), que pisa esos headers con la IP que vio. Si la API queda expuesta directo, cualquiera puede inventarse la IP.
+
 ### Rate Limiting
-- Endpoint: `/auth/**`
-- Limite: 10 requests por minuto por IP
-- Toma la IP de `X-Forwarded-For` si viene (ojo: el cliente puede falsificarlo si no hay un proxy que lo pise)
+Ventana fija por IP y por regla, en memoria (alcanza con una sola instancia de la API; con varias haria falta un store compartido como Redis):
+
+| Regla | Limite | Respuesta |
+|---|---|---|
+| `/auth/**` | 10 requests / minuto | 429 + `Retry-After` |
+| `POST /pedidos/public/pedidoEfimero` | 5 pedidos / 10 minutos | 429 + `Retry-After` |
 
 ### CORS
-- Origen permitido: `http://localhost:5173` (fijo en `SecurityConfig`)
+- Origenes permitidos: `app.cors.allowed-origins` (`APP_CORS_ALLOWED_ORIGINS`, separados por coma). Vacio = `http://localhost:5173`
+- Con el nginx de produccion front y API comparten dominio, asi que CORS no interviene
 - Metodos: GET, POST, PATCH, DELETE, OPTIONS
 - Credenciales: habilitadas
 
@@ -437,7 +452,8 @@ RuntimeException
 
 - Los datos de contacto del pie salen de `app.contacto.*` (`ContactConfig`). Hoy son placeholders: completarlos con los datos reales.
 - El logo se sirve desde la propia API: `${APP_BASE_URL}/img/logo.webp`.
-- El envio es sincronico. Si falla el mail de pedidos, se loguea y el pedido igual se guarda; si falla el de verificacion, el registro devuelve 409.
+- **Mails de pedidos (nuevo pedido, confirmado)**: el HTML se arma en el request y el envio va a un pool acotado (`mailExecutor` en `AsyncConfig`: 2-4 hilos, cola de 200). Si el SMTP esta lento o caido, el pedido responde igual; si la cola se llena, se descartan envios y se loguea.
+- **Mail de verificacion**: es sincronico, porque si falla el registro tiene que avisar (409).
 
 ---
 
@@ -466,8 +482,12 @@ RuntimeException
 | `APP_BASE_URL` | URL publica de la API (logo en mails). Default `http://localhost:8080` | No |
 | `APP_FRONT_URL` | URL publica del front (links en mails). Default `http://localhost:5173` | No |
 | `FIREBASE_CREDENTIALS_PATH` | Ruta al JSON de la service account de Firebase | Para subir imagenes |
+| `APP_TRUST_PROXY` | `true` solo detras del nginx propio (ver IP del cliente) | No (default `false`) |
+| `APP_CORS_ALLOWED_ORIGINS` | Origenes CORS separados por coma | No |
+| `APP_CONTACTO_TELEFONO`, `APP_CONTACTO_EMAIL`, `APP_CONTACTO_DIRECCION`, `APP_CONTACTO_HORARIO` | Datos de contacto del pie de los mails (perfil `prod`) | No |
+| `SPRING_PROFILES_ACTIVE` | `prod` en produccion | Si (prod) |
 
-`application.properties` esta en el `.gitignore`: si clonas el repo de cero, crealo a partir de estas variables.
+`application.properties` esta en el `.gitignore` (es la config de desarrollo de cada uno). El perfil **`prod`** (`application-prod.properties`, versionado) es autosuficiente: todo sale de variables de entorno, con logs en `INFO`/`WARN`, sin `show-sql` ni parametros SQL, y cache de Thymeleaf activa.
 
 ---
 
@@ -500,14 +520,32 @@ La API corre en `http://localhost:8080`.
 
 ---
 
+## Produccion con Docker
+
+`docker-compose.prod.yml` (en la raiz `TopDeck/`) levanta:
+
+```
+Internet ──► frontend (nginx :80) ──┬── /        → SPA (build de Vite)
+                                    └── /api/... → backend:8080 (sin puertos publicados)
+                                                      └── db (sin puertos publicados)
+```
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+```
+
+- El backend corre con `SPRING_PROFILES_ACTIVE=prod` y `APP_TRUST_PROXY=true`, valido porque solo nginx lo alcanza.
+- `APP_PUBLIC_URL` (ej. `https://topdeck.com.ar`) arma `APP_FRONT_URL` y `APP_BASE_URL` (`.../api`).
+- HTTPS: terminarlo en un proxy/balanceador delante, o agregar el certificado al nginx. Si hay otro proxy o CDN delante de nginx, configurar `real_ip` en nginx para que `$remote_addr` sea el cliente real.
+
 ## Checklist para produccion
 
 1. **Secrets nuevos**, nunca los de desarrollo: el `jwt.secret` y la password de la DB de desarrollo quedaron en el historial de git (commit `429ace3`). Generar con `openssl rand -base64 48`.
-2. Cargarlos como **variables de entorno** de la plataforma, no en archivos. No activar el perfil `local`.
+2. Cargarlos como **variables de entorno** de la plataforma, no en archivos. Activar el perfil `prod`, nunca el `local`.
 3. Service account de Firebase disponible en `FIREBASE_CREDENTIALS_PATH`, y **despues** publicar `Front-Top-Deck/storage.rules` en la consola de Firebase.
-4. `APP_FRONT_URL` y `APP_BASE_URL` con los dominios reales; agregar el dominio del front a CORS en `SecurityConfig`.
-5. Bajar los logs: hoy `application.properties` tiene `DEBUG`/`TRACE` (incluye parametros SQL) y `show-sql=true`.
-6. Completar `app.contacto.*` con los datos reales del negocio.
+4. `APP_PUBLIC_URL` con el dominio real. Si front y API van en dominios distintos (sin el nginx), cargar `APP_CORS_ALLOWED_ORIGINS`.
+5. La API **no** debe quedar accesible directo desde internet cuando `APP_TRUST_PROXY=true`.
+6. Completar `APP_CONTACTO_*` con los datos reales del negocio.
 7. Cambiar la password del ADMIN que crea el seed (su hash esta publico en `TopDeck-DB-Tables.sql`).
 
 ---
