@@ -1,6 +1,9 @@
 package org.example.topdeckapi.src.controller;
 
 
+import java.net.URI;
+import java.util.regex.Pattern;
+import org.example.topdeckapi.src.Exception.BussinesException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.request.ProductoRequest;
@@ -30,6 +33,8 @@ public class ProductoController {
 
     @Value("${tcg.api.key}")
     private String tcgApiKey;
+
+    private static final Pattern TCG_SLUG = Pattern.compile("^[a-z0-9-]{1,50}$");
 
     @GetMapping("/test")
     public ResponseEntity<String> test(){
@@ -125,13 +130,20 @@ public class ProductoController {
 
     @GetMapping("/admin/tcg/{franquicia}/{nombreCarta}/{page}/{limit}")
     public ResponseEntity<?> tcg(@PathVariable String franquicia, @PathVariable String nombreCarta, @PathVariable Integer page, @PathVariable Integer limit) {
+        // franquicia is a slug like "one-piece": anything else could inject extra query params.
+        if (franquicia == null || !TCG_SLUG.matcher(franquicia).matches()) {
+            throw new BussinesException("Franquicia inválida");
+        }
+        int safePage = Math.max(1, page == null ? 1 : page);
+        int safeLimit = Math.min(50, Math.max(1, limit == null ? 26 : limit));
         try {
-            String url = "https://api.apitcg.com/api/products?tcg=" + franquicia + "&type=card";
+            String url = "https://api.apitcg.com/api/products?tcg="
+                    + URLEncoder.encode(franquicia, StandardCharsets.UTF_8) + "&type=card";
             if (nombreCarta != null && !nombreCarta.isEmpty()) {
                 url += "&name=" + URLEncoder.encode(nombreCarta, StandardCharsets.UTF_8);
             }
 
-            url += "&page=" + page + "&limit=" + limit;
+            url += "&page=" + safePage + "&limit=" + safeLimit;
 
             HttpHeaders headers = new HttpHeaders();
             headers.set("x-api-key", tcgApiKey);
@@ -140,8 +152,9 @@ public class ProductoController {
 
             HttpEntity<?> entity = new HttpEntity<>(headers);
 
+            // URI (not String) so RestTemplate does not encode the already-encoded query again.
             ResponseEntity<String> response = restTemplate.exchange(
-                    url,
+                    URI.create(url),
                     HttpMethod.GET,
                     entity,
                     String.class

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
@@ -123,7 +124,7 @@ public class EmailService {
                 ? pedido.getFechaPedido().format(FECHA_FORMATTER)
                 : "-");
         variables.put("total", String.format(new Locale("es", "AR"), "$%,.2f",
-                pedido.getTotal() != null ? pedido.getTotal() : 0.0));
+                pedido.getTotal() != null ? pedido.getTotal() : BigDecimal.ZERO));
 
         List<Map<String, String>> items = new ArrayList<>();
         if (pedido.getDetalles() != null) {
@@ -132,9 +133,9 @@ public class EmailService {
                 item.put("nombre", detalle.getProducto() != null ? detalle.getProducto().getNombre() : "-");
                 item.put("cantidad", String.valueOf(detalle.getCantidad() != null ? detalle.getCantidad() : 0));
                 item.put("precioUnitario", String.format(new Locale("es", "AR"), "$%,.2f",
-                        detalle.getPrecioUnitario() != null ? detalle.getPrecioUnitario() : 0.0));
+                        detalle.getPrecioUnitario() != null ? detalle.getPrecioUnitario() : BigDecimal.ZERO));
                 item.put("subtotal", String.format(new Locale("es", "AR"), "$%,.2f",
-                        detalle.getSubTotal() != null ? detalle.getSubTotal() : 0.0));
+                        detalle.getSubTotal() != null ? detalle.getSubTotal() : BigDecimal.ZERO));
                 items.add(item);
             }
         }

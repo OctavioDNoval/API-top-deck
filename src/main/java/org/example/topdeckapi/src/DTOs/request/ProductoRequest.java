@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.DTOs.request;
 
+import java.math.BigDecimal;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -32,7 +33,7 @@ public class ProductoRequest {
 
     @NotNull(message = "El precio es obligatorio")
     @Positive(message = "El precio debe ser mayor a 0")
-    private Double precio;
+    private BigDecimal precio;
 
     private String imgUrl;
 

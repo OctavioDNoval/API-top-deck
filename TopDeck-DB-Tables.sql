@@ -23,7 +23,7 @@ CREATE TABLE producto(
     id_tag BIGINT,
     nombre VARCHAR(255),
     descripcion TEXT,
-    precio DOUBLE PRECISION,
+    precio NUMERIC(12,2),
     stock INT,
     img_url VARCHAR(255),
     descuento INT DEFAULT 0,
@@ -80,7 +80,7 @@ CREATE TABLE pedido(
     id_direccion BIGINT,
     fecha_pedido TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     estado VARCHAR(20) CHECK (estado IN ('PENDIENTE', 'CONFIRMADO', 'RECHAZADO')),
-    total DOUBLE PRECISION NOT NULL,
+    total NUMERIC(12,2) NOT NULL,
     ip_usuario VARCHAR(255),
     FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario),
     FOREIGN KEY (id_direccion) REFERENCES direccion(id_direccion)
@@ -92,8 +92,8 @@ CREATE TABLE detallepedido(
     id_pedido BIGINT NOT NULL,
     id_producto BIGINT NOT NULL,
     cantidad INT,
-    precio_unitario DOUBLE PRECISION,
-    subtotal DOUBLE PRECISION,
+    precio_unitario NUMERIC(12,2),
+    subtotal NUMERIC(12,2),
     FOREIGN KEY (id_pedido) REFERENCES pedido(id_pedido),
     FOREIGN KEY (id_producto) REFERENCES producto(id_producto)
 );
@@ -132,7 +132,7 @@ CREATE TABLE evento(
     ubicacion VARCHAR(255),
     fecha DATE,
     hora TIME,
-    precio_entrada DOUBLE PRECISION,
+    precio_entrada NUMERIC(12,2),
     estado VARCHAR(20) CHECK (estado IN ('PROXIMAMENTE', 'EN_CURSO', 'FINALIZADO'))
 );
 

@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.model;
 
+import java.math.BigDecimal;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -46,8 +47,8 @@ public class Pedido {
     @Enumerated(EnumType.STRING)
     private ESTADO_PEDIDO estado;
 
-    @Column(name = "total", nullable = false)
-    private Double total;
+    @Column(name = "total", nullable = false, precision = 12, scale = 2)
+    private BigDecimal total;
 
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DetallePedido> detalles = new ArrayList<>();

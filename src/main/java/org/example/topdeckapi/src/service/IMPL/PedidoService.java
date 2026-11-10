@@ -1,5 +1,8 @@
 package org.example.topdeckapi.src.service.IMPL;
 
+import org.example.topdeckapi.src.util.Montos;
+import java.util.LinkedHashMap;
+import java.math.BigDecimal;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
@@ -115,38 +118,8 @@ public class PedidoService implements IPedidoService {
         pedido.setUsuario(usuarioAuth);
         pedido.setDireccion(direccionAsociada);
 
-        List<DetallePedido> detalles = newPedido.getDetalles().stream()
-                .map(dp->{
-                    Producto producto = productoRepo.findByUuid(dp.getIdProducto())
-                            .orElseThrow(()-> new ResourceNotFoundException("Producto no encontrado"));
-
-                    if (Boolean.FALSE.equals(producto.getActivo())) {
-                        throw new BussinesException("El producto no está disponible");
-                    }
-
-                    int cantidad = dp.getCantidad() != null ? dp.getCantidad() : 0;
-                    if(cantidad <= 0){
-                        throw new BussinesException("La cantidad de un detalle del pedido no es valida");
-                    }
-                    int stock = producto.getStock() != null ? producto.getStock() : 0;
-                    if(stock < cantidad){
-                        throw new BussinesException("Stock insuficiente para el producto " + producto.getNombre());
-                    }
-
-                    return DetallePedido.builder()
-                            .producto(producto)
-                            .cantidad(cantidad)
-                            .precioUnitario(producto.getPrecio())
-                            .subTotal(calcularSubTotal(producto, cantidad))
-                            .build();
-                })
-                .collect(Collectors.toList());
-
-        double total = detalles.stream()
-                .mapToDouble(DetallePedido::getSubTotal)
-                .sum();
-
-        pedido.setTotal(total);
+        List<DetallePedido> detalles = construirDetalles(newPedido.getDetalles());
+        pedido.setTotal(calcularTotal(detalles));
         Pedido pedidoGuardado = pedidoRepo.save(pedido);
 
         detalles.forEach(detalle -> detalle.setPedido(pedidoGuardado));
@@ -206,14 +179,7 @@ public class PedidoService implements IPedidoService {
                 productoRepo.save(p);
             }
         }else if(estadoAnterior == ESTADO_PEDIDO.CONFIRMADO && estado == ESTADO_PEDIDO.RECHAZADO){
-            for(DetallePedido detalle: detalles){
-                Long productoId = detalle.getProducto().getIdProducto();
-                Producto p = productoRepo.findByIdForUpdate(productoId)
-                        .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
-                int cantidad = detalle.getCantidad() != null ? detalle.getCantidad() : 0;
-                p.setStock((p.getStock() != null ? p.getStock() : 0) + cantidad);
-                productoRepo.save(p);
-            }
+            reponerStock(detalles);
         }
 
         pedido.setEstado(estado);
@@ -244,36 +210,8 @@ public class PedidoService implements IPedidoService {
 
         Direccion direccion = direccionService.guardarDireccionParaGuest(request.getDireccion(),usuario);
 
-        List<DetallePedido> detalles = new ArrayList<>();
-        for(DetallePedidoRequest detallePedidoRequest : request.getDetalles()){
-            DetallePedido dp = detallePedidoMapper.toEntity(detallePedidoRequest);
-            Producto producto = productoRepo.findByUuid(detallePedidoRequest.getIdProducto())
-                    .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado: " + detallePedidoRequest.getIdProducto()));
-            log.info("Producto {}", producto);
-
-            if (Boolean.FALSE.equals(producto.getActivo())) {
-                throw new BussinesException("El producto no está disponible");
-            }
-
-            int cantidad = dp.getCantidad() != null ? dp.getCantidad() : 0;
-            if(cantidad <= 0){
-                throw new BussinesException("La cantidad de un detalle del pedido no es valida");
-            }
-            int stock = producto.getStock() != null ? producto.getStock() : 0;
-            if(stock < cantidad){
-                throw new BussinesException("Stock insuficiente para el producto " + producto.getNombre());
-            }
-
-            dp.setProducto(producto);
-            dp.setCantidad(cantidad);
-            dp.setPrecioUnitario(producto.getPrecio());
-            dp.setSubTotal(calcularSubTotal(producto, cantidad));
-            detalles.add(dp);
-        }
-
-        double total = detalles.stream()
-                .mapToDouble(DetallePedido::getSubTotal)
-                .sum();
+        List<DetallePedido> detalles = construirDetalles(request.getDetalles());
+        BigDecimal total = calcularTotal(detalles);
 
         Pedido pedido = Pedido.builder()
                 .usuario(usuario)
@@ -316,16 +254,70 @@ public class PedidoService implements IPedidoService {
     public boolean delete(String uuid){
         Pedido pedido = pedidoRepo.findByUuid(uuid)
                 .orElseThrow(()-> new PedidoNotFoundException("Pedido no encontrado"));
+        // A confirmed order already took its units out of stock: give them back.
+        if (pedido.getEstado() == ESTADO_PEDIDO.CONFIRMADO) {
+            reponerStock(pedido.getDetalles());
+        }
         auditService.registrar("DELETE", "pedido");
         pedidoRepo.delete(pedido);
         return true;
     }
 
-    private Double calcularSubTotal(Producto producto, Integer cantidad) {
-        double precio = producto.getPrecio() != null ? producto.getPrecio() : 0.0;
-        int descuento = producto.getDescuento() != null ? producto.getDescuento() : 0;
-        int cant = cantidad != null ? cantidad : 0;
-        return precio * cant * (1 - descuento / 100.0);
+    private void reponerStock(List<DetallePedido> detalles) {
+        if (detalles == null) return;
+        for (DetallePedido detalle : detalles) {
+            Long productoId = detalle.getProducto().getIdProducto();
+            Producto p = productoRepo.findByIdForUpdate(productoId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
+            int cantidad = detalle.getCantidad() != null ? detalle.getCantidad() : 0;
+            p.setStock((p.getStock() != null ? p.getStock() : 0) + cantidad);
+            productoRepo.save(p);
+        }
+    }
+
+    /*
+    * Builds the order lines from the request. Repeated products are merged
+    * first, so stock is checked against the total quantity requested, not
+    * line by line. Prices always come from the database.
+    * */
+    private List<DetallePedido> construirDetalles(List<DetallePedidoRequest> requests) {
+        Map<String, Integer> cantidadesPorProducto = new LinkedHashMap<>();
+        for (DetallePedidoRequest dp : requests) {
+            if (dp == null || dp.getIdProducto() == null) {
+                throw new BussinesException("Un detalle del pedido no tiene producto");
+            }
+            int cantidad = dp.getCantidad() != null ? dp.getCantidad() : 0;
+            if (cantidad <= 0) {
+                throw new BussinesException("La cantidad de un detalle del pedido no es valida");
+            }
+            cantidadesPorProducto.merge(dp.getIdProducto(), cantidad, Integer::sum);
+        }
+
+        List<DetallePedido> detalles = new ArrayList<>();
+        cantidadesPorProducto.forEach((idProducto, cantidad) -> {
+            Producto producto = productoRepo.findByUuid(idProducto)
+                    .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
+            if (Boolean.FALSE.equals(producto.getActivo())) {
+                throw new BussinesException("El producto no está disponible");
+            }
+            int stock = producto.getStock() != null ? producto.getStock() : 0;
+            if (stock < cantidad) {
+                throw new BussinesException("Stock insuficiente para el producto " + producto.getNombre());
+            }
+            detalles.add(DetallePedido.builder()
+                    .producto(producto)
+                    .cantidad(cantidad)
+                    .precioUnitario(producto.getPrecio())
+                    .subTotal(Montos.subtotal(producto.getPrecio(), producto.getDescuento(), cantidad))
+                    .build());
+        });
+        return detalles;
+    }
+
+    private BigDecimal calcularTotal(List<DetallePedido> detalles) {
+        return detalles.stream()
+                .map(DetallePedido::getSubTotal)
+                .reduce(Montos.redondear(BigDecimal.ZERO), BigDecimal::add);
     }
 
     private void notificarNuevoPedidoAdmins(Pedido pedido) {

@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.DTOs.request;
 
+import java.math.BigDecimal;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -22,5 +23,5 @@ public class DetallePedidoRequest {
     @Min(value = 1, message = "La cantidad debe ser mayor a 0")
     private Integer cantidad;
 
-    private Double precioUnitario;
+    private BigDecimal precioUnitario;
 }

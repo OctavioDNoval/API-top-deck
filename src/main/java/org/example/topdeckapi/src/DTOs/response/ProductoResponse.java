@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.DTOs.response;
 
+import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,7 +17,7 @@ public class ProductoResponse {
     private String idProducto;
     private String nombreProducto;
     private String descripcion;
-    private Double precio;
+    private BigDecimal precio;
     private Integer stock;
     private String imgUrl;
     private Integer descuento;

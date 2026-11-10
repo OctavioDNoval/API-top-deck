@@ -299,16 +299,16 @@ Ventana fija por IP y por regla, en memoria (alcanza con una sola instancia de l
 | PATCH | `/products/admin/deslistar/{id}` | Deslistar producto |
 | PATCH | `/products/admin/relistar/{id}` | Volver a listar producto |
 | DELETE | `/products/admin/delete/{id}` | Eliminar producto |
-| GET | `/products/admin/tcg/{franquicia}/{nombre}/{page}/{limit}` | Proxy a API externa de TCG |
+| GET | `/products/admin/tcg/{franquicia}/{nombre}/{page}/{limit}` | Proxy a API externa de TCG. `franquicia` debe ser un slug (`[a-z0-9-]`), `limit` max 50 |
 | GET | `/user/admin/obtenerPaginados` | Usuarios paginados |
 | GET | `/user/admin/{id}` | Usuario por UUID |
 | POST | `/user/admin/crearUsuario` | Crear usuario |
-| PATCH | `/user/admin/{id}` | Actualizar usuario |
+| PATCH | `/user/admin/{id}` | Actualizacion parcial: solo cambia los campos enviados (`nombre`, `email`, `password`, `telefono`, `rol`). No toca TyC ni IP |
 | DELETE | `/user/admin/delete/{id}` | Eliminar usuario |
 | GET | `/pedidos/admin/obtenerPaginados` | Pedidos paginados |
 | GET | `/pedidos/admin/{id}/getDetalles` | Detalles de un pedido |
 | PATCH | `/pedidos/admin/{id}/newState` | Cambiar estado de pedido (descuenta/repone stock) |
-| DELETE | `/pedidos/admin/delete/{id}` | Eliminar pedido |
+| DELETE | `/pedidos/admin/delete/{id}` | Eliminar pedido (si estaba CONFIRMADO, repone stock) |
 | POST | `/category/admin/new` | Crear categoria |
 | PATCH | `/category/admin/edit/{id}` | Editar categoria |
 | DELETE | `/category/admin/delete/{id}` | Eliminar categoria |
@@ -349,7 +349,7 @@ Todas las operaciones de carrito, direcciones y pedidos de usuario validan que e
 - `idUsuario` (Long, PK), `uuid` (String), `nombre`, `email`, `password` (write-only), `telefono`, `rol` (ADMIN/USER/GUEST), `ipUsuario`, `versionTerminosYCondicionesAceptados`, `terminosAceptados`, `fechaAceptacionTerminos`, `tokenVerificacionHash` y `tokenVerificacionExpira` (JSON-ignored, ver reclamo de GUEST)
 
 ### Producto
-- `idProducto` (Long, PK), `uuid`, `categoria` (FK→Categoria, opcional en singles), `tag` (FK→Tag), `nombre`, `descripcion`, `precio` (Double), `stock` (Integer), `imgUrl`, `descuento` (Integer, porcentaje), `activo` (Boolean), `tipoProducto` (`PRODUCTO` | `SINGLE`)
+- `idProducto` (Long, PK), `uuid`, `categoria` (FK→Categoria, opcional en singles), `tag` (FK→Tag), `nombre`, `descripcion`, `precio` (BigDecimal), `stock` (Integer), `imgUrl`, `descuento` (Integer, porcentaje), `activo` (Boolean), `tipoProducto` (`PRODUCTO` | `SINGLE`)
 
 ### ProductoSingles
 - `idProductoSingles` (Long, PK), `uuid`, `producto` (1:1 con Producto), `atributos` (`jsonb`: set, rarity, color, type, etc.)
@@ -362,11 +362,12 @@ Todas las operaciones de carrito, direcciones y pedidos de usuario validan que e
 - `idTag` (Long, PK), `uuid`, `nombre`, `nombreNormalizado` (lowercase, sin acentos), `imgUrl`
 
 ### Pedido
-- `idPedido` (Long, PK), `uuid`, `usuario` (FK→Usuario), `direccion` (FK→Direccion), `fechaPedido` (LocalDateTime), `estado` (PENDIENTE/CONFIRMADO/RECHAZADO), `total` (Double), `detalles` (OneToMany), `ipUsuario`
-- Transiciones permitidas: PENDIENTE → CONFIRMADO/RECHAZADO, CONFIRMADO → RECHAZADO. Confirmar descuenta stock (con lock pesimista); rechazar uno confirmado lo repone.
+- `idPedido` (Long, PK), `uuid`, `usuario` (FK→Usuario), `direccion` (FK→Direccion), `fechaPedido` (LocalDateTime), `estado` (PENDIENTE/CONFIRMADO/RECHAZADO), `total` (BigDecimal), `detalles` (OneToMany), `ipUsuario`
+- Transiciones permitidas: PENDIENTE → CONFIRMADO/RECHAZADO, CONFIRMADO → RECHAZADO. Confirmar descuenta stock (con lock pesimista); rechazar o **borrar** uno confirmado lo repone.
+- Al crear un pedido, las lineas con el mismo producto se **unifican** y el stock se valida contra la cantidad total pedida. Los precios salen siempre de la DB.
 
 ### DetallePedido
-- `idDetallePedido` (Long, PK), `uuid`, `producto` (FK→Producto), `pedido` (FK→Pedido), `cantidad`, `precioUnitario`, `subTotal`
+- `idDetallePedido` (Long, PK), `uuid`, `producto` (FK→Producto), `pedido` (FK→Pedido), `cantidad`, `precioUnitario` (BigDecimal), `subTotal` (BigDecimal)
 
 ### Carrito
 - `idCarrito` (Long, PK), `uuid`, `usuario` (FK→Usuario), `sessionId` (legacy), `fechaCreacion`, `detalles` (OneToMany)
@@ -378,7 +379,11 @@ Todas las operaciones de carrito, direcciones y pedidos de usuario validan que e
 - `idDireccion` (Long, PK), `uuid`, `usuario` (FK→Usuario), `ciudad`, `provincia`, `pais`, `codigoPostal`, `direccion`, `altura`, `piso`, `principal` (Boolean)
 
 ### Evento
-- `idEvento` (Long, PK), `uuid`, `nombreEvento`, `ubicacion`, `fecha` (LocalDate), `hora` (LocalTime), `precioEntrada`, `estado` (PROXIMAMENTE/EN_CURSO/FINALIZADO)
+- `idEvento` (Long, PK), `uuid`, `nombreEvento`, `ubicacion`, `fecha` (LocalDate), `hora` (LocalTime), `precioEntrada` (BigDecimal), `estado` (PROXIMAMENTE/EN_CURSO/FINALIZADO)
+
+### Montos
+- Todos los importes son `BigDecimal` en Java y `NUMERIC(12,2)` en la DB. En el JSON siguen siendo numeros (`"precio": 8500.00`).
+- `util/Montos.subtotal(precio, descuento%, cantidad)` es el unico calculo de subtotal (lo usan carrito y pedidos): redondeo `HALF_UP` a 2 decimales.
 
 ### Audit
 - `idAuditoria` (Long, PK, columna: `id_log`), `nombreUsuario`, `fechaAudit` (LocalDateTime), `accion`, `tabla`
@@ -505,6 +510,17 @@ docker-compose up --build
 
 La base se inicializa con `TopDeck-DB-Tables.sql` solo la primera vez que se crea el volumen `db_data`.
 
+### Migraciones
+`ddl-auto=update` agrega columnas nuevas pero **no cambia tipos**. Los cambios de tipo van como scripts en `db/migrations/` y se aplican a mano sobre bases ya creadas:
+
+| Script | Que hace |
+|---|---|
+| `2026-11-10_money_numeric.sql` | Columnas de importes `DOUBLE PRECISION` → `NUMERIC(12,2)` |
+
+```bash
+docker exec -i topdeck-db psql -U postgres -d topdeck_database < db/migrations/2026-11-10_money_numeric.sql
+```
+
 ### Desarrollo local
 ```bash
 # Requiere Java 21 y PostgreSQL 16 (o levantar solo la DB: docker compose up -d db)
@@ -517,6 +533,13 @@ cd API-top-deck
 - El perfil `local` (`application-local.properties`, ignorado por git) pisa valores para desarrollo. **No activarlo en produccion.**
 
 La API corre en `http://localhost:8080`.
+
+### Tests
+```bash
+./mvnw test
+```
+
+Tests unitarios (JUnit 5 + Mockito, sin DB): `JwtAuthFilter` (rol desde la DB), `ClientIpResolver`, `RateLimitFilter`, `AuthService` (login uniforme y reclamo de GUEST), `PedidoService` (productos repetidos, stock al borrar) y `Montos`. `TopDeckApiApplicationTests` levanta el contexto completo y solo corre si hay `DB_PASSWORD` configurado.
 
 ---
 

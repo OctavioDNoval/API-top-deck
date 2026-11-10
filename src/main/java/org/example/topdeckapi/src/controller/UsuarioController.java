@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.request.UsuarioRequest;
+import org.example.topdeckapi.src.DTOs.request.UsuarioUpdateRequest;
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
 import org.example.topdeckapi.src.DTOs.response.ProductoResponse;
 import org.example.topdeckapi.src.DTOs.response.UsuarioResponse;
@@ -59,7 +60,7 @@ public class UsuarioController {
     //=======================PATCH========================
 
     @PatchMapping("/admin/{id}")
-    public ResponseEntity<UsuarioResponse>  update(@PathVariable("id") String id, @RequestBody @Valid UsuarioRequest dto){
+    public ResponseEntity<UsuarioResponse>  update(@PathVariable("id") String id, @RequestBody @Valid UsuarioUpdateRequest dto){
         return ResponseEntity.ok(usuarioService.actualizarUsuario(dto, id));
     }
 
