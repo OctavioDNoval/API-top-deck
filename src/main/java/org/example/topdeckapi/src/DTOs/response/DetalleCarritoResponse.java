@@ -18,4 +18,6 @@ public class DetalleCarritoResponse {
     private BigDecimal precio;
     private Integer descuento;
     private String imgUrl;
+    // Current product stock, so the cart can cap the quantity it lets you pick.
+    private Integer stock;
 }
