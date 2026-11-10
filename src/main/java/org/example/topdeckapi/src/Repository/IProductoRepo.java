@@ -63,10 +63,12 @@ public interface IProductoRepo extends JpaRepository<Producto,Long> {
             "GROUP BY t.nombre", nativeQuery = true)
     List<Object[]> contarPorTag();
 
+    // Singles are usually a single unit, so they only count as "sin stock" (0) or "ok":
+    // "bajo" (1-9 units) applies to sealed products only.
     @Query(value = "SELECT " +
             "SUM(CASE WHEN p.stock = 0 THEN 1 ELSE 0 END) AS sinStock, " +
-            "SUM(CASE WHEN p.stock > 0 AND p.stock < 10 THEN 1 ELSE 0 END) AS bajo, " +
-            "SUM(CASE WHEN p.stock >= 10 THEN 1 ELSE 0 END) AS ok " +
+            "SUM(CASE WHEN p.stock > 0 AND p.stock < 10 AND p.tipo_producto <> 'SINGLE' THEN 1 ELSE 0 END) AS bajo, " +
+            "SUM(CASE WHEN p.stock >= 10 OR (p.stock > 0 AND p.tipo_producto = 'SINGLE') THEN 1 ELSE 0 END) AS ok " +
             "FROM producto p WHERE p.activo = true", nativeQuery = true)
     List<Object[]> distribucionStock();
 
