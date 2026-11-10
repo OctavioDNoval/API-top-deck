@@ -15,6 +15,7 @@ public interface DetalleCarritoMapper {
     @Mapping(target = "precio", source = "producto.precio")
     @Mapping(target = "descuento", source = "producto.descuento")
     @Mapping(target = "imgUrl", source = "producto.imgUrl")
+    @Mapping(target = "stock", source = "producto.stock")
     DetalleCarritoResponse toResponse (DetalleCarrito detalleCarrito);
 
     @Mapping(target = "carrito", ignore = true)

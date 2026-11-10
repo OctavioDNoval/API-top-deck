@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.topdeckapi.src.DTOs.mappers.UsuarioMapper;
 import org.example.topdeckapi.src.DTOs.request.UsuarioEfimeroRequest;
 import org.example.topdeckapi.src.DTOs.request.UsuarioRequest;
+import org.example.topdeckapi.src.DTOs.request.UsuarioUpdateRequest;
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
 import org.example.topdeckapi.src.DTOs.response.UsuarioResponse;
 import org.example.topdeckapi.src.Enumerados.ROL;
@@ -125,31 +126,44 @@ public class UsuarioService implements IUsuarioService {
         return usuarioMapper.toResponse(usuarioGuardado);
     }
 
-    public UsuarioResponse actualizarUsuario(UsuarioRequest request, String uuid){
+    /*
+    * Partial update: only non-null fields change. Terms acceptance, IP and the
+    * verification token are left as they are.
+    * */
+    public UsuarioResponse actualizarUsuario(UsuarioUpdateRequest request, String uuid){
         Usuario usuario = usuarioRepo.findByUuid(uuid).orElseThrow(
                 ()-> new ResourceNotFoundException("Usuario no encontrado")
         );
 
-        if(request.getEmail() != null
-            && usuarioRepo.existsByEmailAndIdUsuarioNot(request.getEmail(), usuario.getIdUsuario())){
-            throw new BussinesException("El email ya existe en el sistema");
+        if (request.getEmail() != null) {
+            String email = request.getEmail().trim();
+            if (email.isEmpty()) {
+                throw new BussinesException("El email no puede estar vacío");
+            }
+            if (usuarioRepo.existsByEmailAndIdUsuarioNot(email, usuario.getIdUsuario())) {
+                throw new BussinesException("El email ya existe en el sistema");
+            }
+            usuario.setEmail(email);
+        }
+        if (request.getNombre() != null) {
+            usuario.setNombre(request.getNombre().trim());
+        }
+        if (request.getTelefono() != null) {
+            // Column is UNIQUE: store "no phone" as null, not "".
+            String telefono = request.getTelefono().trim();
+            usuario.setTelefono(telefono.isEmpty() ? null : telefono);
+        }
+        // A new password or a role change closes the user's open sessions.
+        if (request.getRol() != null && request.getRol() != usuario.getRol()) {
+            usuario.setRol(request.getRol());
+            usuario.invalidarSesiones();
+        }
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            usuario.setPassword(passwordEncoder.encode(request.getPassword()));
+            usuario.invalidarSesiones();
         }
 
-        Usuario usuarioActualizado = usuarioMapper.toEntity(request);
-        usuarioActualizado.setIdUsuario(usuario.getIdUsuario());
-        usuarioActualizado.setUuid(uuid);
-        usuarioActualizado.setNombre(request.getNombre());
-        usuarioActualizado.setEmail(request.getEmail());
-        usuarioActualizado.setRol(request.getRol() != null ? request.getRol() : usuario.getRol());
-        usuarioActualizado.setTerminosAceptados(request.getTerminosAceptados());
-        usuarioActualizado.setVersionTerminosYCondicionesAceptados(request.getVersionTerminosYCondicionesAceptados());
-        if(request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
-            usuarioActualizado.setPassword(passwordEncoder.encode(request.getPassword()));
-        }else{
-            usuarioActualizado.setPassword(usuario.getPassword());
-        }
-
-        Usuario usuarioGuardado = usuarioRepo.save(usuarioActualizado);
+        Usuario usuarioGuardado = usuarioRepo.save(usuario);
         auditService.registrar("UPDATE", "usuario");
         return usuarioMapper.toResponse(usuarioGuardado);
     }
@@ -159,7 +173,9 @@ public class UsuarioService implements IUsuarioService {
 
         if (usuarioExistente.isPresent()) {
             Usuario usuario = usuarioExistente.get();
-            if (usuario.getRol() == ROL.GUEST) {
+            // An unconfirmed account may have been registered by someone else, so it
+            // must not block the real owner from buying as a guest with their email.
+            if (usuario.getRol() == ROL.GUEST || !usuario.isEmailConfirmado()) {
                 return usuario;
             }
             throw new EmailYaRegistradoException("El email pertenece a una cuenta ya registrada, Intente ingresando a su cuenta");

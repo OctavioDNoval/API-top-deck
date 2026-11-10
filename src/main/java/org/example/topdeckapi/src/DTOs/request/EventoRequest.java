@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.DTOs.request;
 
+import java.math.BigDecimal;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -28,6 +29,6 @@ public class EventoRequest {
     @NotNull(message = "La hora es obligatoria")
     private LocalTime hora;
 
-    private Double precioEntrada;
+    private BigDecimal precioEntrada;
     private ESTADO_EVENTO estado;
 }

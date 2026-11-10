@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 public class ContactConfig {
 
     private String baseUrl;
+    private String frontUrl;
     private Contacto contacto = new Contacto();
     private Email email = new Email();
 

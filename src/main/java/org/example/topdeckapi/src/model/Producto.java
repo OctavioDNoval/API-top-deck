@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.model;
 
+import java.math.BigDecimal;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -39,11 +40,11 @@ public class Producto {
     @Column(name = "nombre")
     private String nombre;
 
-    @Column(name = "descripcion")
+    @Column(name = "descripcion", columnDefinition = "TEXT")
     private String descripcion;
 
-    @Column (name = "precio")
-    private Double precio;
+    @Column(name = "precio", precision = 12, scale = 2)
+    private BigDecimal precio;
 
     @Column(name = "stock")
     private Integer stock;
@@ -56,5 +57,8 @@ public class Producto {
 
     @Column(name = "activo")
     private Boolean activo;
+
+    @Column(name = "tipo_producto", nullable = false)
+    private String tipoProducto = "PRODUCTO";
 
 }

@@ -1,11 +1,13 @@
 package org.example.topdeckapi.src.model;
 
+import java.math.BigDecimal;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.example.topdeckapi.src.Enumerados.ESTADO_PEDIDO;
+import org.example.topdeckapi.src.Enumerados.TIPO_ENTREGA;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -46,13 +48,21 @@ public class Pedido {
     @Enumerated(EnumType.STRING)
     private ESTADO_PEDIDO estado;
 
-    @Column(name = "total", nullable = false)
-    private Double total;
+    @Column(name = "total", nullable = false, precision = 12, scale = 2)
+    private BigDecimal total;
 
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DetallePedido> detalles = new ArrayList<>();
 
     @Column(name = "ip_usuario")
     private String ipUsuario;
+
+    // Null on orders created before delivery options existed (those were all shipped).
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_entrega", length = 10)
+    private TIPO_ENTREGA tipoEntrega;
+
+    @Column(name = "telefono_contacto", length = 30)
+    private String telefonoContacto;
 
 }

@@ -17,6 +17,7 @@ public interface ProductoMapper {
 
     @Mapping(target = "idProducto", source = "uuid")
     @Mapping(source = "nombre", target = "nombreProducto")
+    @Mapping(target = "atributos", ignore = true)
     ProductoResponse toResponse(Producto producto);
 
     @Mapping(target="categoria", ignore = true)

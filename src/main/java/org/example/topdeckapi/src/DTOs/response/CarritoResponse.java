@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.DTOs.response;
 
+import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,7 +16,7 @@ import java.util.List;
 public class CarritoResponse {
     private String idCarrito;
     private LocalDateTime fechaCreacion;
-    private Double precioTotal;
+    private BigDecimal precioTotal;
     List<DetalleCarritoResponse> detalleCarrito;
 
     //Datos resumidos del Usuario

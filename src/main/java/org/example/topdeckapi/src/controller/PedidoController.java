@@ -1,6 +1,7 @@
 package org.example.topdeckapi.src.controller;
 
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +11,7 @@ import org.example.topdeckapi.src.DTOs.request.PedidoRequest;
 import org.example.topdeckapi.src.DTOs.response.DetallePedidoResponse;
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
 import org.example.topdeckapi.src.DTOs.response.PedidoResponse;
+import org.example.topdeckapi.src.Security.ClientIpResolver;
 import org.example.topdeckapi.src.service.IMPL.DetallePedidoService;
 import org.example.topdeckapi.src.service.IMPL.PedidoService;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,7 @@ import java.util.List;
 public class PedidoController {
     private final PedidoService pedidoService;
     private final DetallePedidoService detallePedidoService;
+    private final ClientIpResolver clientIpResolver;
 
     @GetMapping("/admin/obtenerPaginados")
     public ResponseEntity<PaginacionResponse<PedidoResponse>> obtenerPedidosPaginados(
@@ -47,9 +50,9 @@ public class PedidoController {
     }
 
     @PostMapping("/user/newPedido")
-    public ResponseEntity<PedidoResponse> newPedido(@Valid @RequestBody PedidoRequest newPedido){
-        log.info("PedidoRequest completo: {}", newPedido);
-
+    public ResponseEntity<PedidoResponse> newPedido(@Valid @RequestBody PedidoRequest newPedido, HttpServletRequest request){
+        // The stored IP is the one the server sees, never a client-supplied value.
+        newPedido.setIpUsuario(clientIpResolver.resolve(request));
         return ResponseEntity.ok(pedidoService.guardar(newPedido));
     }
 
@@ -59,7 +62,12 @@ public class PedidoController {
     }
 
     @PostMapping("/public/pedidoEfimero")
-    public ResponseEntity<PedidoResponse> pedidoEfimero(@Valid @RequestBody PedidoEfimeroRequest newPedido){
+    public ResponseEntity<PedidoResponse> pedidoEfimero(@Valid @RequestBody PedidoEfimeroRequest newPedido, HttpServletRequest request){
+        String ip = clientIpResolver.resolve(request);
+        newPedido.setIpUsuario(ip);
+        if (newPedido.getUsuario() != null) {
+            newPedido.getUsuario().setIpUsuario(ip);
+        }
         return ResponseEntity.ok(pedidoService.guardarPedidoEfimero(newPedido));
     }
 

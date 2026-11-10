@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.DTOs.response;
 
+import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,6 +20,6 @@ public class EventoResponse {
     private String ubicacion;
     private LocalDateTime fecha;
     private LocalTime hora;
-    private Double precioEntrada;
+    private BigDecimal precioEntrada;
     private ESTADO_EVENTO estado;
 }

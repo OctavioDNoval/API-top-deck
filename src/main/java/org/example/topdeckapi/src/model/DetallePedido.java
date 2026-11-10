@@ -1,6 +1,7 @@
 package org.example.topdeckapi.src.model;
 
 
+import java.math.BigDecimal;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -43,11 +44,11 @@ public class DetallePedido {
     @Column(name = "cantidad")
     private Integer cantidad;
 
-    @Column(name = "precio_unitario")
-    private Double precioUnitario;
+    @Column(name = "precio_unitario", precision = 12, scale = 2)
+    private BigDecimal precioUnitario;
 
-    @Column(name = "subtotal")
-    private Double subTotal;
+    @Column(name = "subtotal", precision = 12, scale = 2)
+    private BigDecimal subTotal;
 
     /*
     * Las relaciones Many To One, One To Many siempre

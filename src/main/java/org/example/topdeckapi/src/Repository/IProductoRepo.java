@@ -19,22 +19,28 @@ public interface IProductoRepo extends JpaRepository<Producto,Long> {
 
 
     @Query("SELECT p FROM Producto p WHERE " +
-            "(:search IS NULL OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(p.descripcion) LIKE LOWER(CONCAT('%', :search, '%'))) AND " +
+            "(:searchPattern IS NULL OR LOWER(p.nombre) LIKE :searchPattern OR LOWER(p.descripcion) LIKE :searchPattern) AND " +
             "(:idCategoria IS NULL OR p.categoria.idCategoria = :idCategoria) AND " +
-            "(:idTag IS NULL OR p.tag.idTag = :idTag)")
-    Page<Producto> findByFiltros(@Param("search") String search,
+            "(:idTag IS NULL OR p.tag.idTag = :idTag) AND " +
+            "(:tipoProducto IS NULL OR p.tipoProducto = :tipoProducto) AND " +
+            "(:activo IS NULL OR p.activo = :activo)")
+    Page<Producto> findByFiltros(@Param("searchPattern") String searchPattern,
                                  @Param("idCategoria") Long idCategoria,
                                  @Param("idTag") Long idTag,
+                                 @Param("tipoProducto") String tipoProducto,
+                                 @Param("activo") Boolean activo,
                                  Pageable pageable);
 
     @Query("SELECT p FROM Producto p WHERE " +
-            "(:search IS NULL OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(p.descripcion) LIKE LOWER(CONCAT('%', :search, '%'))) AND " +
+            "(:searchPattern IS NULL OR LOWER(p.nombre) LIKE :searchPattern OR LOWER(p.descripcion) LIKE :searchPattern) AND " +
             "(:idCategoria IS NULL OR p.categoria.idCategoria = :idCategoria) AND " +
             "(:idTag IS NULL OR p.tag.idTag = :idTag) AND " +
+            "(:tipoProducto IS NULL OR p.tipoProducto = :tipoProducto) AND " +
             "p.activo = true ")
-    Page<Producto> findByFiltrosAndActivo(@Param("search") String search,
+    Page<Producto> findByFiltrosAndActivo(@Param("searchPattern") String searchPattern,
                                           @Param("idCategoria") Long idCategoria,
                                           @Param("idTag") Long idTag,
+                                          @Param("tipoProducto") String tipoProducto,
                                           Pageable pageable);
 
     @Query("SELECT p FROM Producto p WHERE p.descuento > 0 AND p.activo = true")
@@ -57,10 +63,12 @@ public interface IProductoRepo extends JpaRepository<Producto,Long> {
             "GROUP BY t.nombre", nativeQuery = true)
     List<Object[]> contarPorTag();
 
+    // Singles are usually a single unit, so they only count as "sin stock" (0) or "ok":
+    // "bajo" (1-9 units) applies to sealed products only.
     @Query(value = "SELECT " +
             "SUM(CASE WHEN p.stock = 0 THEN 1 ELSE 0 END) AS sinStock, " +
-            "SUM(CASE WHEN p.stock > 0 AND p.stock < 10 THEN 1 ELSE 0 END) AS bajo, " +
-            "SUM(CASE WHEN p.stock >= 10 THEN 1 ELSE 0 END) AS ok " +
+            "SUM(CASE WHEN p.stock > 0 AND p.stock < 10 AND p.tipo_producto <> 'SINGLE' THEN 1 ELSE 0 END) AS bajo, " +
+            "SUM(CASE WHEN p.stock >= 10 OR (p.stock > 0 AND p.tipo_producto = 'SINGLE') THEN 1 ELSE 0 END) AS ok " +
             "FROM producto p WHERE p.activo = true", nativeQuery = true)
     List<Object[]> distribucionStock();
 

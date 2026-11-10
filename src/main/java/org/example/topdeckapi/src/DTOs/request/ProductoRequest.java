@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.DTOs.request;
 
+import java.math.BigDecimal;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -10,6 +11,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.Map;
 
 @Data
 @AllArgsConstructor
@@ -30,11 +33,16 @@ public class ProductoRequest {
 
     @NotNull(message = "El precio es obligatorio")
     @Positive(message = "El precio debe ser mayor a 0")
-    private Double precio;
+    private BigDecimal precio;
 
     private String imgUrl;
 
     @Min(value = 0, message = "El descuento no puede ser negativo")
     @Max(value = 100, message = "El descuento no puede superar el 100%")
     private Integer descuento;
+
+    @Builder.Default
+    private String tipoProducto = "PRODUCTO";
+
+    private Map<String, Object> atributos;
 }

@@ -14,5 +14,8 @@ public interface UsuarioMapper {
     UsuarioResponse toResponse(Usuario usuario);
 
     @Mapping(target = "password", ignore = true)
+    @Mapping(target = "fechaAceptacionTerminos", ignore = true)
+    @Mapping(target = "tokenVerificacionHash", ignore = true)
+    @Mapping(target = "tokenVerificacionExpira", ignore = true)
     Usuario toEntity(UsuarioRequest usuarioRequest);
 }

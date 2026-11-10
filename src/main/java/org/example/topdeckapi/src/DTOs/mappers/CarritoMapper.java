@@ -1,5 +1,7 @@
 package org.example.topdeckapi.src.DTOs.mappers;
 
+import java.math.BigDecimal;
+import org.example.topdeckapi.src.util.Montos;
 import org.example.topdeckapi.src.DTOs.request.CarritoRequest;
 import org.example.topdeckapi.src.DTOs.response.CarritoResponse;
 import org.example.topdeckapi.src.model.Carrito;
@@ -24,16 +26,11 @@ public interface CarritoMapper {
     Carrito toEntity(CarritoRequest carritoRequest);
 
     @Named("calcularTotal")
-    default Double calcularTotal(Carrito carrito) {
+    default BigDecimal calcularTotal(Carrito carrito) {
         if(carrito.getDetalles() == null || carrito.getDetalles().isEmpty())
-            return 0.0;
-        return  carrito.getDetalles().stream()
-                .mapToDouble(d->{
-                    double precio = d.getProducto().getPrecio() != null ? d.getProducto().getPrecio() : 0.0;
-                    int cantidad = d.getCantidad() != null? d.getCantidad() : 0;
-                    double descuento = d.getProducto().getDescuento() != null ? (double) d.getProducto().getDescuento() / 100 : 0.0;
-                    return precio* (1-descuento) *cantidad;
-                })
-                .sum();
+            return Montos.redondear(BigDecimal.ZERO);
+        return carrito.getDetalles().stream()
+                .map(d -> Montos.subtotal(d.getProducto().getPrecio(), d.getProducto().getDescuento(), d.getCantidad()))
+                .reduce(Montos.redondear(BigDecimal.ZERO), BigDecimal::add);
     }
 }

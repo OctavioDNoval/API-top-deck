@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.model;
 
+import java.math.BigDecimal;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -43,8 +44,8 @@ public class Evento {
     @Column(name = "hora")
     private LocalTime hora;
 
-    @Column(name = "precio_entrada")
-    private Double precioEntrada;
+    @Column(name = "precio_entrada", precision = 12, scale = 2)
+    private BigDecimal precioEntrada;
 
     @Column(name = "estado")
     @Enumerated(EnumType.STRING)
