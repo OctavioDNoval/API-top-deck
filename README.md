@@ -298,14 +298,12 @@ Ventana fija por IP y por regla, en memoria (alcanza con una sola instancia de l
 | POST | `/auth/olvide-contrasena` | `{ email }` → siempre 202; manda el link si la cuenta existe |
 | POST | `/auth/restablecer-contrasena` | `{ token, password }` → JWT; cierra las demas sesiones |
 | POST | `/auth/logout` | Cierra todas las sesiones del usuario (204) |
-| GET | `/auth/validate/start` | Valida token Bearer existente |
 | POST | `/auth/refresh` | Renueva un token vigente, hasta 7 dias desde el login |
 | GET | `/products/public/obtenerPaginados` | Productos sellados paginados (solo activos). Params: `pagina`, `tamanio`, `sortBy`, `direction`, `filter`, `idTag`, `idCategoria` |
 | GET | `/products/public/singles` | Singles paginados. Params: los de arriba + `attr=clave:valor` (repetible) |
 | GET | `/products/public/singles/facetas` | Facetas (atributos y valores con conteo) de singles. Param: `idTag` |
 | GET | `/products/public/ofertas` | Top 8 productos con descuento |
 | GET | `/products/public/{id}` | Producto por UUID |
-| GET | `/products/test` | Health check simple |
 | GET | `/category/public/getAll` | Todas las categorias |
 | GET | `/category/public/{id}` | Categoria por UUID |
 | GET | `/tags/public/getAll` | Todos los tags |

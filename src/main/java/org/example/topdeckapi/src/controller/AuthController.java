@@ -12,7 +12,6 @@ import org.example.topdeckapi.src.DTOs.request.UsuarioRequest;
 import org.example.topdeckapi.src.DTOs.request.VerificarCuentaRequest;
 import org.example.topdeckapi.src.Security.ClientIpResolver;
 import org.example.topdeckapi.src.service.IMPL.AuthService;
-import org.example.topdeckapi.src.service.IMPL.JwtService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -25,7 +24,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
-    private final JwtService jwtService;
     private final ClientIpResolver clientIpResolver;
 
     @PostMapping("/login")
@@ -72,14 +70,6 @@ public class AuthController {
     public ResponseEntity<Void> logout(Authentication authentication) {
         authService.logout(authentication != null ? authentication.getName() : null);
         return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/validate/start")
-    public ResponseEntity<String> validate(@RequestHeader("Authorization") String token) {
-        String cleanToken = token.replace("Bearer ", "").trim();
-        return jwtService.isTokenValid(cleanToken)
-                ? ResponseEntity.ok(cleanToken)
-                : ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
     @PostMapping("/refresh")

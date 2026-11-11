@@ -111,7 +111,8 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(origins.isEmpty() ? List.of("http://localhost:5173") : origins);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
+        // Auth travels in the Authorization header, not cookies (revisit with CSRF if that changes).
+        configuration.setAllowCredentials(false);
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

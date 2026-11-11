@@ -36,11 +36,6 @@ public class ProductoController {
 
     private static final Pattern TCG_SLUG = Pattern.compile("^[a-z0-9-]{1,50}$");
 
-    @GetMapping("/test")
-    public ResponseEntity<String> test(){
-        return ResponseEntity.ok("El Servicio funciona!");
-    }
-
     @GetMapping("/public/obtenerPaginados")
     public ResponseEntity<PaginacionResponse<ProductoResponse>> obtenerPaginados(
             @RequestParam(defaultValue = "1") Integer pagina,
