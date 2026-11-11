@@ -43,10 +43,10 @@ Al terminar uno: marcarlo `[x]`, dejar el hash del commit y moverlo a "Hecho" al
 - **Listo cuando**: un admin logueado obtiene token (200) y puede subir una imagen; un usuario común recibe 403.
 - **Relacionado**: FRONT-001, FRONT-011.
 
-### [ ] API-004 · Contraseña del admin del seed y revisión de admins 🔴
-- **Contexto**: `TopDeck-DB-Tables.sql` crea un ADMIN con el hash de su contraseña público en el repo. Además hoy hay más de un ADMIN en la base local (por ejemplo `odnr2005@gmail.com`); conviene revisar quién es admin en la base de producción.
-- **Qué hacer**: cambiar esa contraseña apenas se cree la base de producción (o crear el admin a mano y sacar el insert del seed). Listar los ADMIN y dejar solo los que correspondan.
-- **Listo cuando**: el hash del repo no coincide con ninguna cuenta real.
+### [ ] API-004 · Primer ADMIN de producción y revisión de admins 🔴
+- **Contexto**: el seed con el ADMIN de hash público ya no corre en `prod` (solo en desarrollo, `db/seed`), así que la base de producción arranca sin usuarios. Además en la base local hay más de un ADMIN (por ejemplo `odnr2005@gmail.com`).
+- **Qué hacer**: registrarse desde la tienda con el mail del dueño, confirmar el mail y después `UPDATE usuario SET rol = 'ADMIN' WHERE email = '...';` (cierra su sesión: volver a entrar). Más adelante, revisar la lista de ADMIN desde el panel.
+- **Listo cuando**: en producción solo son ADMIN las cuentas que corresponden y ninguna usa el hash del repo.
 
 ### [ ] API-005 · Variables de entorno de producción 🔴
 - **Qué revisar**: `SPRING_PROFILES_ACTIVE=prod`, `DB_*`, `JWT_SECRET`, `TCG_API_KEY`, `SPRING_EMAIL*`, `APP_FRONT_URL` (links de los mails), `APP_BASE_URL`, `APP_CONTACTO_TELEFONO/EMAIL/DIRECCION/HORARIO` (aparecen en los mails; hoy salen vacíos), `APP_CORS_ALLOWED_ORIGINS` (solo si front y API están en dominios distintos), `APP_TRUST_PROXY=true` solo si la API está detrás de nginx y no expone puertos.
@@ -54,12 +54,12 @@ Al terminar uno: marcarlo `[x]`, dejar el hash del commit y moverlo a "Hecho" al
 - **Listo cuando**: el backend arranca con el perfil `prod` y los mails muestran los datos de contacto reales.
 
 ### [ ] API-006 · Base de datos de producción al día 🔴
-- **Contexto**: `ddl-auto=update` crea columnas nuevas pero **no cambia tipos**.
+- **Contexto**: el esquema lo crea Flyway al arrancar (API-041). Con una base nueva no hay que hacer nada; con una base que ya existía, Flyway la toma como versión 1 y le aplica la V2.
 - **Qué hacer**:
-  1. Aplicar `db/migrations/2026-11-10_money_numeric.sql` (montos `Double` → `NUMERIC(12,2)`) **antes** de levantar la versión nueva.
-  2. Verificar que se crearon las columnas nuevas: `usuario.email_verificado`, `usuario.sesion_version`, `usuario.token_reset_hash`, `usuario.token_reset_expira`, `usuario.fecha_baja`, `pedido.tipo_entrega`, `pedido.telefono_contacto`.
-  3. Backup antes de todo.
-- **Relacionado**: API-041 (pasar a Flyway).
+  1. Backup antes de todo (si la base ya tenía datos).
+  2. Levantar la API con el perfil `prod` y revisar en el log que Flyway aplicó las migraciones y que la API arrancó (`ddl-auto=validate` no arranca si falta algo).
+  3. Crear el ADMIN a mano (el perfil `prod` no carga el seed).
+- **Relacionado**: API-004.
 
 ### [ ] API-007 · HTTPS 🔴
 - **Contexto**: sin HTTPS el token viaja en claro. Se resuelve en el proxy (nginx del front o un balanceador).
@@ -152,11 +152,6 @@ Al terminar uno: marcarlo `[x]`, dejar el hash del commit y moverlo a "Hecho" al
 - **Contexto**: falta la carpeta `.mvn/wrapper/` en el repo, así que `./mvnw` no funciona; hoy se usa un Maven instalado a mano.
 - **Qué hacer**: `mvn -N wrapper:wrapper` y commitear `.mvn/` + `mvnw` + `mvnw.cmd`. Revisar que el Dockerfile use el wrapper o la imagen de Maven.
 
-### [ ] API-041 · Migraciones versionadas (Flyway) 🟡
-- **Contexto**: el esquema lo maneja `ddl-auto=update` (también en producción) más scripts sueltos en `db/migrations/`. `update` no cambia tipos, no borra columnas y no deja historial.
-- **Qué hacer**: agregar Flyway, generar `V1__baseline.sql` desde el esquema actual (`baselineOnMigrate=true`), pasar los scripts de `db/migrations/` a `V2...`, y poner `ddl-auto=validate` en prod.
-- **Relacionado**: API-006.
-
 ### [ ] API-042 · Tests de integración y de seguridad 🟡
 - **Contexto**: hay 46 tests unitarios (sin base). No hay tests de controllers ni de las reglas de seguridad por URL.
 - **Qué hacer**: Testcontainers con Postgres + `@SpringBootTest` + MockMvc. Casos mínimos:
@@ -198,3 +193,4 @@ Al terminar uno: marcarlo `[x]`, dejar el hash del commit y moverlo a "Hecho" al
 - Cuentas y sesiones (`e5ca4df`): registro con confirmación por mail, sesiones revocables con tope de 7 días, logout real, olvidé mi contraseña, bloqueo por intentos, contraseñas de 8 a 72.
 - Tanda 1 de seguridad (`58119aa`, `b5836ad`): API-010 un admin no puede borrarse ni cambiarse el rol, y no se puede borrar ni bajar al único ADMIN (409, `UsuarioServiceTest`); API-011 se eliminó `/auth/validate/start`; API-012 se eliminó `/products/test`; API-013 CORS sin `allowCredentials`. Además: rutas inexistentes devuelven 404 en vez de 500.
 - Baja de usuarios (`72b1e6f`): API-020 borrar un usuario elimina su carrito y direcciones; si tiene pedidos, la cuenta se anonimiza (nombre, mail `@topdeck.invalid`, sin teléfono ni contraseña, GUEST, `fecha_baja`) y se oculta de la lista y las estadísticas, conservando los pedidos y las direcciones que usan. `DELETE /user/admin/delete/{id}` responde `{resultado, message}`; `UsuarioResponse` expone `emailConfirmado`.
+- Migraciones con Flyway (`ca703ba`): API-041 `V1__initial_schema`, `V2__accounts_and_orders_columns` (idempotente, reemplaza `db/migrations/`), seed solo de desarrollo en `db/seed`, `ddl-auto=validate` y `baseline-on-migrate`. Probado con la base existente y con bases vacías en dev y prod. Se eliminó `TopDeck-DB-Tables.sql`.
