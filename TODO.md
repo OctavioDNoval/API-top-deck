@@ -57,7 +57,7 @@ Al terminar uno: marcarlo `[x]`, dejar el hash del commit y moverlo a "Hecho" al
 - **Contexto**: `ddl-auto=update` crea columnas nuevas pero **no cambia tipos**.
 - **Qué hacer**:
   1. Aplicar `db/migrations/2026-11-10_money_numeric.sql` (montos `Double` → `NUMERIC(12,2)`) **antes** de levantar la versión nueva.
-  2. Verificar que se crearon las columnas nuevas: `usuario.email_verificado`, `usuario.sesion_version`, `usuario.token_reset_hash`, `usuario.token_reset_expira`, `pedido.tipo_entrega`, `pedido.telefono_contacto`.
+  2. Verificar que se crearon las columnas nuevas: `usuario.email_verificado`, `usuario.sesion_version`, `usuario.token_reset_hash`, `usuario.token_reset_expira`, `usuario.fecha_baja`, `pedido.tipo_entrega`, `pedido.telefono_contacto`.
   3. Backup antes de todo.
 - **Relacionado**: API-041 (pasar a Flyway).
 
@@ -97,13 +97,6 @@ Al terminar uno: marcarlo `[x]`, dejar el hash del commit y moverlo a "Hecho" al
 ### [ ] API-019 · `telefono` UNIQUE en `usuario` 🟡
 - **Contexto**: la columna es única. Dos clientes con el mismo teléfono (familia, un local) no pueden guardarlo en su perfil. El pedido igual guarda el teléfono en `pedido.telefono_contacto`, y el perfil solo se completa si nadie más lo tiene.
 - **Qué hacer**: decidir si se saca el `UNIQUE` (migración `ALTER TABLE usuario DROP CONSTRAINT ...`) y simplificar `PedidoService.guardarTelefonoSiFalta`.
-
-### [ ] API-020 · No se puede borrar un usuario que tiene carrito 🟠
-- **Contexto**: `DELETE /user/admin/delete/{id}` devuelve 409 para casi cualquier usuario registrado: la FK `carrito_id_usuario_fkey` lo impide (todos tienen carrito), y lo mismo pasaría con `direccion` y `pedido`. Se vio al probar API-010.
-- **Qué hacer**: decidir qué pasa con el historial. Opción sugerida: borrar carrito y direcciones en cascada y, si tiene pedidos, no borrar sino anonimizar/desactivar la cuenta (los pedidos se conservan para estadísticas). Alternativa: bloquear el borrado si tiene pedidos, con un mensaje claro.
-- **Archivos**: `service/IMPL/UsuarioService.java` (`deleteUsuario`), repos de carrito/dirección/pedido.
-- **Listo cuando**: borrar a un usuario sin pedidos funciona; con pedidos, hace lo que se haya decidido, con mensaje claro.
-- **Relacionado**: FRONT-020.
 
 ---
 
@@ -204,3 +197,4 @@ Al terminar uno: marcarlo `[x]`, dejar el hash del commit y moverlo a "Hecho" al
 - Pedidos: forma de entrega y teléfono de contacto (`a630d66`).
 - Cuentas y sesiones (`e5ca4df`): registro con confirmación por mail, sesiones revocables con tope de 7 días, logout real, olvidé mi contraseña, bloqueo por intentos, contraseñas de 8 a 72.
 - Tanda 1 de seguridad (`58119aa`, `b5836ad`): API-010 un admin no puede borrarse ni cambiarse el rol, y no se puede borrar ni bajar al único ADMIN (409, `UsuarioServiceTest`); API-011 se eliminó `/auth/validate/start`; API-012 se eliminó `/products/test`; API-013 CORS sin `allowCredentials`. Además: rutas inexistentes devuelven 404 en vez de 500.
+- Baja de usuarios (`72b1e6f`): API-020 borrar un usuario elimina su carrito y direcciones; si tiene pedidos, la cuenta se anonimiza (nombre, mail `@topdeck.invalid`, sin teléfono ni contraseña, GUEST, `fecha_baja`) y se oculta de la lista y las estadísticas, conservando los pedidos y las direcciones que usan. `DELETE /user/admin/delete/{id}` responde `{resultado, message}`; `UsuarioResponse` expone `emailConfirmado`.
