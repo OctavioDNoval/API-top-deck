@@ -69,29 +69,6 @@ Al terminar uno: marcarlo `[x]`, dejar el hash del commit y moverlo a "Hecho" al
 
 ## 2. Seguridad (pendiente de la auditoría)
 
-### [ ] API-010 · Que un admin no pueda dejar el sistema sin admins 🟠
-- **Contexto**: hoy un admin puede borrarse a sí mismo, sacarse el rol, o sacárselo al último admin, y el panel queda sin dueño (solo se arregla tocando la base).
-- **Qué hacer**: en `UsuarioService.actualizarUsuario` y `deleteUsuario`:
-  - rechazar (409) borrar al usuario autenticado;
-  - rechazar bajar de ADMIN a otro rol si es el único ADMIN (`usuarioRepo.countByRol(ROL.ADMIN) == 1`);
-  - opcional: no permitir que un admin se cambie su propio rol.
-- **Archivos**: `service/IMPL/UsuarioService.java`, `Repository/IUsuarioRepo.java`, tests en `UsuarioServiceTest` (nuevo).
-- **Listo cuando**: los 3 casos devuelven 409 con un mensaje claro y hay tests.
-- **Relacionado**: FRONT-020 (la pantalla de editar usuarios tiene que mostrar ese error).
-
-### [ ] API-011 · Simplificar `/auth/validate/start` 🟡
-- **Contexto**: devuelve el mismo token que recibe. El front lo usa al cargar para "validar" y después llama a `/user/me`. Ya no filtra el texto del error, pero es redundante: `/user/me` ya valida todo (firma, versión de sesión, mail confirmado, tope de 7 días).
-- **Qué hacer**: eliminar el endpoint y que el front valide directamente con `/user/me` (si da 401, logout). Hacerlo en conjunto con FRONT-012.
-- **Listo cuando**: el arranque del front funciona igual sin ese endpoint.
-
-### [ ] API-012 · Borrar `/products/test` 🟢
-- **Contexto**: endpoint de prueba que quedó; responde a cualquier usuario autenticado.
-- **Archivos**: `controller/ProductoController.java`, README (tabla de endpoints).
-
-### [ ] API-013 · CORS sin `allowCredentials` 🟢
-- **Contexto**: la autenticación va por header `Authorization`, no por cookies, así que no hace falta. Si algún día se pasa a cookies (API-017), revisarlo junto con CSRF.
-- **Archivos**: `Security/SecurityConfig.java` (`corsConfigurationSource`).
-
 ### [ ] API-014 · Pedidos de invitado con mail o teléfono ajeno 🟡 (decisión de negocio)
 - **Contexto**: cualquiera puede hacer un pedido como invitado con cualquier mail. Límite actual: 5 pedidos cada 10 minutos por IP. Riesgo: pedidos falsos y, si se confirma uno, le llega un mail a un tercero. Lo mitiga que el pago y la entrega se coordinan por WhatsApp.
 - **Opciones**:
@@ -120,6 +97,13 @@ Al terminar uno: marcarlo `[x]`, dejar el hash del commit y moverlo a "Hecho" al
 ### [ ] API-019 · `telefono` UNIQUE en `usuario` 🟡
 - **Contexto**: la columna es única. Dos clientes con el mismo teléfono (familia, un local) no pueden guardarlo en su perfil. El pedido igual guarda el teléfono en `pedido.telefono_contacto`, y el perfil solo se completa si nadie más lo tiene.
 - **Qué hacer**: decidir si se saca el `UNIQUE` (migración `ALTER TABLE usuario DROP CONSTRAINT ...`) y simplificar `PedidoService.guardarTelefonoSiFalta`.
+
+### [ ] API-020 · No se puede borrar un usuario que tiene carrito 🟠
+- **Contexto**: `DELETE /user/admin/delete/{id}` devuelve 409 para casi cualquier usuario registrado: la FK `carrito_id_usuario_fkey` lo impide (todos tienen carrito), y lo mismo pasaría con `direccion` y `pedido`. Se vio al probar API-010.
+- **Qué hacer**: decidir qué pasa con el historial. Opción sugerida: borrar carrito y direcciones en cascada y, si tiene pedidos, no borrar sino anonimizar/desactivar la cuenta (los pedidos se conservan para estadísticas). Alternativa: bloquear el borrado si tiene pedidos, con un mensaje claro.
+- **Archivos**: `service/IMPL/UsuarioService.java` (`deleteUsuario`), repos de carrito/dirección/pedido.
+- **Listo cuando**: borrar a un usuario sin pedidos funciona; con pedidos, hace lo que se haya decidido, con mensaje claro.
+- **Relacionado**: FRONT-020.
 
 ---
 
@@ -219,3 +203,4 @@ Al terminar uno: marcarlo `[x]`, dejar el hash del commit y moverlo a "Hecho" al
 - Carrito: stock en el detalle (`63fd890`).
 - Pedidos: forma de entrega y teléfono de contacto (`a630d66`).
 - Cuentas y sesiones (`e5ca4df`): registro con confirmación por mail, sesiones revocables con tope de 7 días, logout real, olvidé mi contraseña, bloqueo por intentos, contraseñas de 8 a 72.
+- Tanda 1 de seguridad (`58119aa`, `b5836ad`): API-010 un admin no puede borrarse ni cambiarse el rol, y no se puede borrar ni bajar al único ADMIN (409, `UsuarioServiceTest`); API-011 se eliminó `/auth/validate/start`; API-012 se eliminó `/products/test`; API-013 CORS sin `allowCredentials`. Además: rutas inexistentes devuelven 404 en vez de 500.
