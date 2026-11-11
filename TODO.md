@@ -102,32 +102,11 @@ Al terminar uno: marcarlo `[x]`, dejar el hash del commit y moverlo a "Hecho" al
 
 ## 3. Funcionalidad nueva
 
-### [ ] API-030 · Direcciones del usuario: editar y borrar 🟡
-- **Contexto**: el usuario solo puede crear y listar direcciones. `DireccionService.update` y `delete` existen pero no tienen endpoint, y **`delete` no verifica que la dirección sea del usuario** (hay que agregarlo antes de exponerlo).
-- **Qué hacer**:
-  - `PATCH /direccion/user/{id}` → `update` (ya chequea dueño);
-  - `DELETE /direccion/user/{id}` → agregar chequeo de dueño (403 si no es suya);
-  - `PATCH /direccion/user/{id}/principal` para marcar la principal (desmarca las demás);
-  - borrar una dirección usada en pedidos: los pedidos viejos guardan la referencia, así que hacer borrado lógico (`activa=false`) o desvincular.
-- **Archivos**: `controller/DireccionController.java`, `service/IMPL/DireccionService.java`, `model/Direccion.java`.
-- **Listo cuando**: un usuario edita/borra las suyas y recibe 403 con las de otro (test).
-- **Relacionado**: FRONT-030.
-
 ### [ ] API-031 · Editar eventos 🟡
 - **Contexto**: los eventos se crean y se borran, pero no se editan.
 - **Qué hacer**: `PATCH /eventos/admin/edit/{id}` con DTO parcial (nombre, ubicación, fecha, hora, precio). El estado lo sigue calculando el job diario (`EventoService.actualizarEstadoEventoAutomaticamente`); al cambiar la fecha, recalcularlo en el momento.
 - **Archivos**: `controller/EventosController.java`, `service/IMPL/EventoService.java`, DTO nuevo `EventoUpdateRequest`.
 - **Relacionado**: FRONT-021.
-
-### [ ] API-032 · Perfil autogestionado: datos y cambio de contraseña 🟡
-- **Contexto**: el usuario no puede editar su nombre o teléfono ni cambiar su contraseña desde la cuenta (solo con "olvidé mi contraseña").
-- **Qué hacer**:
-  - `PATCH /user/me` → nombre y teléfono (validar teléfono igual que en el checkout; respetar API-019);
-  - `POST /user/me/password` `{ actual, nueva }` → verificar la actual, mínimo 8, `invalidarSesiones()` y devolver un token nuevo para el dispositivo actual;
-  - cambio de email: solo con confirmación al mail nuevo (dejar para después).
-- **Archivos**: `controller/UsuarioController.java`, `service/IMPL/UsuarioService.java`, DTOs nuevos.
-- **Listo cuando**: cambiar la contraseña cierra las otras sesiones y deja la actual abierta (test).
-- **Relacionado**: FRONT-030.
 
 ### [ ] API-033 · Auditoría útil: registro afectado y filtros 🟡
 - **Contexto**: el log de auditoría guarda acción, tabla y usuario, pero no **qué registro** se tocó, y solo se filtra por acción. Las acciones de invitados y del sistema quedan como `SISTEMA`.
@@ -194,3 +173,4 @@ Al terminar uno: marcarlo `[x]`, dejar el hash del commit y moverlo a "Hecho" al
 - Tanda 1 de seguridad (`58119aa`, `b5836ad`): API-010 un admin no puede borrarse ni cambiarse el rol, y no se puede borrar ni bajar al único ADMIN (409, `UsuarioServiceTest`); API-011 se eliminó `/auth/validate/start`; API-012 se eliminó `/products/test`; API-013 CORS sin `allowCredentials`. Además: rutas inexistentes devuelven 404 en vez de 500.
 - Baja de usuarios (`72b1e6f`): API-020 borrar un usuario elimina su carrito y direcciones; si tiene pedidos, la cuenta se anonimiza (nombre, mail `@topdeck.invalid`, sin teléfono ni contraseña, GUEST, `fecha_baja`) y se oculta de la lista y las estadísticas, conservando los pedidos y las direcciones que usan. `DELETE /user/admin/delete/{id}` responde `{resultado, message}`; `UsuarioResponse` expone `emailConfirmado`.
 - Migraciones con Flyway (`ca703ba`): API-041 `V1__initial_schema`, `V2__accounts_and_orders_columns` (idempotente, reemplaza `db/migrations/`), seed solo de desarrollo en `db/seed`, `ddl-auto=validate` y `baseline-on-migrate`. Probado con la base existente y con bases vacías en dev y prod. Se eliminó `TopDeck-DB-Tables.sql`.
+- Perfil del cliente (`c2c8749`): API-030 editar, borrar y marcar principal las direcciones propias (403 con las de otro; si un pedido la usa, se oculta o se guarda como nueva, `V3__direccion_activa`); la primera dirección queda como principal. API-032 `PATCH /user/me` (nombre y teléfono) y `POST /user/me/password` (verifica la actual con el mismo bloqueo del login, cierra las otras sesiones y devuelve un token nuevo). El cambio de email queda pendiente.
