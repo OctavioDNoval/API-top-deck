@@ -116,7 +116,7 @@ public class AuthService {
         u.setEmailVerificado(false);
         u.setSesionVersion(0);
         Usuario guardado = usuarioRepo.save(u);
-        auditService.registrar("INSERT", "usuario");
+        auditService.registrar("INSERT", "usuario", guardado.getUuid(), "Registro de cuenta (falta confirmar el email)");
         crearCarritoSiFalta(guardado);
         enviarLinkConfirmacion(guardado, true);
     }
@@ -160,7 +160,7 @@ public class AuthService {
         user.setTokenVerificacionHash(null);
         user.setTokenVerificacionExpira(null);
         Usuario guardado = usuarioRepo.save(user);
-        auditService.registrar("UPDATE", "usuario");
+        auditService.registrar("UPDATE", "usuario", guardado.getUuid(), "Confirmó su email: cuenta activa");
         return nuevaSesion(guardado);
     }
 
@@ -246,7 +246,7 @@ public class AuthService {
         user.setTokenVerificacionExpira(null);
 
         Usuario usuarioGuardado = usuarioRepo.save(user);
-        auditService.registrar("UPDATE", "usuario");
+        auditService.registrar("UPDATE", "usuario", usuarioGuardado.getUuid(), "Activó su cuenta de invitado: ahora es cliente");
         crearCarritoSiFalta(usuarioGuardado);
         return nuevaSesion(usuarioGuardado);
     }
@@ -344,7 +344,7 @@ public class AuthService {
         u.setEmailVerificado(true);
         u.invalidarSesiones();
         Usuario guardado = usuarioRepo.save(u);
-        auditService.registrar("UPDATE", "usuario");
+        auditService.registrar("UPDATE", "usuario", guardado.getUuid(), "Restableció la contraseña con el link del email (sesiones cerradas)");
         loginAttemptService.registrarExito(guardado.getEmail());
         return nuevaSesion(guardado);
     }
@@ -381,7 +381,7 @@ public class AuthService {
         u.setTokenResetExpira(null);
         u.invalidarSesiones();
         Usuario guardado = usuarioRepo.save(u);
-        auditService.registrar("UPDATE", "usuario");
+        auditService.registrar("UPDATE", "usuario", guardado.getUuid(), "Cambió su contraseña desde el perfil (otras sesiones cerradas)");
         return nuevaSesion(guardado);
     }
 

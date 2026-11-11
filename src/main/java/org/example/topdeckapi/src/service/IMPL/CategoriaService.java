@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.service.IMPL;
 
+import org.example.topdeckapi.src.util.AuditMensaje;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.mappers.CategoriaMapper;
@@ -42,7 +43,7 @@ public class CategoriaService implements ICategoriaService {
                     Categoria categoria = new Categoria();
                     categoria.setNombre(nombre);
                     Categoria guardada = categoriasRepo.save(categoria);
-                    auditService.registrar("INSERT", "categoria");
+                    auditService.registrar("INSERT", "categoria", guardada.getUuid(), "Creación de la categoría \"" + guardada.getNombre() + "\" (al cargar un producto)");
                     return guardada;
                 });
 
@@ -53,25 +54,28 @@ public class CategoriaService implements ICategoriaService {
         Categoria categoria = new Categoria();
         categoria.setNombre(newCategoria.getNombre());
         Categoria categoriaGuardada = categoriasRepo.save(categoria);
-        auditService.registrar("INSERT", "categoria");
+        auditService.registrar("INSERT", "categoria", categoriaGuardada.getUuid(), "Creación de la categoría \"" + categoriaGuardada.getNombre() + "\"");
         return categoriaMapper.toResponse(categoriaGuardada);
     }
 
     public CategoriaResponse actualizar(CategoriaRequest categoria, String uuid) {
         Categoria c = categoriasRepo.findByUuid(uuid)
                 .orElseThrow(()-> new ResourceNotFoundException("Categoria no encontrada"));
+        String nombreAntes = c.getNombre();
         if(!c.getNombre().equals(categoria.getNombre())) {
             c.setNombre(categoria.getNombre());
         }
         Categoria categoriaGuardada = categoriasRepo.save(c);
-        auditService.registrar("UPDATE", "categoria");
+        auditService.registrar("UPDATE", "categoria", categoriaGuardada.getUuid(),
+                new AuditMensaje.Cambios().valor("nombre", nombreAntes, categoriaGuardada.getNombre())
+                        .texto("Edición de la categoría \"" + nombreAntes + "\""));
         return categoriaMapper.toResponse(categoriaGuardada);
     }
 
     public boolean borrarCategoria(String uuid) {
         Categoria c = categoriasRepo.findByUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("Categoria no encontrada"));
-        auditService.registrar("DELETE", "categoria");
+        auditService.registrar("DELETE", "categoria", c.getUuid(), "Eliminación de la categoría \"" + c.getNombre() + "\"");
         categoriasRepo.delete(c);
         return true;
     }

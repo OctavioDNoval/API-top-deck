@@ -1,5 +1,11 @@
 package org.example.topdeckapi.src.service.IMPL;
 
+import jakarta.persistence.criteria.Predicate;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.jpa.domain.Specification;
+import java.time.LocalDate;
+import java.util.ArrayList;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
@@ -27,21 +33,36 @@ public class AuditService {
     private final IAuditRepository repository;
     private final PaginacionService paginacionService;
 
-    private static final int DIAS_RETENCION_LOGS = 90;
+    // How long logs are kept (purged every night at 03:30).
+    @Value("${app.audit.dias-retencion:90}")
+    private int diasRetencion = 90;
 
     public List<Audit> getAll (){
         return repository.findAll();
     }
 
-    public PaginacionResponse<Audit> obtenerPaginados(Integer pagina, Integer tamanio, String filtro) {
+    /*
+     * Newest first. Every filter is optional: accion and tabla match exactly,
+     * usuario is a partial match, desde/hasta are inclusive days.
+     */
+    public PaginacionResponse<Audit> obtenerPaginados(Integer pagina, Integer tamanio, String accion, String tabla,
+                                                      String usuario, LocalDate desde, LocalDate hasta) {
         if (pagina == null || pagina < 1) pagina = 1;
         if (tamanio == null || tamanio < 1) tamanio = 20;
+        tamanio = Math.min(tamanio, 100);
         Pageable pageable = PageRequest.of(pagina - 1, tamanio, Sort.by(Sort.Direction.DESC, "idAuditoria"));
 
-        Page<Audit> page = (filtro == null || filtro.trim().isEmpty())
-                ? repository.findAll(pageable)
-                : repository.findByAccionIgnoreCase(filtro.trim(), pageable);
-
+        Specification<Audit> spec = (root, query, cb) -> {
+            List<Predicate> p = new ArrayList<>();
+            if (accion != null && !accion.isBlank()) p.add(cb.equal(cb.upper(root.get("accion")), accion.trim().toUpperCase()));
+            if (tabla != null && !tabla.isBlank()) p.add(cb.equal(cb.lower(root.get("tabla")), tabla.trim().toLowerCase()));
+            if (usuario != null && !usuario.isBlank())
+                p.add(cb.like(cb.lower(root.get("nombreUsuario")), "%" + usuario.trim().toLowerCase() + "%"));
+            if (desde != null) p.add(cb.greaterThanOrEqualTo(root.get("fechaAudit"), desde.atStartOfDay()));
+            if (hasta != null) p.add(cb.lessThan(root.get("fechaAudit"), hasta.plusDays(1).atStartOfDay()));
+            return cb.and(p.toArray(new Predicate[0]));
+        };
+        Page<Audit> page = repository.findAll(spec, pageable);
         return paginacionService.crearPaginacionResponse(page, pagina, tamanio, Function.identity());
     }
 
@@ -55,7 +76,7 @@ public class AuditService {
     @Transactional
     public void limpiezaProgramada() {
         try {
-            int borrados = eliminarAntiguos(DIAS_RETENCION_LOGS);
+            int borrados = eliminarAntiguos(diasRetencion);
             if (borrados > 0) {
                 log.info("Limpieza de auditoría: {} logs antiguos eliminados", borrados);
             }
@@ -66,11 +87,19 @@ public class AuditService {
 
     @Transactional
     public void registrar(String accion, String tabla) {
+        registrar(accion, tabla, null, null);
+    }
+
+    /** idRegistro: uuid of the affected record. detalle: short summary (no personal data). */
+    @Transactional
+    public void registrar(String accion, String tabla, String idRegistro, String detalle) {
         Audit log = new Audit();
         log.setNombreUsuario(obtenerUsuarioActual());
         log.setFechaAudit(LocalDateTime.now());
         log.setAccion(accion);
         log.setTabla(tabla);
+        log.setIdRegistro(idRegistro);
+        log.setDetalle(detalle == null ? null : (detalle.length() > 500 ? detalle.substring(0, 497) + "..." : detalle));
         repository.save(log);
     }
 

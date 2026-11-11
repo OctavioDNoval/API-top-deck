@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.controller;
 
+import org.example.topdeckapi.src.DTOs.request.EventoUpdateRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.request.EventoRequest;
@@ -26,6 +27,11 @@ public class EventosController {
     @PostMapping("/admin/save")
     public ResponseEntity<EventoResponse> save(@RequestBody @Valid EventoRequest dto){
         return new ResponseEntity<>(eventosService.save(dto), HttpStatus.CREATED);
+    }
+
+    @PatchMapping("/admin/edit/{id}")
+    public ResponseEntity<EventoResponse> update(@PathVariable String id, @RequestBody @Valid EventoUpdateRequest dto){
+        return ResponseEntity.ok(eventosService.update(id, dto));
     }
 
     @DeleteMapping("/admin/delete/{id}")

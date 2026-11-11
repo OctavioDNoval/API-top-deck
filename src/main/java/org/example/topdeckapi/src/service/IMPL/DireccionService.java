@@ -79,7 +79,7 @@ public class DireccionService implements IDireccionService {
             Direccion oculta = duplicada.get();
             oculta.setActiva(true);
             oculta.setPrincipal(principal);
-            auditService.registrar("UPDATE", "direccion");
+            auditService.registrar("UPDATE", "direccion", oculta.getUuid(), "Volvió a agregar una dirección que había eliminado" + (principal ? " (principal)" : ""));
             return direccionMapper.toResponse(direccionRepo.save(oculta));
         }
 
@@ -97,7 +97,7 @@ public class DireccionService implements IDireccionService {
 
 
         Direccion direccionGuardada = direccionRepo.save(direccion);
-        auditService.registrar("INSERT", "direccion");
+        auditService.registrar("INSERT", "direccion", direccionGuardada.getUuid(), "Agregó una dirección" + (principal ? " (principal)" : ""));
         return direccionMapper.toResponse(direccionGuardada);
     }
 
@@ -161,7 +161,9 @@ public class DireccionService implements IDireccionService {
             desmarcarPrincipales(d.getUsuario().getIdUsuario(), d.getIdDireccion());
         }
         Direccion guardada = direccionRepo.save(destino);
-        auditService.registrar("UPDATE", "direccion");
+        auditService.registrar("UPDATE", "direccion", guardada.getUuid(), destino == d
+                ? "Editó una dirección"
+                : "Editó una dirección usada en pedidos: se guardó como nueva y la anterior quedó para esos pedidos");
         return direccionMapper.toResponse(guardada);
     }
 
@@ -169,7 +171,7 @@ public class DireccionService implements IDireccionService {
         Direccion d = propiaActiva(uuid);
         desmarcarPrincipales(d.getUsuario().getIdUsuario(), d.getIdDireccion());
         d.setPrincipal(true);
-        auditService.registrar("UPDATE", "direccion");
+        auditService.registrar("UPDATE", "direccion", d.getUuid(), "Marcó una dirección como principal");
         return direccionMapper.toResponse(direccionRepo.save(d));
     }
 
@@ -196,14 +198,17 @@ public class DireccionService implements IDireccionService {
         Long idDireccion = d.getIdDireccion();
         boolean eraPrincipal = Boolean.TRUE.equals(d.getPrincipal());
 
-        if (pedidoRepo.existsByDireccion_IdDireccion(idDireccion)) {
+        boolean usadaEnPedidos = pedidoRepo.existsByDireccion_IdDireccion(idDireccion);
+        if (usadaEnPedidos) {
             d.setActiva(false);
             d.setPrincipal(false);
             direccionRepo.save(d);
         } else {
             direccionRepo.delete(d);
         }
-        auditService.registrar("DELETE", "direccion");
+        auditService.registrar("DELETE", "direccion", uuid, usadaEnPedidos
+                ? "Eliminó una dirección usada en pedidos (quedó oculta para conservarlos)"
+                : "Eliminó una dirección");
 
         if (eraPrincipal) {
             direccionRepo.findByUsuario_IdUsuarioAndActivaTrue(idUsuario).stream()

@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.service.IMPL;
 
+import org.example.topdeckapi.src.util.AuditMensaje;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.example.topdeckapi.src.DTOs.mappers.TagMapper;
@@ -45,7 +46,7 @@ public class TagService {
                     tag.setNombre(nombre);
                     tag.setNombreNormalizado(nombreNormalizado);
                     Tag guardado = tagRepository.save(tag);
-                    auditService.registrar("INSERT", "tag");
+                    auditService.registrar("INSERT", "tag", guardado.getUuid(), "Creación del tag \"" + guardado.getNombre() + "\" (al cargar un producto)");
                     return guardado;
                 });
 
@@ -75,7 +76,8 @@ public class TagService {
         tag.setNombreNormalizado(normalizar(request.getNombre()));
         tag.setImgUrl(request.getImgUrl());
         Tag tagGuardado = tagRepository.save(tag);
-        auditService.registrar("INSERT", "tag");
+        auditService.registrar("INSERT", "tag", tagGuardado.getUuid(), "Creación del tag \"" + tagGuardado.getNombre() + "\""
+                + (tagGuardado.getImgUrl() != null && !tagGuardado.getImgUrl().isBlank() ? " con imagen" : " sin imagen"));
 
         return tagMapper.toResponse(tagGuardado);
     }
@@ -85,13 +87,18 @@ public class TagService {
         if(tagRepository.existsByNombreAndUuidNot(newTag.getNombre(), uuid)){
             throw new BussinesException("El nombre de tag ya existe en el sistema");
         }
+        String nombreAntes = tag.getNombre();
+        String imagenAntes = tag.getImgUrl();
         tag.setNombre(newTag.getNombre());
         tag.setNombreNormalizado(normalizar(newTag.getNombre()));
         if(newTag.getImgUrl() != null){
             tag.setImgUrl(newTag.getImgUrl());
         }
         Tag tagGuardado = tagRepository.save(tag);
-        auditService.registrar("UPDATE", "tag");
+        auditService.registrar("UPDATE", "tag", tagGuardado.getUuid(), new AuditMensaje.Cambios()
+                .valor("nombre", nombreAntes, tagGuardado.getNombre())
+                .campo("imagen", imagenAntes, tagGuardado.getImgUrl())
+                .texto("Edición del tag \"" + nombreAntes + "\""));
         return tagMapper.toResponse(tagGuardado);
     }
 
@@ -99,7 +106,7 @@ public class TagService {
     public boolean delete(String uuid) {
         Tag tag = tagRepository.findByUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("Tag not found"));
-        auditService.registrar("DELETE", "tag");
+        auditService.registrar("DELETE", "tag", tag.getUuid(), "Eliminación del tag \"" + tag.getNombre() + "\"");
         tagRepository.delete(tag);
         return true;
     }

@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.service.IMPL;
 
+import org.example.topdeckapi.src.util.AuditMensaje;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -106,6 +107,8 @@ public class UsuarioService implements IUsuarioService {
         if (usuario == null) {
             throw new ResourceNotFoundException("Usuario no autenticado");
         }
+        String nombreAntes = usuario.getNombre();
+        String telefonoAntes = usuario.getTelefono();
         usuario.setNombre(request.getNombre().trim());
 
         String telefono = request.getTelefono() == null ? "" : request.getTelefono().trim();
@@ -119,7 +122,10 @@ public class UsuarioService implements IUsuarioService {
         }
 
         Usuario guardado = usuarioRepo.save(usuario);
-        auditService.registrar("UPDATE", "usuario");
+        auditService.registrar("UPDATE", "usuario", guardado.getUuid(), new AuditMensaje.Cambios()
+                .campo("nombre", nombreAntes, guardado.getNombre())
+                .campo("teléfono", telefonoAntes, guardado.getTelefono())
+                .texto("Editó su perfil"));
         return usuarioMapper.toResponse(guardado);
     }
 
@@ -160,7 +166,7 @@ public class UsuarioService implements IUsuarioService {
         usuario.setRol(rol);
 
         Usuario usuarioGuardado = usuarioRepo.save(usuario);
-        auditService.registrar("INSERT", "usuario");
+        auditService.registrar("INSERT", "usuario", usuarioGuardado.getUuid(), "Alta desde el panel con rol " + usuarioGuardado.getRol());
         return usuarioMapper.toResponse(usuarioGuardado);
     }
 
@@ -174,6 +180,10 @@ public class UsuarioService implements IUsuarioService {
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
         validarCambioDeRol(usuario, request.getRol());
+        String nombreAntes = usuario.getNombre();
+        String emailAntes = usuario.getEmail();
+        String telefonoAntes = usuario.getTelefono();
+        ROL rolAntes = usuario.getRol();
 
         if (request.getEmail() != null) {
             String email = request.getEmail().trim();
@@ -204,7 +214,15 @@ public class UsuarioService implements IUsuarioService {
         }
 
         Usuario usuarioGuardado = usuarioRepo.save(usuario);
-        auditService.registrar("UPDATE", "usuario");
+        boolean cambioPassword = request.getPassword() != null && !request.getPassword().isBlank();
+        auditService.registrar("UPDATE", "usuario", usuarioGuardado.getUuid(), new AuditMensaje.Cambios()
+                .campo("nombre", nombreAntes, usuarioGuardado.getNombre())
+                .campo("email", emailAntes, usuarioGuardado.getEmail())
+                .campo("teléfono", telefonoAntes, usuarioGuardado.getTelefono())
+                .valor("rol", rolAntes, usuarioGuardado.getRol())
+                .nota(cambioPassword, "contraseña")
+                .nota(cambioPassword || rolAntes != usuarioGuardado.getRol(), "sesiones cerradas")
+                .texto("Edición desde el panel"));
         return usuarioMapper.toResponse(usuarioGuardado);
     }
 
@@ -229,7 +247,7 @@ public class UsuarioService implements IUsuarioService {
         usuario.setTerminosAceptados(newUsuario.getTerminosAceptados());
         usuario.setRol(ROL.GUEST);
         Usuario guardado = usuarioRepo.save(usuario);
-        auditService.registrar("INSERT", "usuario");
+        auditService.registrar("INSERT", "usuario", guardado.getUuid(), "Alta de cliente invitado (primer pedido sin cuenta)");
         return guardado;
     }
 
@@ -256,7 +274,9 @@ public class UsuarioService implements IUsuarioService {
         carritoRepo.findByUsuario(usuario).ifPresent(carritoRepo::delete);
         List<Pedido> pedidos = pedidoRepo.findByUsuario_IdUsuario(usuario.getIdUsuario());
         List<Direccion> direcciones = direccionRepo.findByUsuario_IdUsuario(usuario.getIdUsuario());
-        auditService.registrar("DELETE", "usuario");
+        auditService.registrar("DELETE", "usuario", usuario.getUuid(), pedidos.isEmpty()
+                ? "Cuenta eliminada con su carrito y " + AuditMensaje.plural(direcciones.size(), "dirección", "direcciones")
+                : "Cuenta anonimizada: se conservaron " + AuditMensaje.plural(pedidos.size(), "pedido", "pedidos"));
 
         if (pedidos.isEmpty()) {
             direccionRepo.deleteAll(direcciones);

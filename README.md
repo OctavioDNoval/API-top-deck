@@ -322,6 +322,7 @@ Ventana fija por IP y por regla, en memoria (alcanza con una sola instancia de l
 | PATCH | `/products/admin/edit/{id}` | Editar producto |
 | PATCH | `/products/admin/deslistar/{id}` | Deslistar producto |
 | PATCH | `/products/admin/relistar/{id}` | Volver a listar producto |
+| GET | `/products/admin/{id}` | Un producto por id, incluidos los ocultos de la tienda |
 | DELETE | `/products/admin/delete/{id}` | Eliminar producto |
 | GET | `/products/admin/tcg/{franquicia}/{nombre}/{page}/{limit}` | Proxy a API externa de TCG. `franquicia` debe ser un slug (`[a-z0-9-]`), `limit` max 50 |
 | GET | `/user/admin/obtenerPaginados` | Usuarios paginados |
@@ -332,6 +333,7 @@ Ventana fija por IP y por regla, en memoria (alcanza con una sola instancia de l
 | GET | `/pedidos/admin/obtenerPaginados` | Pedidos paginados |
 | GET | `/pedidos/admin/{id}/getDetalles` | Detalles de un pedido |
 | PATCH | `/pedidos/admin/{id}/newState` | Cambiar estado de pedido (descuenta/repone stock) |
+| GET | `/pedidos/admin/{id}` | Un pedido por id (para abrirlo desde los logs) |
 | DELETE | `/pedidos/admin/delete/{id}` | Eliminar pedido (si estaba CONFIRMADO, repone stock) |
 | POST | `/category/admin/new` | Crear categoria |
 | PATCH | `/category/admin/edit/{id}` | Editar categoria |
@@ -342,10 +344,11 @@ Ventana fija por IP y por regla, en memoria (alcanza con una sola instancia de l
 | DELETE | `/tags/admin/delete/{id}` | Eliminar tag |
 | GET | `/tags/admin/getId/{nombre}` | UUID de tag por nombre |
 | GET | `/tags/admin/getById/{id}` | Tag por UUID |
-| POST | `/eventos/admin/save` | Crear evento |
+| POST | `/eventos/admin/save` | Crear evento (el estado sale de la fecha) |
+| PATCH | `/eventos/admin/edit/{id}` | Editar evento (parcial: solo los campos enviados; al cambiar la fecha se recalcula el estado) |
 | DELETE | `/eventos/admin/delete/{id}` | Eliminar evento |
 | GET | `/audit/admin/getAll` | Todos los logs de auditoria |
-| GET | `/audit/admin/obtenerPaginados` | Logs paginados. Params: `pagina`, `tamanio`, `filtro` |
+| GET | `/audit/admin/obtenerPaginados` | Logs paginados, del más nuevo al más viejo. Params opcionales: `pagina`, `tamanio` (máx. 100), `accion`, `tabla`, `usuario` (parcial), `desde` y `hasta` (`AAAA-MM-DD`, inclusive). `filtro` sigue funcionando como sinónimo de `accion` |
 
 ### User (`hasAnyRole("USER", "ADMIN")`)
 
@@ -547,6 +550,8 @@ El esquema lo manejan las migraciones de `src/main/resources/db/migration/`, que
 | `V1__initial_schema.sql` | Tablas e índices iniciales |
 | `V2__accounts_and_orders_columns.sql` | Columnas de cuentas (confirmación de mail, sesiones, reset, baja) y de pedidos (entrega, teléfono); importes en `NUMERIC(12,2)` |
 | `V3__direccion_activa.sql` | `direccion.activa`: las direcciones usadas en pedidos se ocultan en vez de borrarse |
+| `V4__auditoria_registro.sql` | `auditoria.id_registro` y `auditoria.detalle` (qué registro se tocó y un resumen), más índices por fecha y tabla |
+| `V5__auditoria_detalle_500.sql` | `auditoria.detalle` pasa a 500 caracteres (las ediciones listan cada campo cambiado) |
 
 - **Cambiar el esquema** (columna nueva, tipo, índice): agregar `V<n>__descripcion.sql` con el número siguiente. Nunca editar una migración ya aplicada (Flyway compara checksums y no arranca).
 - **Bases creadas antes de Flyway** (con tablas y sin historial): `baseline-on-migrate` las marca como versión 1 y les aplica de la V2 en adelante. La V2 es idempotente, así que no toca lo que ya existe.

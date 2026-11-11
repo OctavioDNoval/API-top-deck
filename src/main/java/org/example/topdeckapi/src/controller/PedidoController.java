@@ -44,6 +44,11 @@ public class PedidoController {
         return ResponseEntity.ok(paginacionResponse);
     }
 
+    @GetMapping("/admin/{idPedido}")
+    public ResponseEntity<PedidoResponse> getById(@PathVariable String idPedido){
+        return ResponseEntity.ok(pedidoService.getById(idPedido));
+    }
+
     @GetMapping("/admin/{idPedido}/getDetalles")
     public ResponseEntity<List<DetallePedidoResponse>> getDetallesPedido(@PathVariable String idPedido){
         return ResponseEntity.ok(detallePedidoService.obtenerDetallesByIdPedido(idPedido));

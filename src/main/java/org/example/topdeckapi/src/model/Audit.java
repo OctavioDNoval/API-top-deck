@@ -29,4 +29,12 @@ public class Audit {
 
     @Column(name = "tabla")
     private String tabla;
+
+    // uuid of the affected record (null for old entries).
+    @Column(name = "id_registro", length = 36)
+    private String idRegistro;
+
+    // Short readable summary, e.g. the product name or the new order state.
+    @Column(name = "detalle", length = 500)
+    private String detalle;
 }

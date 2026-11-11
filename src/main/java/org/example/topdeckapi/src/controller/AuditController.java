@@ -1,5 +1,8 @@
 package org.example.topdeckapi.src.controller;
 
+import org.springframework.format.annotation.DateTimeFormat;
+import java.time.LocalDate;
+
 
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
 import org.example.topdeckapi.src.model.Audit;
@@ -28,12 +31,19 @@ public class AuditController {
         return ResponseEntity.ok(audits);
     }
 
+    /** filtro = action (kept for older clients); accion wins when both are sent. */
     @GetMapping("/admin/obtenerPaginados")
     public ResponseEntity<PaginacionResponse<Audit>> obtenerPaginados(
             @RequestParam(defaultValue = "1") Integer pagina,
             @RequestParam(defaultValue = "20") Integer tamanio,
-            @RequestParam(defaultValue = "") String filtro
+            @RequestParam(defaultValue = "") String filtro,
+            @RequestParam(required = false) String accion,
+            @RequestParam(required = false) String tabla,
+            @RequestParam(required = false) String usuario,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
     ) {
-        return ResponseEntity.ok(auditService.obtenerPaginados(pagina, tamanio, filtro));
+        String accionFinal = (accion != null && !accion.isBlank()) ? accion : filtro;
+        return ResponseEntity.ok(auditService.obtenerPaginados(pagina, tamanio, accionFinal, tabla, usuario, desde, hasta));
     }
 }

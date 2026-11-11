@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.service.IMPL;
 
+import org.example.topdeckapi.src.util.AuditMensaje;
 import org.example.topdeckapi.src.util.Montos;
 import java.util.LinkedHashMap;
 import java.math.BigDecimal;
@@ -140,7 +141,7 @@ public class PedidoService implements IPedidoService {
 
         pedidoGuardado.setDetalles(detallePedidosGuardado);
 
-        auditService.registrar("INSERT", "pedido");
+        auditService.registrar("INSERT", "pedido", pedidoGuardado.getUuid(), "Nuevo pedido " + resumen(pedidoGuardado));
         Pedido pedidoFinal = pedidoRepo.save(pedidoGuardado);
         notificarNuevoPedidoAdmins(pedidoFinal);
         return pedidoMapper.toResponse(pedidoFinal);
@@ -197,7 +198,10 @@ public class PedidoService implements IPedidoService {
 
         pedido.setEstado(estado);
         Pedido pedidoActualizado = pedidoRepo.save(pedido);
-        auditService.registrar("UPDATE", "pedido");
+        String efectoStock = (estado == ESTADO_PEDIDO.CONFIRMADO && estadoAnterior != ESTADO_PEDIDO.CONFIRMADO) ? " (se descontó el stock)"
+                : (estadoAnterior == ESTADO_PEDIDO.CONFIRMADO && estado == ESTADO_PEDIDO.RECHAZADO) ? " (se repuso el stock)" : "";
+        auditService.registrar("UPDATE", "pedido", pedidoActualizado.getUuid(),
+                "Pedido " + AuditMensaje.codigo(pedidoActualizado.getUuid()) + ": " + estadoAnterior + " → " + estado + efectoStock);
 
         if (estado == ESTADO_PEDIDO.CONFIRMADO && estadoAnterior != ESTADO_PEDIDO.CONFIRMADO) {
             enviarConfirmacionPedido(pedidoActualizado);
@@ -256,7 +260,7 @@ public class PedidoService implements IPedidoService {
                 Hibernate.initialize(detalle.getProducto())
         );
 
-        auditService.registrar("INSERT", "pedido");
+        auditService.registrar("INSERT", "pedido", pedidoTerminado.getUuid(), "Nuevo pedido de invitado " + resumen(pedidoTerminado));
         notificarNuevoPedidoAdmins(pedidoTerminado);
         return pedidoMapper.toResponse(pedidoTerminado);
     }
@@ -280,7 +284,8 @@ public class PedidoService implements IPedidoService {
         if (pedido.getEstado() == ESTADO_PEDIDO.CONFIRMADO) {
             reponerStock(pedido.getDetalles());
         }
-        auditService.registrar("DELETE", "pedido");
+        auditService.registrar("DELETE", "pedido", pedido.getUuid(), "Eliminación del pedido " + resumen(pedido) + " · estado " + pedido.getEstado()
+                + (pedido.getEstado() == ESTADO_PEDIDO.CONFIRMADO ? " (se repuso el stock)" : ""));
         pedidoRepo.delete(pedido);
         return true;
     }
@@ -345,6 +350,15 @@ public class PedidoService implements IPedidoService {
         if (usuarioRepo.existsByTelefono(limpio)) return;
         usuario.setTelefono(limpio);
         usuarioRepo.save(usuario);
+    }
+
+    // '#A1B2C3D4 — 3 ítems, total $12.000,00, envío a domicilio'
+    private static String resumen(Pedido p) {
+        int items = p.getDetalles() == null ? 0 : p.getDetalles().stream()
+                .mapToInt(d -> d.getCantidad() != null ? d.getCantidad() : 0).sum();
+        String entrega = p.getTipoEntrega() == null ? "" : p.getTipoEntrega() == TIPO_ENTREGA.RETIRO ? ", retiro en el local" : ", envío a domicilio";
+        return AuditMensaje.codigo(p.getUuid()) + " — " + AuditMensaje.plural(items, "ítem", "ítems")
+                + ", total " + AuditMensaje.dinero(p.getTotal()) + entrega;
     }
 
     private BigDecimal calcularTotal(List<DetallePedido> detalles) {

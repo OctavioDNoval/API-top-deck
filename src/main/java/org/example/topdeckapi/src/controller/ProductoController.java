@@ -175,6 +175,12 @@ public class ProductoController {
         return new ResponseEntity<>(productoService.guardar(producto), HttpStatus.CREATED);
     }
 
+    /** Admin lookup: also returns products hidden from the store. */
+    @GetMapping("/admin/{id}")
+    public ResponseEntity<ProductoResponse> getByIdAdmin(@PathVariable("id") String id){
+        return ResponseEntity.ok(productoService.buscarPorIdAdmin(id));
+    }
+
     @GetMapping("/public/{id}")
     public ResponseEntity<ProductoResponse> getByID(@PathVariable("id") String id){
         ProductoResponse productoReponse = productoService.buscarPorId(id);

@@ -1,5 +1,7 @@
 package org.example.topdeckapi.src.service.IMPL;
 
+import org.example.topdeckapi.src.util.AuditMensaje;
+import java.math.BigDecimal;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
@@ -277,7 +279,7 @@ public class ProductoService implements IProductoService {
             productoSinglesRepo.save(single);
         }
 
-        auditService.registrar("INSERT", "producto");
+        auditService.registrar("INSERT", "producto", productoGuardado.getUuid(), "Creación " + describir(productoGuardado));
         return enrichWithAtributos(productoMapper.toResponse(productoGuardado), productoGuardado);
     }
 
@@ -286,6 +288,12 @@ public class ProductoService implements IProductoService {
         return productoRepo.findOfertas(pageable).stream()
                 .map(p -> enrichWithAtributos(productoMapper.toResponse(p), p))
                 .toList();
+    }
+
+    public ProductoResponse buscarPorIdAdmin(String uuid) {
+        Producto p = productoRepo.findByUuid(uuid)
+                .orElseThrow(() -> new ResourceNotFoundException("No existe el producto"));
+        return enrichWithAtributos(productoMapper.toResponse(p), p);
     }
 
     public ProductoResponse buscarPorId(String uuid) {
@@ -302,6 +310,15 @@ public class ProductoService implements IProductoService {
     public ProductoResponse actualizarProducto(String uuid, ProductoRequest newProducto) {
         Producto p = productoRepo.findByUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("No existe el producto"));
+        // Snapshot for the audit message (what changed, before -> after).
+        String nombreAntes = p.getNombre();
+        BigDecimal precioAntes = p.getPrecio();
+        Integer stockAntes = p.getStock();
+        Integer descuentoAntes = p.getDescuento();
+        String categoriaAntes = p.getCategoria() != null ? p.getCategoria().getNombre() : null;
+        String tagAntes = p.getTag() != null ? p.getTag().getNombre() : null;
+        String descripcionAntes = p.getDescripcion();
+        String imagenAntes = p.getImgUrl();
 
         if(newProducto.getNombre() != null && !newProducto.getNombre().trim().isEmpty()){
             String nuevoNombre = newProducto.getNombre().trim();
@@ -337,7 +354,18 @@ public class ProductoService implements IProductoService {
         Optional.ofNullable(newProducto.getDescuento())
                 .ifPresent(p::setDescuento);
 
-        auditService.registrar("UPDATE", "producto");
+        AuditMensaje.Cambios cambios = new AuditMensaje.Cambios()
+                .valor("nombre", nombreAntes, p.getNombre())
+                .monto("precio", precioAntes, p.getPrecio())
+                .valor("stock", stockAntes, p.getStock())
+                .valor("descuento %", descuentoAntes, p.getDescuento())
+                .valor("categoría", categoriaAntes, p.getCategoria() != null ? p.getCategoria().getNombre() : null)
+                .valor("tag", tagAntes, p.getTag() != null ? p.getTag().getNombre() : null)
+                .campo("descripción", descripcionAntes, p.getDescripcion())
+                .campo("imagen", imagenAntes, p.getImgUrl())
+                .nota("SINGLE".equalsIgnoreCase(p.getTipoProducto())
+                        && newProducto.getAtributos() != null && !newProducto.getAtributos().isEmpty(), "atributos del single");
+        auditService.registrar("UPDATE", "producto", p.getUuid(), cambios.texto("Edición " + tipo(p) + " \"" + nombreAntes + "\""));
         Producto productoActualizado = productoRepo.save(p);
 
         if ("SINGLE".equalsIgnoreCase(p.getTipoProducto())
@@ -361,7 +389,8 @@ public class ProductoService implements IProductoService {
 
         boolean estadoActual = p.getActivo();
         p.setActivo(!estadoActual);
-        auditService.registrar("UPDATE", "producto");
+        auditService.registrar("UPDATE", "producto", p.getUuid(),
+                (Boolean.TRUE.equals(p.getActivo()) ? "Activación " : "Desactivación ") + tipo(p) + " \"" + p.getNombre() + "\" (" + (Boolean.TRUE.equals(p.getActivo()) ? "visible" : "oculto") + " en la tienda)");
         return enrichWithAtributos(productoMapper.toResponse(productoRepo.save(p)), p);
     }
 
@@ -370,16 +399,32 @@ public class ProductoService implements IProductoService {
                 .orElseThrow(() -> new ResourceNotFoundException("No existe el producto"));
 
         p.setActivo(true);
-        auditService.registrar("UPDATE", "producto");
+        auditService.registrar("UPDATE", "producto", p.getUuid(), "Activación " + tipo(p) + " \"" + p.getNombre() + "\" (visible en la tienda)");
         return enrichWithAtributos(productoMapper.toResponse(productoRepo.save(p)), p);
     }
 
     public boolean borrarProducto(String uuid) {
         Producto p = productoRepo.findByUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("No existe el producto"));
-        auditService.registrar("DELETE", "producto");
+        auditService.registrar("DELETE", "producto", p.getUuid(), "Eliminación " + describir(p));
         productoRepo.delete(p);
         return true;
+    }
+
+    // "del single" / "del producto", for the audit messages.
+    private static String tipo(Producto p) {
+        return "SINGLE".equalsIgnoreCase(p.getTipoProducto()) ? "del single" : "del producto";
+    }
+
+    // 'del producto "Sobre X" ($8.500,00) · stock 50 · 10% off · Sobres · Pokémon'
+    private static String describir(Producto p) {
+        StringBuilder sb = new StringBuilder(tipo(p))
+                .append(" \"").append(p.getNombre()).append("\" (").append(AuditMensaje.dinero(p.getPrecio())).append(")")
+                .append(" · stock ").append(p.getStock() != null ? p.getStock() : 0);
+        if (p.getDescuento() != null && p.getDescuento() > 0) sb.append(" · ").append(p.getDescuento()).append("% off");
+        if (p.getCategoria() != null) sb.append(" · ").append(p.getCategoria().getNombre());
+        if (p.getTag() != null) sb.append(" · ").append(p.getTag().getNombre());
+        return sb.toString();
     }
 
     private ProductoResponse enrichWithAtributos(ProductoResponse response, Producto producto) {
