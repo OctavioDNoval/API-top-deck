@@ -360,6 +360,7 @@ public class PedidoService implements IPedidoService {
     }
 
     private void enviarConfirmacionPedido(Pedido pedido) {
+        if (pedido.getUsuario().getFechaBaja() != null) return; // anonymized account: no real address
         try {
             emailService.enviarPedidoConfirmado(pedido.getUsuario(), pedido);
         } catch (Exception e) {

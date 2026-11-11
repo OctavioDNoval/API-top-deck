@@ -4,7 +4,13 @@ import org.example.topdeckapi.src.DTOs.mappers.UsuarioMapper;
 import org.example.topdeckapi.src.DTOs.request.UsuarioUpdateRequest;
 import org.example.topdeckapi.src.Enumerados.ROL;
 import org.example.topdeckapi.src.Exception.BussinesException;
+import org.example.topdeckapi.src.Repository.ICarritoRepository;
+import org.example.topdeckapi.src.Repository.IDireccionRepo;
+import org.example.topdeckapi.src.Repository.IPedidoRepo;
 import org.example.topdeckapi.src.Repository.IUsuarioRepo;
+import org.example.topdeckapi.src.model.Carrito;
+import org.example.topdeckapi.src.model.Direccion;
+import org.example.topdeckapi.src.model.Pedido;
 import org.example.topdeckapi.src.model.Usuario;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +32,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -39,6 +46,9 @@ class UsuarioServiceTest {
     @Mock private UsuarioMapper usuarioMapper;
     @Mock private PaginacionService paginacionService;
     @Mock private AuditService auditService;
+    @Mock private ICarritoRepository carritoRepo;
+    @Mock private IDireccionRepo direccionRepo;
+    @Mock private IPedidoRepo pedidoRepo;
 
     @InjectMocks private UsuarioService usuarioService;
 
@@ -55,6 +65,9 @@ class UsuarioServiceTest {
         when(usuarioRepo.findByUuid("otro-uuid")).thenReturn(Optional.of(otroAdmin));
         when(usuarioRepo.findByUuid("cliente-uuid")).thenReturn(Optional.of(cliente));
         when(usuarioRepo.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(pedidoRepo.findByUsuario_IdUsuario(anyLong())).thenReturn(List.of());
+        when(direccionRepo.findByUsuario_IdUsuario(anyLong())).thenReturn(List.of());
+        when(carritoRepo.findByUsuario(any())).thenReturn(Optional.empty());
         autenticarComo("admin@test.com");
     }
 
@@ -88,7 +101,7 @@ class UsuarioServiceTest {
     void permiteEliminarOtroAdminSiQuedanAdmins() {
         when(usuarioRepo.countByRol(ROL.ADMIN)).thenReturn(2L);
 
-        assertThat(usuarioService.deleteUsuario("otro-uuid")).isTrue();
+        assertThat(usuarioService.deleteUsuario("otro-uuid")).isEqualTo(UsuarioService.ResultadoBaja.ELIMINADO);
         verify(usuarioRepo).delete(otroAdmin);
     }
 
@@ -130,6 +143,61 @@ class UsuarioServiceTest {
         usuarioService.actualizarUsuario(conRol(ROL.ADMIN), "cliente-uuid");
 
         assertThat(cliente.getRol()).isEqualTo(ROL.ADMIN);
+    }
+
+    @Test
+    void sinPedidosBorraUsuarioCarritoYDirecciones() {
+        Carrito carrito = new Carrito();
+        Direccion casa = direccion(10L);
+        when(carritoRepo.findByUsuario(cliente)).thenReturn(Optional.of(carrito));
+        when(direccionRepo.findByUsuario_IdUsuario(3L)).thenReturn(List.of(casa));
+
+        assertThat(usuarioService.deleteUsuario("cliente-uuid")).isEqualTo(UsuarioService.ResultadoBaja.ELIMINADO);
+
+        verify(carritoRepo).delete(carrito);
+        verify(direccionRepo).deleteAll(List.of(casa));
+        verify(usuarioRepo).delete(cliente);
+    }
+
+    @Test
+    void conPedidosAnonimizaYConservaLasDireccionesDeLosPedidos() {
+        cliente.setNombre("Juan");
+        cliente.setTelefono("1155554444");
+        cliente.setPassword("hash");
+        Direccion usada = direccion(10L);
+        Direccion sinUsar = direccion(11L);
+        Pedido pedido = new Pedido();
+        pedido.setDireccion(usada);
+        when(pedidoRepo.findByUsuario_IdUsuario(3L)).thenReturn(List.of(pedido));
+        when(direccionRepo.findByUsuario_IdUsuario(3L)).thenReturn(List.of(usada, sinUsar));
+
+        assertThat(usuarioService.deleteUsuario("cliente-uuid")).isEqualTo(UsuarioService.ResultadoBaja.ANONIMIZADO);
+
+        verify(direccionRepo).deleteAll(List.of(sinUsar));
+        verify(usuarioRepo, never()).delete(any());
+        assertThat(cliente.getNombre()).isEqualTo("Usuario eliminado");
+        assertThat(cliente.getEmail()).isEqualTo("eliminado-cliente-uuid@topdeck.invalid");
+        assertThat(cliente.getTelefono()).isNull();
+        assertThat(cliente.getPassword()).isNull();
+        assertThat(cliente.getRol()).isEqualTo(ROL.GUEST);
+        assertThat(cliente.getFechaBaja()).isNotNull();
+        assertThat(cliente.getSesionVersionActual()).isEqualTo(1);
+    }
+
+    @Test
+    void unaCuentaDadaDeBajaNoSePuedeEditarNiBorrarDeNuevo() {
+        cliente.setFechaBaja(java.time.LocalDateTime.now());
+
+        assertThatThrownBy(() -> usuarioService.deleteUsuario("cliente-uuid"))
+                .isInstanceOf(org.example.topdeckapi.src.Exception.ResourceNotFoundException.class);
+        assertThatThrownBy(() -> usuarioService.actualizarUsuario(conRol(ROL.ADMIN), "cliente-uuid"))
+                .isInstanceOf(org.example.topdeckapi.src.Exception.ResourceNotFoundException.class);
+    }
+
+    private static Direccion direccion(Long id) {
+        Direccion d = new Direccion();
+        d.setIdDireccion(id);
+        return d;
     }
 
     private static Usuario usuario(Long id, String uuid, String email, ROL rol) {

@@ -327,7 +327,7 @@ Ventana fija por IP y por regla, en memoria (alcanza con una sola instancia de l
 | GET | `/user/admin/{id}` | Usuario por UUID |
 | POST | `/user/admin/crearUsuario` | Crear usuario |
 | PATCH | `/user/admin/{id}` | Actualizacion parcial: solo cambia los campos enviados (`nombre`, `email`, `password`, `telefono`, `rol`). No toca TyC ni IP |
-| DELETE | `/user/admin/delete/{id}` | Eliminar usuario |
+| DELETE | `/user/admin/delete/{id}` | Eliminar usuario (si tiene pedidos, se anonimiza y se conservan los pedidos) |
 | GET | `/pedidos/admin/obtenerPaginados` | Pedidos paginados |
 | GET | `/pedidos/admin/{id}/getDetalles` | Detalles de un pedido |
 | PATCH | `/pedidos/admin/{id}/newState` | Cambiar estado de pedido (descuenta/repone stock) |

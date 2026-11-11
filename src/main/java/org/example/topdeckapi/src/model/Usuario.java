@@ -91,6 +91,12 @@ public class Usuario {
     @Column(name = "token_reset_expira")
     private LocalDateTime tokenResetExpira;
 
+    // Set when an admin deletes a user who has orders: the account is anonymized
+    // and hidden instead of removed, so the orders keep their owner.
+    @JsonIgnore
+    @Column(name = "fecha_baja")
+    private LocalDateTime fechaBaja;
+
     public boolean isEmailConfirmado() {
         return !Boolean.FALSE.equals(emailVerificado);
     }

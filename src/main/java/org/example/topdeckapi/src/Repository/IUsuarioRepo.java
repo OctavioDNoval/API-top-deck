@@ -26,9 +26,11 @@ public interface IUsuarioRepo extends JpaRepository<Usuario,Long> {
 
     long countByRol(ROL rol);
 
-    @Query("SELECT u FROM Usuario u WHERE " +
+    Page<Usuario> findByFechaBajaIsNull(Pageable pageable);
+
+    @Query("SELECT u FROM Usuario u WHERE u.fechaBaja IS NULL AND (" +
             "LOWER(u.nombre) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) ")
+            "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')))")
     Page<Usuario> findBySearch(@Param("search") String search, Pageable pageable);
 
     Optional<Usuario> findByUuid(String uuid);
@@ -39,6 +41,6 @@ public interface IUsuarioRepo extends JpaRepository<Usuario,Long> {
 
     boolean existsByTelefono(String telefono);
 
-    @Query(value = "SELECT u.rol, COUNT(*) FROM usuario u GROUP BY u.rol", nativeQuery = true)
+    @Query(value = "SELECT u.rol, COUNT(*) FROM usuario u WHERE u.fecha_baja IS NULL GROUP BY u.rol", nativeQuery = true)
     List<Object[]> contarPorRol();
 }

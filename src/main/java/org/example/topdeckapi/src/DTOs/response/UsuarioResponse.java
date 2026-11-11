@@ -18,4 +18,5 @@ public class UsuarioResponse {
     private ROL rol;
     private String versionTerminosYCondicionesAceptados;
     private Boolean terminosAceptados;
+    private Boolean emailConfirmado;
 }

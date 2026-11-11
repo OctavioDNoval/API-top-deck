@@ -13,6 +13,8 @@ import org.example.topdeckapi.src.service.IMPL.UsuarioService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/user")
 @RequiredArgsConstructor
@@ -67,10 +69,11 @@ public class UsuarioController {
     //=======================DELETE========================
 
     @DeleteMapping("/admin/delete/{id}")
-    public ResponseEntity<?>  delete(@PathVariable("id") String id){
-        boolean isDeleted = usuarioService.deleteUsuario(id);
-        return isDeleted
-                ? ResponseEntity.ok().build()
-                : ResponseEntity.notFound().build();
+    public ResponseEntity<Map<String, String>> delete(@PathVariable("id") String id){
+        UsuarioService.ResultadoBaja resultado = usuarioService.deleteUsuario(id);
+        String message = resultado == UsuarioService.ResultadoBaja.ELIMINADO
+                ? "Usuario eliminado"
+                : "El usuario tenía pedidos: se anonimizó su cuenta y se conservaron los pedidos";
+        return ResponseEntity.ok(Map.of("resultado", resultado.name(), "message", message));
     }
 }

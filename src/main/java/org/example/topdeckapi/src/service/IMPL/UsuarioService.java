@@ -14,7 +14,12 @@ import org.example.topdeckapi.src.Enumerados.ROL;
 import org.example.topdeckapi.src.Exception.BussinesException;
 import org.example.topdeckapi.src.Exception.EmailYaRegistradoException;
 import org.example.topdeckapi.src.Exception.ResourceNotFoundException;
+import org.example.topdeckapi.src.Repository.ICarritoRepository;
+import org.example.topdeckapi.src.Repository.IDireccionRepo;
+import org.example.topdeckapi.src.Repository.IPedidoRepo;
 import org.example.topdeckapi.src.Repository.IUsuarioRepo;
+import org.example.topdeckapi.src.model.Direccion;
+import org.example.topdeckapi.src.model.Pedido;
 import org.example.topdeckapi.src.model.Usuario;
 import org.example.topdeckapi.src.service.Interface.IUsuarioService;
 import org.springframework.data.domain.Page;
@@ -27,7 +32,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.Optional;
 
 
@@ -41,6 +51,9 @@ public class UsuarioService implements IUsuarioService {
     private final UsuarioMapper usuarioMapper;
     private final PaginacionService paginacionService;
     private final AuditService auditService;
+    private final ICarritoRepository carritoRepo;
+    private final IDireccionRepo direccionRepo;
+    private final IPedidoRepo pedidoRepo;
 
     //METODOS PARA OBTENER DATOS PAGINADOS Y DATOS PRECISOS
 
@@ -60,7 +73,7 @@ public class UsuarioService implements IUsuarioService {
     public PaginacionResponse<UsuarioResponse> obtenerPaginados (Integer pagina, Integer tamanio, String sortBy, String direction) {
         Sort sort = buildSort (sortBy, direction);
         Pageable pageable = PageRequest.of(pagina - 1, tamanio, sort);
-        Page<Usuario> paginaUsuarios = usuarioRepo.findAll(pageable);
+        Page<Usuario> paginaUsuarios = usuarioRepo.findByFechaBajaIsNull(pageable);
         return paginacionService.crearPaginacionResponse(paginaUsuarios,pagina,tamanio, usuarioMapper::toResponse);
     }
 
@@ -74,6 +87,7 @@ public class UsuarioService implements IUsuarioService {
     public UsuarioResponse obtenerPorId(String uuid){
         return usuarioMapper.toResponse(usuarioRepo.
                 findByUuid(uuid)
+                .filter(u -> u.getFechaBaja() == null)
                 .orElseThrow(
                         () -> new ResourceNotFoundException("Usuario no encontrado"))
         );
@@ -131,9 +145,9 @@ public class UsuarioService implements IUsuarioService {
     * verification token are left as they are.
     * */
     public UsuarioResponse actualizarUsuario(UsuarioUpdateRequest request, String uuid){
-        Usuario usuario = usuarioRepo.findByUuid(uuid).orElseThrow(
-                ()-> new ResourceNotFoundException("Usuario no encontrado")
-        );
+        Usuario usuario = usuarioRepo.findByUuid(uuid)
+                .filter(u -> u.getFechaBaja() == null)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
         validarCambioDeRol(usuario, request.getRol());
 
@@ -195,18 +209,64 @@ public class UsuarioService implements IUsuarioService {
         return guardado;
     }
 
-    public boolean deleteUsuario(String uuid){
+    public enum ResultadoBaja { ELIMINADO, ANONIMIZADO }
+
+    /*
+     * Without orders the user is removed with their cart and addresses. With orders
+     * the account is anonymized and hidden instead, so the orders (and stats) keep
+     * their owner; only the addresses those orders point to are kept.
+     */
+    public ResultadoBaja deleteUsuario(String uuid){
         Usuario usuario = usuarioRepo.findByUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        if (usuario.getFechaBaja() != null) {
+            throw new ResourceNotFoundException("Usuario no encontrado");
+        }
         if (esUsuarioAutenticado(usuario)) {
             throw new BussinesException("No podés eliminar tu propia cuenta");
         }
         if (usuario.getRol() == ROL.ADMIN && usuarioRepo.countByRol(ROL.ADMIN) <= 1) {
             throw new BussinesException("No se puede eliminar al único administrador");
         }
+
+        carritoRepo.findByUsuario(usuario).ifPresent(carritoRepo::delete);
+        List<Pedido> pedidos = pedidoRepo.findByUsuario_IdUsuario(usuario.getIdUsuario());
+        List<Direccion> direcciones = direccionRepo.findByUsuario_IdUsuario(usuario.getIdUsuario());
         auditService.registrar("DELETE", "usuario");
-        usuarioRepo.delete(usuario);
-        return true;
+
+        if (pedidos.isEmpty()) {
+            direccionRepo.deleteAll(direcciones);
+            usuarioRepo.delete(usuario);
+            return ResultadoBaja.ELIMINADO;
+        }
+
+        Set<Long> usadasEnPedidos = pedidos.stream()
+                .map(Pedido::getDireccion)
+                .filter(Objects::nonNull)
+                .map(Direccion::getIdDireccion)
+                .collect(Collectors.toSet());
+        direccionRepo.deleteAll(direcciones.stream()
+                .filter(d -> !usadasEnPedidos.contains(d.getIdDireccion()))
+                .toList());
+        anonimizar(usuario);
+        usuarioRepo.save(usuario);
+        return ResultadoBaja.ANONIMIZADO;
+    }
+
+    private void anonimizar(Usuario usuario) {
+        usuario.setNombre("Usuario eliminado");
+        // Unique and not null: a reserved domain that can never receive mail.
+        usuario.setEmail("eliminado-" + usuario.getUuid() + "@topdeck.invalid");
+        usuario.setTelefono(null);
+        usuario.setPassword(null);
+        usuario.setRol(ROL.GUEST); // GUEST can't log in or be claimed with this email
+        usuario.setIpUsuario(null);
+        usuario.setTokenVerificacionHash(null);
+        usuario.setTokenVerificacionExpira(null);
+        usuario.setTokenResetHash(null);
+        usuario.setTokenResetExpira(null);
+        usuario.invalidarSesiones();
+        usuario.setFechaBaja(LocalDateTime.now());
     }
 
     // Keeps the panel from being left without an owner.
