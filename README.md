@@ -7,7 +7,8 @@ API RESTful construida con Spring Boot 3.5.4 y Java 21 para el e-commerce de car
 - **Framework**: Spring Boot 3.5.4
 - **Java**: 21
 - **Base de datos**: PostgreSQL 16
-- **ORM**: Spring Data JPA / Hibernate (`ddl-auto=update`)
+- **ORM**: Spring Data JPA / Hibernate (`ddl-auto=validate`)
+- **Migraciones**: Flyway (`src/main/resources/db/migration`)
 - **Seguridad**: Spring Security + JWT (jjwt 0.11.5)
 - **Mapeo**: MapStruct 1.6.3
 - **Validacion**: Jakarta Bean Validation
@@ -531,18 +532,19 @@ cp .env.example .env
 docker-compose up --build
 ```
 
-La base se inicializa con `TopDeck-DB-Tables.sql` solo la primera vez que se crea el volumen `db_data`.
+Al arrancar, la API crea o actualiza las tablas con Flyway; en desarrollo además carga datos de ejemplo (ver [Datos Iniciales](#datos-iniciales-seed)).
 
-### Migraciones
-`ddl-auto=update` agrega columnas nuevas pero **no cambia tipos**. Los cambios de tipo van como scripts en `db/migrations/` y se aplican a mano sobre bases ya creadas:
+### Migraciones (Flyway)
+El esquema lo manejan las migraciones de `src/main/resources/db/migration/`, que Flyway aplica al arrancar la API. Hibernate está en `ddl-auto=validate`: solo verifica que las entidades coincidan con las tablas y **no crea ni cambia nada**.
 
-| Script | Que hace |
+| Migración | Qué hace |
 |---|---|
-| `2026-11-10_money_numeric.sql` | Columnas de importes `DOUBLE PRECISION` → `NUMERIC(12,2)` |
+| `V1__initial_schema.sql` | Tablas e índices iniciales |
+| `V2__accounts_and_orders_columns.sql` | Columnas de cuentas (confirmación de mail, sesiones, reset, baja) y de pedidos (entrega, teléfono); importes en `NUMERIC(12,2)` |
 
-```bash
-docker exec -i topdeck-db psql -U postgres -d topdeck_database < db/migrations/2026-11-10_money_numeric.sql
-```
+- **Cambiar el esquema** (columna nueva, tipo, índice): agregar `V<n>__descripcion.sql` con el número siguiente. Nunca editar una migración ya aplicada (Flyway compara checksums y no arranca).
+- **Bases creadas antes de Flyway** (con tablas y sin historial): `baseline-on-migrate` las marca como versión 1 y les aplica de la V2 en adelante. La V2 es idempotente, así que no toca lo que ya existe.
+- El historial queda en la tabla `flyway_schema_history`.
 
 ### Desarrollo local
 ```bash
@@ -592,13 +594,13 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 4. `APP_PUBLIC_URL` con el dominio real. Si front y API van en dominios distintos (sin el nginx), cargar `APP_CORS_ALLOWED_ORIGINS`.
 5. La API **no** debe quedar accesible directo desde internet cuando `APP_TRUST_PROXY=true`.
 6. Completar `APP_CONTACTO_*` con los datos reales del negocio.
-7. Cambiar la password del ADMIN que crea el seed (su hash esta publico en `TopDeck-DB-Tables.sql`).
+7. Crear el ADMIN a mano: el perfil `prod` no carga el seed, así que la base arranca sin usuarios.
 
 ---
 
 ## Datos Iniciales (Seed)
 
-El archivo `TopDeck-DB-Tables.sql` crea las tablas e incluye datos semilla:
+`src/main/resources/db/seed/V1_1__dev_seed.sql` carga datos de ejemplo **solo en desarrollo** (`spring.flyway.locations` incluye `classpath:db/seed`; el perfil `prod` no) y solo si la base no tiene categorías:
 
 **Categorias**: Sobres, Cajas, Barajas, Accesorios, Figuras
 
@@ -606,4 +608,4 @@ El archivo `TopDeck-DB-Tables.sql` crea las tablas e incluye datos semilla:
 
 **Productos**: 10 productos de ejemplo distribuidos entre las categorias y franquicias
 
-**Usuario ADMIN por defecto**: con su password como hash bcrypt dentro del archivo. Como el archivo esta en el repo, ese hash es publico: en produccion no usar ese usuario (o cambiarle la password apenas se crea la base).
+**Usuario ADMIN por defecto**: con su password como hash bcrypt dentro del archivo. Como el archivo está en el repo, ese hash es público: sirve solo para desarrollo.
