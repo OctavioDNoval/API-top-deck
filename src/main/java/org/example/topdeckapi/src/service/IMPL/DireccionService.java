@@ -10,10 +10,12 @@ import org.example.topdeckapi.src.Exception.BussinesException;
 import org.example.topdeckapi.src.Exception.ResourceNotFoundException;
 import org.example.topdeckapi.src.Exception.UsuarioNotFoundException;
 import org.example.topdeckapi.src.Repository.IDireccionRepo;
+import org.example.topdeckapi.src.Repository.IPedidoRepo;
 import org.example.topdeckapi.src.Repository.IUsuarioRepo;
 import org.example.topdeckapi.src.model.Direccion;
 import org.example.topdeckapi.src.model.Usuario;
 import org.example.topdeckapi.src.service.Interface.IDireccionService;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -28,6 +30,7 @@ public class DireccionService implements IDireccionService {
     private final IUsuarioRepo usuarioRepo;
     private final UsuarioService usuarioService;
     private final AuditService auditService;
+    private final IPedidoRepo pedidoRepo;
 
     @Transactional(readOnly = true)
     public List<DireccionResponse> getAll(){
@@ -60,18 +63,24 @@ public class DireccionService implements IDireccionService {
                         dto.getCodigoPostal(),
                         usuario.getIdUsuario()
                 );
-        if (duplicada.isPresent()) {
-            throw new BussinesException("Ya existe una direccion con los mismos datos");
+        if (duplicada.isPresent() && Boolean.TRUE.equals(duplicada.get().getActiva())) {
+            throw new BussinesException("Ya tenés una dirección con los mismos datos");
         }
 
-        if (Boolean.TRUE.equals(dto.getPrincipal())) {
-            List<Direccion> existentes = direccionRepo.findByUsuario_IdUsuario(usuario.getIdUsuario());
-            for (Direccion d : existentes) {
-                if (Boolean.TRUE.equals(d.getPrincipal())) {
-                    d.setPrincipal(false);
-                    direccionRepo.save(d);
-                }
-            }
+        // The first address is the main one; marking a new one as main unmarks the rest.
+        boolean esPrimera = direccionRepo.findByUsuario_IdUsuarioAndActivaTrue(usuario.getIdUsuario()).isEmpty();
+        boolean principal = Boolean.TRUE.equals(dto.getPrincipal()) || esPrimera;
+        if (principal) {
+            desmarcarPrincipales(usuario.getIdUsuario(), null);
+        }
+
+        // Same address removed earlier (kept for its orders): bring it back.
+        if (duplicada.isPresent()) {
+            Direccion oculta = duplicada.get();
+            oculta.setActiva(true);
+            oculta.setPrincipal(principal);
+            auditService.registrar("UPDATE", "direccion");
+            return direccionMapper.toResponse(direccionRepo.save(oculta));
         }
 
         Direccion direccion = Direccion.builder()
@@ -83,7 +92,7 @@ public class DireccionService implements IDireccionService {
                 .direccion(dto.getDireccion())
                 .altura(dto.getAltura())
                 .piso(dto.getPiso())
-                .principal(dto.getPrincipal())
+                .principal(principal)
                 .build();
 
 
@@ -124,30 +133,44 @@ public class DireccionService implements IDireccionService {
         return direccionRepo.save(direccion);
     }
 
+    /*
+     * An address that orders point to is never changed in place: the old one is
+     * hidden (the orders keep it) and the edit is saved as a new address.
+     */
     public DireccionResponse update(DireccionRequest request, String uuid) {
-        return direccionRepo.findByUuid(uuid)
-                .map(d->{
-                    Usuario usuarioAuth = usuarioService.obtenerUsuarioAutenticado();
-                    if (usuarioAuth == null || !d.getUsuario().getIdUsuario().equals(usuarioAuth.getIdUsuario())) {
-                        throw new org.springframework.security.access.AccessDeniedException("No tienes acceso a esta dirección");
-                    }
+        Direccion d = propiaActiva(uuid);
+        boolean principal = request.getPrincipal() != null ? request.getPrincipal() : Boolean.TRUE.equals(d.getPrincipal());
 
-                    direccionMapper.updateEntity(d, request);
+        Direccion destino = d;
+        if (pedidoRepo.existsByDireccion_IdDireccion(d.getIdDireccion())) {
+            d.setActiva(false);
+            d.setPrincipal(false);
+            direccionRepo.save(d);
+            destino = Direccion.builder().usuario(d.getUsuario()).build();
+        }
+        destino.setDireccion(request.getDireccion());
+        destino.setAltura(request.getAltura());
+        destino.setPiso(request.getPiso());
+        destino.setCiudad(request.getCiudad());
+        destino.setProvincia(request.getProvincia());
+        destino.setCodigoPostal(request.getCodigoPostal());
+        destino.setPais(request.getPais());
+        destino.setPrincipal(principal);
 
-                    if (Boolean.TRUE.equals(request.getPrincipal())) {
-                        List<Direccion> existentes = direccionRepo.findByUsuario_IdUsuario(d.getUsuario().getIdUsuario());
-                        for (Direccion dir : existentes) {
-                            if (!dir.getUuid().equals(uuid) && Boolean.TRUE.equals(dir.getPrincipal())) {
-                                dir.setPrincipal(false);
-                                direccionRepo.save(dir);
-                            }
-                        }
-                    }
+        if (principal) {
+            desmarcarPrincipales(d.getUsuario().getIdUsuario(), d.getIdDireccion());
+        }
+        Direccion guardada = direccionRepo.save(destino);
+        auditService.registrar("UPDATE", "direccion");
+        return direccionMapper.toResponse(guardada);
+    }
 
-                    Direccion direccionActualizada= direccionRepo.save(d);
-                    return  direccionMapper.toResponse(direccionActualizada);
-                })
-                .orElseThrow(()-> new UsuarioNotFoundException("Usuario asignado a la direccion no encontrado"));
+    public DireccionResponse marcarPrincipal(String uuid) {
+        Direccion d = propiaActiva(uuid);
+        desmarcarPrincipales(d.getUsuario().getIdUsuario(), d.getIdDireccion());
+        d.setPrincipal(true);
+        auditService.registrar("UPDATE", "direccion");
+        return direccionMapper.toResponse(direccionRepo.save(d));
     }
 
     @Transactional(readOnly = true)
@@ -157,16 +180,60 @@ public class DireccionService implements IDireccionService {
             throw new ResourceNotFoundException("Usuario no autenticado");
         }
 
-        return direccionRepo.findByUsuario_IdUsuario(u.getIdUsuario())
+        return direccionRepo.findByUsuario_IdUsuarioAndActivaTrue(u.getIdUsuario())
                 .stream()
                 .map(direccionMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
-    public boolean delete(String uuid) {
+    /*
+     * Removed for good when no order uses it; otherwise hidden so the orders keep it.
+     * If it was the main one, the next remaining address becomes the main one.
+     */
+    public void delete(String uuid) {
+        Direccion d = propiaActiva(uuid);
+        Long idUsuario = d.getUsuario().getIdUsuario();
+        Long idDireccion = d.getIdDireccion();
+        boolean eraPrincipal = Boolean.TRUE.equals(d.getPrincipal());
+
+        if (pedidoRepo.existsByDireccion_IdDireccion(idDireccion)) {
+            d.setActiva(false);
+            d.setPrincipal(false);
+            direccionRepo.save(d);
+        } else {
+            direccionRepo.delete(d);
+        }
+        auditService.registrar("DELETE", "direccion");
+
+        if (eraPrincipal) {
+            direccionRepo.findByUsuario_IdUsuarioAndActivaTrue(idUsuario).stream()
+                    .filter(x -> !x.getIdDireccion().equals(idDireccion))
+                    .findFirst()
+                    .ifPresent(x -> {
+                        x.setPrincipal(true);
+                        direccionRepo.save(x);
+                    });
+        }
+    }
+
+    // The caller's own visible address: 404 if missing or removed, 403 if it belongs to someone else.
+    private Direccion propiaActiva(String uuid) {
         Direccion d = direccionRepo.findByUuid(uuid)
-                .orElseThrow(() -> new ResourceNotFoundException("Direccion no encontrado"));
-        direccionRepo.delete(d);
-        return true;
+                .filter(x -> Boolean.TRUE.equals(x.getActiva()))
+                .orElseThrow(() -> new ResourceNotFoundException("Dirección no encontrada"));
+        Usuario usuarioAuth = usuarioService.obtenerUsuarioAutenticado();
+        if (usuarioAuth == null || !d.getUsuario().getIdUsuario().equals(usuarioAuth.getIdUsuario())) {
+            throw new AccessDeniedException("No tenés acceso a esta dirección");
+        }
+        return d;
+    }
+
+    private void desmarcarPrincipales(Long idUsuario, Long excepto) {
+        for (Direccion dir : direccionRepo.findByUsuario_IdUsuarioAndActivaTrue(idUsuario)) {
+            if (!dir.getIdDireccion().equals(excepto) && Boolean.TRUE.equals(dir.getPrincipal())) {
+                dir.setPrincipal(false);
+                direccionRepo.save(dir);
+            }
+        }
     }
 }

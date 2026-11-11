@@ -8,7 +8,12 @@ import org.example.topdeckapi.src.DTOs.request.UsuarioUpdateRequest;
 import org.example.topdeckapi.src.DTOs.response.PaginacionResponse;
 import org.example.topdeckapi.src.DTOs.response.ProductoResponse;
 import org.example.topdeckapi.src.DTOs.response.UsuarioResponse;
+import org.example.topdeckapi.src.DTOs.request.CambiarContrasenaRequest;
+import org.example.topdeckapi.src.DTOs.request.PerfilUpdateRequest;
+import org.example.topdeckapi.src.DTOs.auth.AuthResponse;
+import org.example.topdeckapi.src.service.IMPL.AuthService;
 import org.example.topdeckapi.src.service.IMPL.UsuarioService;
+import org.springframework.security.core.Authentication;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +25,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class UsuarioController {
     private final UsuarioService usuarioService;
+    private final AuthService authService;
 
 
     //=======================GET========================
@@ -60,6 +66,17 @@ public class UsuarioController {
     }
 
     //=======================PATCH========================
+
+    @PatchMapping("/me")
+    public ResponseEntity<UsuarioResponse> actualizarPerfil(@Valid @RequestBody PerfilUpdateRequest dto){
+        return ResponseEntity.ok(usuarioService.actualizarPerfil(dto));
+    }
+
+    /** Closes every other session; the response carries the new token for this device. */
+    @PostMapping("/me/password")
+    public ResponseEntity<AuthResponse> cambiarContrasena(@Valid @RequestBody CambiarContrasenaRequest dto, Authentication authentication){
+        return ResponseEntity.ok(authService.cambiarContrasena(authentication != null ? authentication.getName() : null, dto));
+    }
 
     @PatchMapping("/admin/{id}")
     public ResponseEntity<UsuarioResponse>  update(@PathVariable("id") String id, @RequestBody @Valid UsuarioUpdateRequest dto){

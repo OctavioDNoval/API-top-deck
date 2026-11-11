@@ -3,6 +3,7 @@ package org.example.topdeckapi.src.service.IMPL;
 import org.example.topdeckapi.src.DTOs.auth.AuthResponse;
 import org.example.topdeckapi.src.DTOs.auth.LoginRequest;
 import org.example.topdeckapi.src.DTOs.mappers.UsuarioMapper;
+import org.example.topdeckapi.src.DTOs.request.CambiarContrasenaRequest;
 import org.example.topdeckapi.src.DTOs.request.RestablecerContrasenaRequest;
 import org.example.topdeckapi.src.DTOs.request.UsuarioRequest;
 import org.example.topdeckapi.src.DTOs.request.VerificarCuentaRequest;
@@ -361,5 +362,48 @@ class AuthServiceTest {
             return e;
         }
         throw new AssertionError("Expected ResponseStatusException");
+    }
+
+    // ---------- change password ----------
+
+    @Test
+    void cambiarContrasenaWithWrongCurrentPasswordFailsAndKeepsSessions() {
+        Usuario u = usuario("user@example.com", ROL.USER, encoder.encode("actual123"));
+        when(usuarioRepo.findByEmail("user@example.com")).thenReturn(Optional.of(u));
+
+        assertThatThrownBy(() -> authService.cambiarContrasena("user@example.com",
+                new CambiarContrasenaRequest("otra1234", "nueva1234")))
+                .isInstanceOf(BussinesException.class)
+                .hasMessageContaining("actual no es correcta");
+        assertThat(u.getSesionVersionActual()).isZero();
+        assertThat(encoder.matches("actual123", u.getPassword())).isTrue();
+    }
+
+    @Test
+    void cambiarContrasenaClosesOtherSessionsAndReturnsANewToken() {
+        Usuario u = usuario("user@example.com", ROL.USER, encoder.encode("actual123"));
+        when(usuarioRepo.findByEmail("user@example.com")).thenReturn(Optional.of(u));
+        String tokenViejo = jwtService.generarToken(u);
+
+        AuthResponse res = authService.cambiarContrasena("user@example.com",
+                new CambiarContrasenaRequest("actual123", "nueva1234"));
+
+        assertThat(encoder.matches("nueva1234", u.getPassword())).isTrue();
+        assertThat(u.getSesionVersionActual()).isEqualTo(1);
+        // The old token (other devices) is no longer valid; the new one is.
+        assertThat(jwtService.sesionVigente(jwtService.leerClaims(tokenViejo), u)).isFalse();
+        assertThat(jwtService.sesionVigente(jwtService.leerClaims(res.getToken()), u)).isTrue();
+    }
+
+    @Test
+    void cambiarContrasenaRejectsTheSamePassword() {
+        Usuario u = usuario("user@example.com", ROL.USER, encoder.encode("actual123"));
+        when(usuarioRepo.findByEmail("user@example.com")).thenReturn(Optional.of(u));
+
+        assertThatThrownBy(() -> authService.cambiarContrasena("user@example.com",
+                new CambiarContrasenaRequest("actual123", "actual123")))
+                .isInstanceOf(BussinesException.class)
+                .hasMessageContaining("distinta");
+        assertThat(u.getSesionVersionActual()).isZero();
     }
 }

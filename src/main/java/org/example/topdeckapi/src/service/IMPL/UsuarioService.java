@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.example.topdeckapi.src.DTOs.mappers.UsuarioMapper;
+import org.example.topdeckapi.src.DTOs.request.PerfilUpdateRequest;
 import org.example.topdeckapi.src.DTOs.request.UsuarioEfimeroRequest;
 import org.example.topdeckapi.src.DTOs.request.UsuarioRequest;
 import org.example.topdeckapi.src.DTOs.request.UsuarioUpdateRequest;
@@ -97,6 +98,29 @@ public class UsuarioService implements IUsuarioService {
     public UsuarioResponse obtenerPerfilAutenticado(){
         Usuario usuario = obtenerUsuarioAutenticado();
         return usuarioMapper.toResponse(usuario);
+    }
+
+    /* The logged-in customer edits their own name and phone. */
+    public UsuarioResponse actualizarPerfil(PerfilUpdateRequest request) {
+        Usuario usuario = obtenerUsuarioAutenticado();
+        if (usuario == null) {
+            throw new ResourceNotFoundException("Usuario no autenticado");
+        }
+        usuario.setNombre(request.getNombre().trim());
+
+        String telefono = request.getTelefono() == null ? "" : request.getTelefono().trim();
+        if (telefono.isEmpty()) {
+            usuario.setTelefono(null); // column is UNIQUE: "no phone" is null, not ""
+        } else if (!telefono.equals(usuario.getTelefono())) {
+            if (usuarioRepo.existsByTelefono(telefono)) {
+                throw new BussinesException("Ese teléfono ya está asociado a otra cuenta");
+            }
+            usuario.setTelefono(telefono);
+        }
+
+        Usuario guardado = usuarioRepo.save(usuario);
+        auditService.registrar("UPDATE", "usuario");
+        return usuarioMapper.toResponse(guardado);
     }
 
     public Usuario obtenerUsuarioAutenticado(){

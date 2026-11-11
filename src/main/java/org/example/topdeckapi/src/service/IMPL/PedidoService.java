@@ -117,6 +117,9 @@ public class PedidoService implements IPedidoService {
             if (!direccionAsociada.getUsuario().getIdUsuario().equals(usuarioAuth.getIdUsuario())) {
                 throw new AccessDeniedException("La dirección no pertenece al usuario autenticado");
             }
+            if (!Boolean.TRUE.equals(direccionAsociada.getActiva())) {
+                throw new BussinesException("Esa dirección ya no está disponible. Elegí otra.");
+            }
         }
 
         pedido.setIpUsuario(newPedido.getIpUsuario());

@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.service.IMPL;
 
+import org.example.topdeckapi.src.DTOs.request.CambiarContrasenaRequest;
 import io.jsonwebtoken.Claims;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -345,6 +346,42 @@ public class AuthService {
         Usuario guardado = usuarioRepo.save(u);
         auditService.registrar("UPDATE", "usuario");
         loginAttemptService.registrarExito(guardado.getEmail());
+        return nuevaSesion(guardado);
+    }
+
+    /*
+     * Changes the password of the logged-in user after checking the current one
+     * (failures count toward the same lockout as the login). Every session is
+     * closed and a fresh token is returned so this device stays signed in.
+     */
+    public AuthResponse cambiarContrasena(String email, CambiarContrasenaRequest dto) {
+        Usuario u = email == null ? null : usuarioRepo.findByEmail(email)
+                .filter(x -> x.getRol() != ROL.GUEST && x.getPassword() != null)
+                .orElse(null);
+        if (u == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "La sesión venció. Ingresá de nuevo.");
+        }
+
+        long minutos = loginAttemptService.minutosBloqueado(u.getEmail());
+        if (minutos > 0) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "Demasiados intentos fallidos. Probá de nuevo en " + minutos + " minuto" + (minutos == 1 ? "" : "s") + ".");
+        }
+        if (!encoder.matches(dto.getActual(), u.getPassword())) {
+            loginAttemptService.registrarFallo(u.getEmail());
+            throw new BussinesException("La contraseña actual no es correcta");
+        }
+        loginAttemptService.registrarExito(u.getEmail());
+        if (encoder.matches(dto.getNueva(), u.getPassword())) {
+            throw new BussinesException("La contraseña nueva tiene que ser distinta de la actual");
+        }
+
+        u.setPassword(encoder.encode(dto.getNueva()));
+        u.setTokenResetHash(null);
+        u.setTokenResetExpira(null);
+        u.invalidarSesiones();
+        Usuario guardado = usuarioRepo.save(u);
+        auditService.registrar("UPDATE", "usuario");
         return nuevaSesion(guardado);
     }
 

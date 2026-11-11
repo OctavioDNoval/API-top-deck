@@ -11,6 +11,8 @@ import java.util.Optional;
 @Repository
 public interface IDireccionRepo extends JpaRepository<Direccion,Long> {
     List<Direccion> findByUsuario_IdUsuario(Long usuarioIdUsuario);
+
+    List<Direccion> findByUsuario_IdUsuarioAndActivaTrue(Long usuarioIdUsuario);
     Optional<Direccion> findByDireccionAndAlturaAndPisoAndCiudadAndProvinciaAndPaisAndCodigoPostalAndUsuario_IdUsuario(
             String direccion,
             String altura,

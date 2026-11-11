@@ -30,7 +30,22 @@ public class DireccionController {
     public ResponseEntity<List<DireccionResponse>> getAllDireccionByUsuarioId(){
         log.info("Iniciando lista de direcciones");
         List<DireccionResponse> lista = direccionService.direccionesPorUsuario();
-        log.info("Lista de direcciones: {}", lista);
         return ResponseEntity.ok(lista);
+    }
+
+    @PatchMapping("/user/{id}")
+    public ResponseEntity<DireccionResponse> update(@PathVariable("id") String id, @Valid @RequestBody DireccionRequest dto) {
+        return ResponseEntity.ok(direccionService.update(dto, id));
+    }
+
+    @PatchMapping("/user/{id}/principal")
+    public ResponseEntity<DireccionResponse> marcarPrincipal(@PathVariable("id") String id) {
+        return ResponseEntity.ok(direccionService.marcarPrincipal(id));
+    }
+
+    @DeleteMapping("/user/{id}")
+    public ResponseEntity<Void> delete(@PathVariable("id") String id) {
+        direccionService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

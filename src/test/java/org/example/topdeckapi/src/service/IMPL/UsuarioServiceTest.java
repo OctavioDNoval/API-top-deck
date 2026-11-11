@@ -1,6 +1,7 @@
 package org.example.topdeckapi.src.service.IMPL;
 
 import org.example.topdeckapi.src.DTOs.mappers.UsuarioMapper;
+import org.example.topdeckapi.src.DTOs.request.PerfilUpdateRequest;
 import org.example.topdeckapi.src.DTOs.request.UsuarioUpdateRequest;
 import org.example.topdeckapi.src.Enumerados.ROL;
 import org.example.topdeckapi.src.Exception.BussinesException;
@@ -192,6 +193,37 @@ class UsuarioServiceTest {
                 .isInstanceOf(org.example.topdeckapi.src.Exception.ResourceNotFoundException.class);
         assertThatThrownBy(() -> usuarioService.actualizarUsuario(conRol(ROL.ADMIN), "cliente-uuid"))
                 .isInstanceOf(org.example.topdeckapi.src.Exception.ResourceNotFoundException.class);
+    }
+
+    @Test
+    void perfilActualizaNombreYTelefono() {
+        when(usuarioRepo.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
+
+        usuarioService.actualizarPerfil(new PerfilUpdateRequest("  Nuevo Nombre ", " 1155554444 "));
+
+        assertThat(admin.getNombre()).isEqualTo("Nuevo Nombre");
+        assertThat(admin.getTelefono()).isEqualTo("1155554444");
+    }
+
+    @Test
+    void perfilRechazaUnTelefonoDeOtraCuenta() {
+        when(usuarioRepo.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
+        when(usuarioRepo.existsByTelefono("1155554444")).thenReturn(true);
+
+        assertThatThrownBy(() -> usuarioService.actualizarPerfil(new PerfilUpdateRequest("Admin", "1155554444")))
+                .isInstanceOf(BussinesException.class)
+                .hasMessageContaining("otra cuenta");
+        verify(usuarioRepo, never()).save(any());
+    }
+
+    @Test
+    void perfilConTelefonoVacioLoBorra() {
+        admin.setTelefono("1155554444");
+        when(usuarioRepo.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
+
+        usuarioService.actualizarPerfil(new PerfilUpdateRequest("Admin", ""));
+
+        assertThat(admin.getTelefono()).isNull();
     }
 
     private static Direccion direccion(Long id) {

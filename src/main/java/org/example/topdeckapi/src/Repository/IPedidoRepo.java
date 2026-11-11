@@ -21,6 +21,7 @@ public interface IPedidoRepo extends JpaRepository<Pedido,Long> {
     Page<Pedido> findBySearch(@Param("search") String search, Pageable pageable);
     Optional<Pedido> findByUuid(String uuid);
     List<Pedido> findByUsuario_IdUsuario(Long idUsuario);
+    boolean existsByDireccion_IdDireccion(Long idDireccion);
 
     @Query(value = "SELECT p.estado, COUNT(*) FROM pedido p GROUP BY p.estado", nativeQuery = true)
     List<Object[]> contarPorEstado();

@@ -52,4 +52,10 @@ public class Direccion {
     private String piso;
 
     private Boolean principal;
+
+    // False once the user removes or edits an address that orders point to:
+    // hidden from the user, kept for those orders.
+    @Builder.Default
+    @Column(name = "activa", nullable = false)
+    private Boolean activa = true;
 }
