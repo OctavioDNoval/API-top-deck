@@ -135,6 +135,8 @@ public class UsuarioService implements IUsuarioService {
                 ()-> new ResourceNotFoundException("Usuario no encontrado")
         );
 
+        validarCambioDeRol(usuario, request.getRol());
+
         if (request.getEmail() != null) {
             String email = request.getEmail().trim();
             if (email.isEmpty()) {
@@ -196,8 +198,31 @@ public class UsuarioService implements IUsuarioService {
     public boolean deleteUsuario(String uuid){
         Usuario usuario = usuarioRepo.findByUuid(uuid)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        if (esUsuarioAutenticado(usuario)) {
+            throw new BussinesException("No podés eliminar tu propia cuenta");
+        }
+        if (usuario.getRol() == ROL.ADMIN && usuarioRepo.countByRol(ROL.ADMIN) <= 1) {
+            throw new BussinesException("No se puede eliminar al único administrador");
+        }
         auditService.registrar("DELETE", "usuario");
         usuarioRepo.delete(usuario);
         return true;
+    }
+
+    // Keeps the panel from being left without an owner.
+    private void validarCambioDeRol(Usuario usuario, ROL nuevoRol) {
+        if (nuevoRol == null || nuevoRol == usuario.getRol()) return;
+        if (esUsuarioAutenticado(usuario)) {
+            throw new BussinesException("No podés cambiar tu propio rol");
+        }
+        if (usuario.getRol() == ROL.ADMIN && usuarioRepo.countByRol(ROL.ADMIN) <= 1) {
+            throw new BussinesException("No se puede quitar el rol al único administrador");
+        }
+    }
+
+    private boolean esUsuarioAutenticado(Usuario usuario) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null && auth.isAuthenticated() && usuario.getEmail() != null
+                && usuario.getEmail().equalsIgnoreCase(auth.getName());
     }
 }

@@ -24,6 +24,8 @@ public interface IUsuarioRepo extends JpaRepository<Usuario,Long> {
 
     List<Usuario> findByRol(ROL rol);
 
+    long countByRol(ROL rol);
+
     @Query("SELECT u FROM Usuario u WHERE " +
             "LOWER(u.nombre) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) ")
