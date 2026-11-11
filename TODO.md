@@ -102,20 +102,6 @@ Al terminar uno: marcarlo `[x]`, dejar el hash del commit y moverlo a "Hecho" al
 
 ## 3. Funcionalidad nueva
 
-### [ ] API-031 · Editar eventos 🟡
-- **Contexto**: los eventos se crean y se borran, pero no se editan.
-- **Qué hacer**: `PATCH /eventos/admin/edit/{id}` con DTO parcial (nombre, ubicación, fecha, hora, precio). El estado lo sigue calculando el job diario (`EventoService.actualizarEstadoEventoAutomaticamente`); al cambiar la fecha, recalcularlo en el momento.
-- **Archivos**: `controller/EventosController.java`, `service/IMPL/EventoService.java`, DTO nuevo `EventoUpdateRequest`.
-- **Relacionado**: FRONT-021.
-
-### [ ] API-033 · Auditoría útil: registro afectado y filtros 🟡
-- **Contexto**: el log de auditoría guarda acción, tabla y usuario, pero no **qué registro** se tocó, y solo se filtra por acción. Las acciones de invitados y del sistema quedan como `SISTEMA`.
-- **Qué hacer**:
-  - agregar `id_registro` (uuid) y opcionalmente un resumen (`detalle`) a `Audit`; pasar el uuid en cada `auditService.registrar(...)`;
-  - `GET /audit/admin/obtenerPaginados` con filtros `usuario`, `desde`, `hasta`, `tabla`;
-  - recordar que `AuditService` purga los logs de más de 90 días (03:30) — dejarlo configurable.
-- **Relacionado**: FRONT-022.
-
 ### [ ] API-034 · Pago online (MercadoPago) 🟢 (futuro)
 - **Contexto**: hoy el medio de pago se coordina por WhatsApp. Integrar Checkout Pro de MercadoPago permitiría cobrar al confirmar.
 - **Qué hacer (cuando se decida)**: preferencia de pago al crear el pedido, webhook de notificación que pase el pedido a pagado, estados nuevos en `ESTADO_PEDIDO`, credenciales como secret.
@@ -174,3 +160,4 @@ Al terminar uno: marcarlo `[x]`, dejar el hash del commit y moverlo a "Hecho" al
 - Baja de usuarios (`72b1e6f`): API-020 borrar un usuario elimina su carrito y direcciones; si tiene pedidos, la cuenta se anonimiza (nombre, mail `@topdeck.invalid`, sin teléfono ni contraseña, GUEST, `fecha_baja`) y se oculta de la lista y las estadísticas, conservando los pedidos y las direcciones que usan. `DELETE /user/admin/delete/{id}` responde `{resultado, message}`; `UsuarioResponse` expone `emailConfirmado`.
 - Migraciones con Flyway (`ca703ba`): API-041 `V1__initial_schema`, `V2__accounts_and_orders_columns` (idempotente, reemplaza `db/migrations/`), seed solo de desarrollo en `db/seed`, `ddl-auto=validate` y `baseline-on-migrate`. Probado con la base existente y con bases vacías en dev y prod. Se eliminó `TopDeck-DB-Tables.sql`.
 - Perfil del cliente (`c2c8749`): API-030 editar, borrar y marcar principal las direcciones propias (403 con las de otro; si un pedido la usa, se oculta o se guarda como nueva, `V3__direccion_activa`); la primera dirección queda como principal. API-032 `PATCH /user/me` (nombre y teléfono) y `POST /user/me/password` (verifica la actual con el mismo bloqueo del login, cierra las otras sesiones y devuelve un token nuevo). El cambio de email queda pendiente.
+- Eventos y auditoría (`6893169`): API-031 `PATCH /eventos/admin/edit/{id}` parcial; el estado se recalcula al cambiar la fecha y al crear (antes un evento de hoy quedaba "próximo"). API-033 cada log guarda el uuid del registro y un resumen legible (`V4__auditoria_registro`; en usuarios y direcciones describe la acción, sin datos personales); filtros `accion`, `tabla`, `usuario`, `desde`, `hasta`; retención configurable con `app.audit.dias-retencion` (90 por defecto). Mensajes armados en `util/AuditMensaje` para productos, pedidos, eventos, categorías, tags, usuarios y direcciones: altas con los datos clave ("Creación del producto \"X\" ($8.500,00) · stock 50 · ..."), ediciones con antes → después de cada campo cambiado, cambios de estado de pedidos con el efecto en el stock; en usuarios y direcciones solo se nombran los campos, sin sus valores (`V5` amplía `detalle` a 500). Para abrir el registro desde los logs: `GET /pedidos/admin/{id}` y `GET /products/admin/{id}` (incluye productos ocultos).
