@@ -2,6 +2,9 @@
 
 API RESTful construida con Spring Boot 3.5.4 y Java 21 para el e-commerce de cartas TCG (Trading Card Games) importados.
 
+> **Cómo funciona el sistema** (reglas de negocio, flujos, seguridad, auditoría, modelo de datos): [docs/SISTEMA.md](docs/SISTEMA.md).
+> Este README es la referencia rápida: endpoints, variables de entorno y cómo ejecutar. Lo pendiente está en [TODO.md](TODO.md).
+
 ## Stack Tecnologico
 
 - **Framework**: Spring Boot 3.5.4
@@ -84,81 +87,21 @@ API RESTful construida con Spring Boot 3.5.4 y Java 21 para el e-commerce de car
 
 ---
 
-## Modelo de Datos (ER)
+## Modelo de Datos
+
+Relaciones principales (detalle de cada tabla en [docs/SISTEMA.md](docs/SISTEMA.md#4-modelo-de-datos)):
 
 ```
-┌──────────────┐       ┌──────────────┐       ┌──────────────────┐
-│  categoria   │       │     tag      │       │     usuario      │
-│──────────────│       │──────────────│       │──────────────────│
-│ id_categoria │PK     │ id_tag       │PK     │ id_usuario       │PK
-│ uuid         │       │ uuid         │       │ uuid             │
-│ nombre       │       │ nombre       │       │ nombre           │
-└──────┬───────┘       │ nombre_norm  │       │ email            │
-       │               │ img_url      │       │ password         │
-       │               └──────┬───────┘       │ telefono         │
-       │                      │               │ rol              │
-       │    ┌─────────────────┘               │ ip_usuario       │
-       ▼    ▼                                 │ token_verif_hash │
-┌──────────────┐       ┌──────────────────┐   │ token_verif_exp  │
-│   producto   │       │ producto_singles │   └──────┬───────────┘
-│──────────────│       │──────────────────│          │
-│ id_producto  │PK ◄───│ id_producto      │FK 1:1    │
-│ uuid         │       │ atributos (jsonb)│          │
-│ id_categoria │FK (nullable para singles) └─────────┘│
-│ id_tag       │FK                                   │
-│ nombre       │       ┌──────────────┐              │
-│ descripcion  │       │   direccion  │              │
-│ precio       │       │──────────────│              │
-│ stock        │       │ id_direccion │PK             │
-│ img_url      │       │ uuid         │              │
-│ descuento    │       │ id_usuario   │FK→usuario←───┘
-│ activo       │       │ ciudad       │
-│ tipo_producto│       │ provincia    │
-└──────┬───────┘       │ codigo_postal│
-       │               │ direccion    │
-       │               │ altura       │
-       │               │ piso         │
-       │               │ pais         │
-       │               │ principal    │
-       │               └──────────────┘
-       │
-       │               ┌──────────────┐       ┌──────────────┐
-       │               │    pedido    │       │  auditoria   │
-       │               │──────────────│       │──────────────│
-       │               │ id_pedido    │PK     │ id_log       │PK
-       │               │ uuid         │       │ nombre_usuario│
-       │               │ id_usuario   │FK     │ fecha_audit  │
-       │               │ id_direccion │FK     │ accion       │
-       │               │ fecha_pedido │       │ tabla        │
-       │               │ estado       │       └──────────────┘
-       │               │ total        │
-       │               │ ip_usuario   │       ┌──────────────┐
-       │               └──────┬───────┘       │    evento    │
-       │                      │               │──────────────│
-       ▼                      ▼               │ id_evento    │PK
-┌──────────────┐       ┌──────────────┐       │ uuid         │
-│detallepedido │       │   carrito    │       │ nombre_evento│
-│──────────────│       │──────────────│       │ ubicacion    │
-│ id_detalle   │PK     │ id_carrito   │PK     │ fecha        │
-│ uuid         │       │ uuid         │       │ hora         │
-│ id_producto  │FK     │ id_usuario   │FK     │ precio_entrada│
-│ id_pedido    │FK     │ session_id   │       │ estado       │
-│ cantidad     │       │ fecha_creac  │       └──────────────┘
-│ precio_unit  │       └──────┬───────┘
-│ subtotal     │              │
-└──────────────┘              ▼
-                      ┌──────────────┐
-                      │detallecarrito│
-                      │──────────────│
-                      │ id_detalle   │PK
-                      │ uuid         │
-                      │ id_carrito   │FK
-                      │ id_producto  │FK
-                      │ cantidad     │
-                      └──────────────┘
+categoria ◄── producto ──► tag              usuario ◄── direccion
+               │  1:1                          │  ▲
+               ▼                               │  └── carrito ──► detallecarrito ──► producto
+        producto_singles (atributos jsonb)     │
+                                               └── pedido ──► direccion (opcional, la del envío)
+                                                     └──► detallepedido ──► producto
+evento          auditoria          flyway_schema_history
 ```
 
-> `carrito.session_id` es legacy: el carrito de invitados ahora vive 100% en el `localStorage` del front.
+> `carrito.session_id` es legacy: el carrito de invitados vive 100% en el `localStorage` del front.
 
 ---
 
@@ -187,7 +130,7 @@ Request HTTP
 ┌─────────────────────┐
 │     Service         │──→ Logica de negocio, validaciones, transacciones
 │  (MapStruct mapper) │──→ Entity ↔ DTO conversion
-│                     │──→ AuditService.registrar(accion, tabla)
+│                     │──→ AuditService.registrar(accion, tabla, uuid, detalle)
 └─────────┬───────────┘
           ▼
 ┌─────────────────────┐
@@ -282,7 +225,7 @@ Ventana fija por IP y por regla, en memoria (alcanza con una sola instancia de l
 - Origenes permitidos: `app.cors.allowed-origins` (`APP_CORS_ALLOWED_ORIGINS`, separados por coma). Vacio = `http://localhost:5173`
 - Con el nginx de produccion front y API comparten dominio, asi que CORS no interviene
 - Metodos: GET, POST, PATCH, DELETE, OPTIONS
-- Credenciales: habilitadas
+- Credenciales: deshabilitadas (la autenticación va por el header `Authorization`, no por cookies)
 
 ---
 
@@ -378,7 +321,8 @@ Todas las operaciones de carrito, direcciones y pedidos de usuario validan que e
 ## Modelo de Datos - Entidades
 
 ### Usuario
-- `idUsuario` (Long, PK), `uuid` (String), `nombre`, `email`, `password` (write-only), `telefono`, `rol` (ADMIN/USER/GUEST), `ipUsuario`, `versionTerminosYCondicionesAceptados`, `terminosAceptados`, `fechaAceptacionTerminos`, `tokenVerificacionHash` y `tokenVerificacionExpira` (JSON-ignored, ver reclamo de GUEST)
+- `idUsuario` (Long, PK), `uuid` (String), `nombre`, `email`, `password` (write-only), `telefono` (único), `rol` (ADMIN/USER/GUEST), `ipUsuario`, `versionTerminosYCondicionesAceptados`, `terminosAceptados`, `fechaAceptacionTerminos`
+- Ocultos en el JSON: `emailVerificado`, `sesionVersion`, `tokenVerificacionHash`/`tokenVerificacionExpira`, `tokenResetHash`/`tokenResetExpira`, `fechaBaja` (cuenta anonimizada)
 
 ### Producto
 - `idProducto` (Long, PK), `uuid`, `categoria` (FK→Categoria, opcional en singles), `tag` (FK→Tag), `nombre`, `descripcion`, `precio` (BigDecimal), `stock` (Integer), `imgUrl`, `descuento` (Integer, porcentaje), `activo` (Boolean), `tipoProducto` (`PRODUCTO` | `SINGLE`)
@@ -394,7 +338,7 @@ Todas las operaciones de carrito, direcciones y pedidos de usuario validan que e
 - `idTag` (Long, PK), `uuid`, `nombre`, `nombreNormalizado` (lowercase, sin acentos), `imgUrl`
 
 ### Pedido
-- `idPedido` (Long, PK), `uuid`, `usuario` (FK→Usuario), `direccion` (FK→Direccion), `fechaPedido` (LocalDateTime), `estado` (PENDIENTE/CONFIRMADO/RECHAZADO), `total` (BigDecimal), `detalles` (OneToMany), `ipUsuario`
+- `idPedido` (Long, PK), `uuid`, `usuario` (FK→Usuario), `direccion` (FK→Direccion, solo en envíos), `fechaPedido` (LocalDateTime), `estado` (PENDIENTE/CONFIRMADO/RECHAZADO), `total` (BigDecimal), `detalles` (OneToMany), `ipUsuario`, `tipoEntrega` (ENVIO/RETIRO), `telefonoContacto`
 - Transiciones permitidas: PENDIENTE → CONFIRMADO/RECHAZADO, CONFIRMADO → RECHAZADO. Confirmar descuenta stock (con lock pesimista); rechazar o **borrar** uno confirmado lo repone.
 - Al crear un pedido, las lineas con el mismo producto se **unifican** y el stock se valida contra la cantidad total pedida. Los precios salen siempre de la DB.
 
@@ -408,7 +352,7 @@ Todas las operaciones de carrito, direcciones y pedidos de usuario validan que e
 - `idDetalleCarrito` (Long, PK), `uuid`, `carrito` (FK→Carrito), `producto` (FK→Producto), `cantidad`
 
 ### Direccion
-- `idDireccion` (Long, PK), `uuid`, `usuario` (FK→Usuario), `ciudad`, `provincia`, `pais`, `codigoPostal`, `direccion`, `altura`, `piso`, `principal` (Boolean)
+- `idDireccion` (Long, PK), `uuid`, `usuario` (FK→Usuario), `ciudad`, `provincia`, `pais`, `codigoPostal`, `direccion`, `altura`, `piso`, `principal` (Boolean), `activa` (false = oculta porque la usa un pedido)
 
 ### Evento
 - `idEvento` (Long, PK), `uuid`, `nombreEvento`, `ubicacion`, `fecha` (LocalDate), `hora` (LocalTime), `precioEntrada` (BigDecimal), `estado` (PROXIMAMENTE/EN_CURSO/FINALIZADO)
@@ -418,7 +362,7 @@ Todas las operaciones de carrito, direcciones y pedidos de usuario validan que e
 - `util/Montos.subtotal(precio, descuento%, cantidad)` es el unico calculo de subtotal (lo usan carrito y pedidos): redondeo `HALF_UP` a 2 decimales.
 
 ### Audit
-- `idAuditoria` (Long, PK, columna: `id_log`), `nombreUsuario`, `fechaAudit` (LocalDateTime), `accion`, `tabla`
+- `idAuditoria` (Long, PK, columna: `id_log`), `nombreUsuario`, `fechaAudit` (LocalDateTime), `accion`, `tabla`, `idRegistro` (uuid afectado), `detalle` (mensaje de `util/AuditMensaje`)
 
 ---
 
@@ -486,11 +430,12 @@ RuntimeException
 | `EmailNuevoPedido.html` | Se crea un pedido (usuario o invitado) | Todos los ADMIN |
 | `EmailPedidoConfirmado.html` | Un pedido pasa a CONFIRMADO | El cliente |
 | `EmailVerificarCuenta.html` | Registro con email de un GUEST | El dueño del email |
+| `EmailAccionCuenta.html` | Confirmar registro, restablecer contraseña, aviso "ya tenés una cuenta" | El dueño del email |
 
-- Los datos de contacto del pie salen de `app.contacto.*` (`ContactConfig`). Hoy son placeholders: completarlos con los datos reales.
+- Los datos de contacto del pie salen de `app.contacto.*` (`ContactConfig`). En producción se cargan con `APP_CONTACTO_*`.
 - El logo se sirve desde la propia API: `${APP_BASE_URL}/img/logo.webp`.
 - **Mails de pedidos (nuevo pedido, confirmado)**: el HTML se arma en el request y el envio va a un pool acotado (`mailExecutor` en `AsyncConfig`: 2-4 hilos, cola de 200). Si el SMTP esta lento o caido, el pedido responde igual; si la cola se llena, se descartan envios y se loguea.
-- **Mail de verificacion**: es sincronico, porque si falla el registro tiene que avisar (409).
+- **Mails de cuenta**: la confirmación del registro y la activación de un GUEST son sincrónicos (si fallan, el flujo avisa); el de restablecer contraseña y el aviso "ya tenés una cuenta" son asincrónicos.
 
 ---
 
@@ -499,7 +444,7 @@ RuntimeException
 | Cron | Tarea |
 |---|---|
 | `0 0 0 * * ?` (medianoche) | Actualiza estados de eventos: `PROXIMAMENTE` → `EN_CURSO` → `FINALIZADO` segun la fecha |
-| `0 30 3 * * *` (03:30) | **Borra logs de auditoria con mas de 90 dias** (`AuditService.DIAS_RETENCION_LOGS`) |
+| `0 30 3 * * *` (03:30) | **Borra logs de auditoria con mas de `app.audit.dias-retencion` dias** (90 por defecto) |
 
 ---
 
@@ -575,7 +520,7 @@ La API corre en `http://localhost:8080`.
 ./mvnw test
 ```
 
-Tests unitarios (JUnit 5 + Mockito, sin DB): `JwtAuthFilter` (rol desde la DB), `ClientIpResolver`, `RateLimitFilter`, `AuthService` (login uniforme y reclamo de GUEST), `PedidoService` (productos repetidos, stock al borrar) y `Montos`. `TopDeckApiApplicationTests` levanta el contexto completo y solo corre si hay `DB_PASSWORD` configurado.
+Tests unitarios (JUnit 5 + Mockito, sin DB) de seguridad, cuentas, usuarios, direcciones, pedidos, eventos, montos y mensajes de auditoría: la lista está en [docs/SISTEMA.md](docs/SISTEMA.md#15-tests). `TopDeckApiApplicationTests` levanta el contexto completo y solo corre si hay `DB_PASSWORD` configurado.
 
 ---
 
