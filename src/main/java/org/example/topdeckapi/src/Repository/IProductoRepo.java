@@ -46,6 +46,10 @@ public interface IProductoRepo extends JpaRepository<Producto,Long> {
     @Query("SELECT p FROM Producto p WHERE p.descuento > 0 AND p.activo = true")
     List<Producto> findOfertas(Pageable pageable);
 
+    /** Ids (uuid) of the products listed in the store, for the sitemap. */
+    @Query("SELECT p.uuid FROM Producto p WHERE p.activo = true ORDER BY p.idProducto")
+    List<String> findUuidsActivos();
+
     boolean existsByNombre(String nombre);
     Optional<Producto> findByUuid(String uuid);
 
