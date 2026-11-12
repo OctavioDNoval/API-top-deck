@@ -1,5 +1,6 @@
 package org.example.topdeckapi.src.controller;
 
+import org.example.topdeckapi.src.DTOs.request.ConfirmarCambioEmailRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -66,6 +67,13 @@ public class AuthController {
     }
 
     /** Revokes every session of the caller (all devices). Anonymous calls are a no-op. */
+    /** Applies a pending email change from the link mailed to the new address. */
+    @PostMapping("/confirmar-cambio-email")
+    public ResponseEntity<Map<String, Object>> confirmarCambioEmail(@Valid @RequestBody ConfirmarCambioEmailRequest dto) {
+        authService.confirmarCambioEmail(dto.getToken());
+        return ResponseEntity.ok(Map.of("message", "Listo, ya cambiaste tu email. Ingresá con la dirección nueva."));
+    }
+
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(Authentication authentication) {
         authService.logout(authentication != null ? authentication.getName() : null);

@@ -150,7 +150,14 @@ registró ese mail primero, el dueño real no la conoce y debe usar "olvidé mi 
   **único** ADMIN (409).
 
 **Perfil propio**: `PATCH /user/me` (nombre y teléfono; un teléfono de otra cuenta se rechaza) y
-`POST /user/me/password` (pide la actual). El mail no se puede cambiar todavía.
+`POST /user/me/password` (pide la actual).
+
+**Cambio de email**: `POST /user/me/email` `{ nuevoEmail, password }` pide la contraseña (los fallos suman al mismo
+bloqueo que el login) y manda un link al **mail nuevo** (`/verificar-cuenta?tipo=email&token=`, 24 h, solo se guarda el
+SHA-256 en `token_email_hash`; el mail nuevo queda en `email_pendiente`). Si el mail nuevo ya tiene cuenta, responde lo
+mismo (202) y no manda nada, así no sirve para averiguar qué mails están registrados. `POST /auth/confirmar-cambio-email`
+`{ token }` aplica el cambio (abrir el link prueba que la casilla es suya), cierra **todas** las sesiones y avisa al mail
+viejo. Nada cambia hasta abrir el link.
 
 ---
 
@@ -183,6 +190,10 @@ verifica que el recurso (carrito, dirección, pedido) **pertenezca** al usuario 
 ---
 
 ## 7. Catálogo
+
+- **Sitemap**: `GET /products/public/sitemap.xml` (`SitemapController`) lista `/`, `/productos`, `/singles`, `/eventos` y
+  `/productos/<uuid>` de cada producto activo, con `app.front-url` como base (sin esa propiedad responde 503). Caché de
+  1 hora. En producción nginx lo sirve en `https://<dominio>/sitemap.xml`.
 
 - **Listados públicos**: `/products/public/obtenerPaginados` (sellados) y `/products/public/singles` (singles), solo
   activos, con búsqueda, orden, filtro por categoría y franquicia. Los singles filtran además por atributos
@@ -270,7 +281,7 @@ Los logs de más de `app.audit.dias-retencion` días (90 por defecto) se borran 
 
 | Plantilla | Cuándo | A quién | Envío |
 |---|---|---|---|
-| `EmailAccionCuenta.html` | Confirmar registro, restablecer contraseña, aviso "ya tenés una cuenta" | El dueño del mail | Confirmación: sincrónico; resto: asincrónico |
+| `EmailAccionCuenta.html` | Confirmar registro, restablecer contraseña, aviso "ya tenés una cuenta", confirmar el email nuevo, aviso al email viejo | El dueño del mail | Confirmaciones: sincrónico; resto: asincrónico |
 | `EmailVerificarCuenta.html` | Activar una cuenta que tenía pedidos como invitado | El dueño del mail | Sincrónico |
 | `EmailNuevoPedido.html` | Se crea un pedido | Todos los ADMIN | Asincrónico |
 | `EmailPedidoConfirmado.html` | Un pedido pasa a CONFIRMADO | El cliente (no a cuentas anonimizadas) | Asincrónico |
@@ -296,7 +307,7 @@ bajo / ok, solo sellados), registros por mes, ingresos por franquicia y acciones
 - El esquema lo crean y actualizan las migraciones de `db/migration/` al arrancar la API. Hibernate está en
   `ddl-auto=validate`: **no crea ni cambia nada**, solo verifica que las entidades coincidan; si falta algo, la API no arranca.
 - Migraciones actuales: `V1` esquema inicial · `V2` columnas de cuentas y pedidos + montos `NUMERIC` · `V3`
-  `direccion.activa` · `V4` `auditoria.id_registro` y `detalle` · `V5` `detalle` a 500 caracteres · `V6` borra `carrito.session_id`.
+  `direccion.activa` · `V4` `auditoria.id_registro` y `detalle` · `V5` `detalle` a 500 caracteres · `V6` borra `carrito.session_id` · `V7` columnas del cambio de email.
 - `db/seed/V1_1__dev_seed.sql` carga datos de ejemplo **solo en desarrollo** y solo si no hay categorías.
 - Bases creadas antes de Flyway se toman como versión 1 (`baseline-on-migrate`).
 - **Para cambiar el esquema**: nuevo archivo `V<n+1>__descripcion.sql`. Nunca editar uno aplicado (Flyway compara
@@ -348,6 +359,8 @@ cada request una IP distinta para no chocar con el rate limit. Los datos de cada
 | `OwnershipIntegrationTest` | El usuario B no puede leer ni tocar el carrito, las direcciones ni los pedidos de A (403) |
 | `AccountFlowIntegrationTest` | Registro → login bloqueado sin confirmar → confirmar → login → logout revoca todos los tokens |
 | `GuestOrderIntegrationTest` | Pedido de invitado con envío y con retiro, total desde la base, TyC, stock; el stock baja recién al confirmar |
+| `EmailChangeIntegrationTest` | Cambio de email: link al mail nuevo, sesiones cerradas, login solo con el nuevo; contraseña incorrecta, mail ya usado, mismo mail, link inválido |
+| `SitemapIntegrationTest` | `sitemap.xml` público con las páginas de la tienda y solo los productos activos |
 
 Necesitan Docker: sin Docker se saltean. En CI (GitHub Actions, `.github/workflows/ci.yml`) se verifica que no se hayan
 salteado. `src/test/resources/docker-java.properties` fija la versión de la API de Docker porque Docker Engine 29 rechaza

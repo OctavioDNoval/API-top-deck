@@ -39,6 +39,8 @@ public interface IUsuarioRepo extends JpaRepository<Usuario,Long> {
 
     Optional<Usuario> findByTokenResetHash(String tokenResetHash);
 
+    Optional<Usuario> findByTokenEmailHash(String tokenEmailHash);
+
     boolean existsByTelefono(String telefono);
 
     @Query(value = "SELECT u.rol, COUNT(*) FROM usuario u WHERE u.fecha_baja IS NULL GROUP BY u.rol", nativeQuery = true)

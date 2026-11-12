@@ -1,5 +1,7 @@
 package org.example.topdeckapi.src.controller;
 
+import org.springframework.http.HttpStatus;
+import org.example.topdeckapi.src.DTOs.request.CambiarEmailRequest;
 import jakarta.validation.Valid;
 
 import lombok.RequiredArgsConstructor;
@@ -73,6 +75,13 @@ public class UsuarioController {
     }
 
     /** Closes every other session; the response carries the new token for this device. */
+    /** Always 202 with the same message, whether or not the new email already has an account. */
+    @PostMapping("/me/email")
+    public ResponseEntity<Map<String, Object>> cambiarEmail(@Valid @RequestBody CambiarEmailRequest dto, Authentication authentication) {
+        authService.solicitarCambioEmail(authentication != null ? authentication.getName() : null, dto);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(Map.of("message", AuthService.MENSAJE_CAMBIO_EMAIL));
+    }
+
     @PostMapping("/me/password")
     public ResponseEntity<AuthResponse> cambiarContrasena(@Valid @RequestBody CambiarContrasenaRequest dto, Authentication authentication){
         return ResponseEntity.ok(authService.cambiarContrasena(authentication != null ? authentication.getName() : null, dto));

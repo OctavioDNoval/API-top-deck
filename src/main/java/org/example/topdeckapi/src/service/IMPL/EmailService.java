@@ -183,6 +183,27 @@ public class EmailService {
     }
 
     /** Someone tried to register an email that already has an account: tell the owner instead of the requester. */
+    /** Link to the NEW address; opening it applies the change. Sync: the request reports failures. */
+    public void enviarConfirmacionCambioEmail(Usuario usuario, String nuevoEmail, String token) {
+        String link = linkFront("/verificar-cuenta?tipo=email&token=", token);
+        logLinkDev(nuevoEmail, link);
+        enviarSincronoODev(nuevoEmail, "Confirmá tu nuevo email de TopDeck", "EmailAccionCuenta",
+                variablesAccion(usuario, "Confirmá tu nuevo email",
+                        "pediste usar este email en tu cuenta de TopDeck. Confirmalo desde este link y a partir de ahí ingresás con esta dirección.",
+                        link,
+                        "Confirmar email",
+                        "El link vence en 24 horas. Si no lo pediste, ignorá este email: la cuenta no cambia."));
+    }
+
+    /** Notice to the OLD address once the change is applied. */
+    public void enviarAvisoEmailCambiado(Usuario usuario, String emailAnterior) {
+        enviarEmailTemplateAsync(emailAnterior, "Cambió el email de tu cuenta de TopDeck", "EmailAccionCuenta",
+                variablesAccion(usuario, "Cambió el email de tu cuenta",
+                        "el email de tu cuenta de TopDeck se cambió por otro. Desde ahora se ingresa con la dirección nueva y se cerraron todas las sesiones.",
+                        null, null,
+                        "Si no fuiste vos, respondé este email o escribinos por WhatsApp para recuperar la cuenta."));
+    }
+
     public void enviarAvisoCuentaExistente(Usuario usuario) {
         enviarEmailTemplateAsync(usuario.getEmail(), "Ya tenés una cuenta en TopDeck", "EmailAccionCuenta",
                 variablesAccion(usuario, "Ya tenés una cuenta",

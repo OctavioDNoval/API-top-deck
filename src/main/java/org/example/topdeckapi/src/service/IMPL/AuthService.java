@@ -1,6 +1,7 @@
 package org.example.topdeckapi.src.service.IMPL;
 
 import org.example.topdeckapi.src.DTOs.request.CambiarContrasenaRequest;
+import org.example.topdeckapi.src.DTOs.request.CambiarEmailRequest;
 import io.jsonwebtoken.Claims;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -64,6 +65,9 @@ public class AuthService {
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     static final Duration VALIDEZ_TOKEN_VERIFICACION = Duration.ofHours(24);
     static final Duration VALIDEZ_TOKEN_RESET = Duration.ofHours(1);
+    static final Duration VALIDEZ_TOKEN_EMAIL = Duration.ofHours(24);
+    public static final String MENSAJE_CAMBIO_EMAIL =
+            "Te enviamos un link al email nuevo. Abrilo para confirmar el cambio (vence en 24 horas).";
     // A link issued in the last few minutes is reused instead of mailing another one.
     static final Duration ESPERA_REENVIO = Duration.ofMinutes(2);
     private static final Duration ESPERA_AVISO_CUENTA_EXISTENTE = Duration.ofMinutes(30);
@@ -383,6 +387,95 @@ public class AuthService {
         Usuario guardado = usuarioRepo.save(u);
         auditService.registrar("UPDATE", "usuario", guardado.getUuid(), "Cambió su contraseña desde el perfil (otras sesiones cerradas)");
         return nuevaSesion(guardado);
+    }
+
+    // ============================== Email change ==============================
+
+    /*
+     * Starts an email change for the logged-in user: checks the password (failures count
+     * toward the login lockout) and mails a link to the NEW address. When that address
+     * already has an account nothing is sent, but the answer is the same, so nobody can
+     * use this to find out which emails are registered.
+     */
+    @Transactional
+    public void solicitarCambioEmail(String email, CambiarEmailRequest dto) {
+        Usuario u = email == null ? null : usuarioRepo.findByEmail(email)
+                .filter(x -> x.getRol() != ROL.GUEST && x.getPassword() != null)
+                .orElse(null);
+        if (u == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "La sesión venció. Ingresá de nuevo.");
+        }
+
+        long minutos = loginAttemptService.minutosBloqueado(u.getEmail());
+        if (minutos > 0) {
+            throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                    "Demasiados intentos fallidos. Probá de nuevo en " + minutos + " minuto" + (minutos == 1 ? "" : "s") + ".");
+        }
+        if (!encoder.matches(dto.getPassword(), u.getPassword())) {
+            loginAttemptService.registrarFallo(u.getEmail());
+            throw new BussinesException("La contraseña no es correcta");
+        }
+        loginAttemptService.registrarExito(u.getEmail());
+
+        String nuevo = dto.getNuevoEmail().trim();
+        if (nuevo.equalsIgnoreCase(u.getEmail())) {
+            throw new BussinesException("Ese ya es el email de tu cuenta");
+        }
+        if (usuarioRepo.findByEmail(nuevo).isPresent()) {
+            auditService.registrar("UPDATE", "usuario", u.getUuid(), "Pidió cambiar su email (el email nuevo ya tenía cuenta: no se envió el link)");
+            return;
+        }
+
+        String token = tokenAleatorio();
+        u.setEmailPendiente(nuevo);
+        u.setTokenEmailHash(sha256(token));
+        u.setTokenEmailExpira(LocalDateTime.now().plus(VALIDEZ_TOKEN_EMAIL));
+        usuarioRepo.save(u);
+        try {
+            emailService.enviarConfirmacionCambioEmail(u, nuevo, token);
+        } catch (Exception e) {
+            log.error("No se pudo enviar el email de cambio de dirección: {}", e.getMessage());
+            throw new BussinesException("No pudimos enviar el email al nuevo email. Revisalo e intentá de nuevo más tarde");
+        }
+        auditService.registrar("UPDATE", "usuario", u.getUuid(), "Pidió cambiar su email (link enviado al email nuevo)");
+    }
+
+    /*
+     * Applies the change from the link: opening it proves the new mailbox. Every session
+     * is closed (the user signs in again with the new email) and the old address is told.
+     */
+    @Transactional
+    public void confirmarCambioEmail(String token) {
+        Usuario u = usuarioRepo.findByTokenEmailHash(sha256(token))
+                .filter(x -> x.getEmailPendiente() != null)
+                .filter(x -> x.getTokenEmailExpira() != null && x.getTokenEmailExpira().isAfter(LocalDateTime.now()))
+                .orElseThrow(() -> new BussinesException("El link para cambiar el email es inválido o expiró. Pedí el cambio de nuevo desde tu perfil."));
+
+        String nuevo = u.getEmailPendiente();
+        if (usuarioRepo.findByEmail(nuevo).isPresent()) {
+            limpiarCambioEmail(u);
+            usuarioRepo.save(u);
+            throw new BussinesException("Ese email ya está en uso en otra cuenta.");
+        }
+
+        String anterior = u.getEmail();
+        u.setEmail(nuevo);
+        u.setEmailVerificado(true);
+        limpiarCambioEmail(u);
+        u.invalidarSesiones();
+        Usuario guardado = usuarioRepo.save(u);
+        auditService.registrar("UPDATE", "usuario", guardado.getUuid(), "Confirmó el cambio de su email (sesiones cerradas)");
+        try {
+            emailService.enviarAvisoEmailCambiado(guardado, anterior);
+        } catch (Exception e) {
+            log.error("No se pudo avisar el cambio de email a la dirección anterior: {}", e.getMessage());
+        }
+    }
+
+    private static void limpiarCambioEmail(Usuario u) {
+        u.setEmailPendiente(null);
+        u.setTokenEmailHash(null);
+        u.setTokenEmailExpira(null);
     }
 
     // ============================== helpers ==============================

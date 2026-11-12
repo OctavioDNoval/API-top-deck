@@ -1,7 +1,7 @@
 # TODO — API TopDeck
 
 Lista viva de lo que falta en el backend. Cada ítem tiene un ID para poder pedirlo directo
-("hacé API-036 y FRONT-037"). Cómo funciona hoy el sistema: [docs/SISTEMA.md](docs/SISTEMA.md).
+("hacé API-014"). Cómo funciona hoy el sistema: [docs/SISTEMA.md](docs/SISTEMA.md).
 
 _Revisado el 11/11/2026: todos los ítems abiertos siguen vigentes y reflejan el código actual._
 
@@ -108,11 +108,6 @@ Al terminar uno: marcarlo `[x]`, dejar el hash del commit y moverlo a "Hecho" al
 - **Contexto**: hoy el medio de pago se coordina por WhatsApp. Integrar Checkout Pro de MercadoPago permitiría cobrar al confirmar.
 - **Qué hacer (cuando se decida)**: preferencia de pago al crear el pedido, webhook de notificación que pase el pedido a pagado, estados nuevos en `ESTADO_PEDIDO`, credenciales como secret.
 
-### [ ] API-036 · Cambio de email desde el perfil 🟡
-- **Contexto**: el cliente puede editar nombre, teléfono y contraseña, pero no su email (API-032 lo dejó afuera a propósito): cambiarlo sin confirmar permitiría que alguien con la sesión abierta se quede con la cuenta.
-- **Qué hacer**: `POST /user/me/email` `{ nuevoEmail, password }` → verifica la contraseña, guarda el pedido de cambio con un token (SHA-256, 24 h) y manda un link al **mail nuevo**; al abrirlo se aplica el cambio, se cierran las sesiones y se avisa al mail viejo. Rechazar un mail que ya tenga cuenta (sin revelar cuál). Columnas nuevas por migración (`email_pendiente`, `token_email_hash`, `token_email_expira`) y mensaje de auditoría sin los mails.
-- **Relacionado**: FRONT-037.
-
 ### [ ] API-035 · Costo de envío 🟢 (futuro)
 - **Contexto**: hoy el envío "se coordina". Si se quiere mostrar el costo antes de confirmar: tabla de tarifas por provincia/CP o integración con un correo (Andreani, Correo Argentino), campo `costo_envio` en `pedido` sumado al total.
 
@@ -145,3 +140,4 @@ Al terminar uno: marcarlo `[x]`, dejar el hash del commit y moverlo a "Hecho" al
 - Documentación del sistema (11/11/2026): API-045 `docs/SISTEMA.md` explica cómo funciona hoy todo el backend (negocio, cuentas, sesiones, catálogo, pedidos, direcciones, eventos, auditoría, imágenes, mails, estadísticas, migraciones, configuración, tests y cómo extenderlo); el README quedó como referencia (endpoints, variables, ejecución) y se corrigieron sus partes desactualizadas (modelo de datos, CORS, mails, tests).
 - Red de seguridad (12/11/2026, `6fb5ba4`): API-040 Maven wrapper (`./mvnw`, solo script, Maven 3.9.12) y la zona horaria fija en el `pom` (ya no hace falta `-Duser.timezone`); API-042 23 tests de integración con Testcontainers + MockMvc contra PostgreSQL 16 real (migraciones, reglas por URL, dueño de carrito/direcciones/pedidos, registro → confirmar → login → logout, pedidos de invitado con envío y retiro y stock al confirmar); API-044 GitHub Actions: tests en cada push/PR y build de la imagen Docker. 102 tests en ~30 s.
 - Limpieza de código (12/11/2026, `59479d4`): API-043 fuera `STATUS`, `JpaConfig` + `AuditorAwareIMPL` (auditoría de JPA sin uso), `CarritoRequest`, `HELP.md` y el código comentado del carrito efímero; migración `V6` borra `carrito.session_id`. `CustomUserDetailsService` se queda (documentado): sin él Spring Boot crea un usuario en memoria con contraseña generada.
+- Cambio de email y sitemap (12/11/2026, commit pendiente): API-036 `POST /user/me/email` `{ nuevoEmail, password }` (contraseña con el mismo bloqueo que el login; si el email nuevo ya tiene cuenta responde igual y no manda nada) y `POST /auth/confirmar-cambio-email` `{ token }` desde el link al mail nuevo (24 h, SHA-256): aplica el cambio, cierra las sesiones y avisa al mail viejo; migración `V7` (`email_pendiente`, `token_email_hash`, `token_email_expira`); auditoría sin mails. Para FRONT-034: `GET /products/public/sitemap.xml` con las páginas de la tienda y los productos activos (links a `app.front-url`). 6 tests de integración nuevos (108 en total).

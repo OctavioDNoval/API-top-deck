@@ -91,6 +91,19 @@ public class Usuario {
     @Column(name = "token_reset_expira")
     private LocalDateTime tokenResetExpira;
 
+    // Pending email change: applied when the link mailed to the new address is opened.
+    @JsonIgnore
+    @Column(name = "email_pendiente")
+    private String emailPendiente;
+
+    @JsonIgnore
+    @Column(name = "token_email_hash", length = 64)
+    private String tokenEmailHash;
+
+    @JsonIgnore
+    @Column(name = "token_email_expira")
+    private LocalDateTime tokenEmailExpira;
+
     // Set when an admin deletes a user who has orders: the account is anonymized
     // and hidden instead of removed, so the orders keep their owner.
     @JsonIgnore

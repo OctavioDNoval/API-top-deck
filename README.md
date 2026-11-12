@@ -241,12 +241,14 @@ Ventana fija por IP y por regla, en memoria (alcanza con una sola instancia de l
 | POST | `/auth/verificar-cuenta` | Confirma el reclamo de un GUEST: `{ token, password, terminosAceptados, ... }` |
 | POST | `/auth/olvide-contrasena` | `{ email }` → siempre 202; manda el link si la cuenta existe |
 | POST | `/auth/restablecer-contrasena` | `{ token, password }` → JWT; cierra las demas sesiones |
+| POST | `/auth/confirmar-cambio-email` | `{ token }` del link al mail nuevo → aplica el cambio de email y cierra todas las sesiones |
 | POST | `/auth/logout` | Cierra todas las sesiones del usuario (204) |
 | POST | `/auth/refresh` | Renueva un token vigente, hasta 7 dias desde el login |
 | GET | `/products/public/obtenerPaginados` | Productos sellados paginados (solo activos). Params: `pagina`, `tamanio`, `sortBy`, `direction`, `filter`, `idTag`, `idCategoria` |
 | GET | `/products/public/singles` | Singles paginados. Params: los de arriba + `attr=clave:valor` (repetible) |
 | GET | `/products/public/singles/facetas` | Facetas (atributos y valores con conteo) de singles. Param: `idTag` |
 | GET | `/products/public/ofertas` | Top 8 productos con descuento |
+| GET | `/products/public/sitemap.xml` | Sitemap para buscadores (páginas de la tienda + productos activos, links a `APP_FRONT_URL`); nginx lo sirve en `/sitemap.xml` |
 | GET | `/products/public/{id}` | Producto por UUID |
 | GET | `/category/public/getAll` | Todas las categorias |
 | GET | `/category/public/{id}` | Categoria por UUID |
@@ -300,6 +302,7 @@ Ventana fija por IP y por regla, en memoria (alcanza con una sola instancia de l
 | GET | `/user/me` | Perfil del usuario autenticado |
 | PATCH | `/user/me` | Editar nombre y teléfono propios |
 | POST | `/user/me/password` | Cambiar la contraseña (`{actual, nueva}`): cierra las otras sesiones y devuelve un token nuevo |
+| POST | `/user/me/email` | Pedir el cambio de email (`{nuevoEmail, password}`) → 202; manda un link al mail nuevo (si ya tiene cuenta, responde igual y no manda nada) |
 | GET | `/carrito/user/getCarrito` | Carrito del usuario autenticado |
 | GET | `/carrito/user/{id}/detalles` | Detalles del carrito |
 | POST | `/carrito/user/agregarDetalle` | Agregar producto al carrito |
@@ -430,7 +433,7 @@ RuntimeException
 | `EmailNuevoPedido.html` | Se crea un pedido (usuario o invitado) | Todos los ADMIN |
 | `EmailPedidoConfirmado.html` | Un pedido pasa a CONFIRMADO | El cliente |
 | `EmailVerificarCuenta.html` | Registro con email de un GUEST | El dueño del email |
-| `EmailAccionCuenta.html` | Confirmar registro, restablecer contraseña, aviso "ya tenés una cuenta" | El dueño del email |
+| `EmailAccionCuenta.html` | Confirmar registro, restablecer contraseña, aviso "ya tenés una cuenta", confirmar el email nuevo y avisar al viejo que cambió | El dueño del email |
 
 - Los datos de contacto del pie salen de `app.contacto.*` (`ContactConfig`). En producción se cargan con `APP_CONTACTO_*`.
 - El logo se sirve desde la propia API: `${APP_BASE_URL}/img/logo.webp`.
@@ -498,6 +501,7 @@ El esquema lo manejan las migraciones de `src/main/resources/db/migration/`, que
 | `V4__auditoria_registro.sql` | `auditoria.id_registro` y `auditoria.detalle` (qué registro se tocó y un resumen), más índices por fecha y tabla |
 | `V5__auditoria_detalle_500.sql` | `auditoria.detalle` pasa a 500 caracteres (las ediciones listan cada campo cambiado) |
 | `V6__drop_carrito_session_id.sql` | Borra `carrito.session_id` (legado del carrito de invitados en la API) |
+| `V7__usuario_cambio_email.sql` | `email_pendiente`, `token_email_hash` y `token_email_expira` para el cambio de email desde el perfil |
 
 - **Cambiar el esquema** (columna nueva, tipo, índice): agregar `V<n>__descripcion.sql` con el número siguiente. Nunca editar una migración ya aplicada (Flyway compara checksums y no arranca).
 - **Bases creadas antes de Flyway** (con tablas y sin historial): `baseline-on-migrate` las marca como versión 1 y les aplica de la V2 en adelante. La V2 es idempotente, así que no toca lo que ya existe.
