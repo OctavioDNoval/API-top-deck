@@ -1,7 +1,7 @@
 # TODO — API TopDeck
 
 Lista viva de lo que falta en el backend. Cada ítem tiene un ID para poder pedirlo directo
-("hacé API-043", "hacé API-036 y FRONT-037"). Cómo funciona hoy el sistema: [docs/SISTEMA.md](docs/SISTEMA.md).
+("hacé API-036 y FRONT-037"). Cómo funciona hoy el sistema: [docs/SISTEMA.md](docs/SISTEMA.md).
 
 _Revisado el 11/11/2026: todos los ítems abiertos siguen vigentes y reflejan el código actual._
 
@@ -120,15 +120,6 @@ Al terminar uno: marcarlo `[x]`, dejar el hash del commit y moverlo a "Hecho" al
 
 ## 4. Calidad y técnico
 
-### [ ] API-043 · Limpieza de código 🟢
-- `CustomUserDetailsService`: ya no lo usa nadie (el filtro lee el usuario del repo). Borrarlo o dejarlo solo si se usa el `AuthenticationManager`.
-- `CarritoController`: ~27 líneas comentadas de los endpoints del carrito efímero (ya vive en el front). Borrarlas junto con los métodos comentados de `CarritoService`.
-- `HELP.md` es el archivo por defecto de Spring Initializr: borrarlo.
-- `Enumerados/STATUS.java`: enum vacío, no lo usa nadie. Borrarlo.
-- `Security/JpaConfig.java` + `Security/AuditorAwareIMPL.java`: habilitan la auditoría de JPA (`@CreatedBy`), pero ninguna entidad la usa (la auditoría real es `AuditService`). Borrarlos.
-- `Carrito.sessionId` / `carrito.session_id`: legado del carrito de invitados en la API; hoy vive en el front. Se puede quitar con una migración.
-- Comentarios en español/inglés mezclados: los nuevos van en inglés (regla del proyecto).
-
 ---
 
 ## 5. Ideas / por definir
@@ -153,3 +144,4 @@ Al terminar uno: marcarlo `[x]`, dejar el hash del commit y moverlo a "Hecho" al
 - Eventos y auditoría (`6893169`): API-031 `PATCH /eventos/admin/edit/{id}` parcial; el estado se recalcula al cambiar la fecha y al crear (antes un evento de hoy quedaba "próximo"). API-033 cada log guarda el uuid del registro y un resumen legible (`V4__auditoria_registro`; en usuarios y direcciones describe la acción, sin datos personales); filtros `accion`, `tabla`, `usuario`, `desde`, `hasta`; retención configurable con `app.audit.dias-retencion` (90 por defecto). Mensajes armados en `util/AuditMensaje` para productos, pedidos, eventos, categorías, tags, usuarios y direcciones: altas con los datos clave ("Creación del producto \"X\" ($8.500,00) · stock 50 · ..."), ediciones con antes → después de cada campo cambiado, cambios de estado de pedidos con el efecto en el stock; en usuarios y direcciones solo se nombran los campos, sin sus valores (`V5` amplía `detalle` a 500). Para abrir el registro desde los logs: `GET /pedidos/admin/{id}` y `GET /products/admin/{id}` (incluye productos ocultos).
 - Documentación del sistema (11/11/2026): API-045 `docs/SISTEMA.md` explica cómo funciona hoy todo el backend (negocio, cuentas, sesiones, catálogo, pedidos, direcciones, eventos, auditoría, imágenes, mails, estadísticas, migraciones, configuración, tests y cómo extenderlo); el README quedó como referencia (endpoints, variables, ejecución) y se corrigieron sus partes desactualizadas (modelo de datos, CORS, mails, tests).
 - Red de seguridad (12/11/2026, `6fb5ba4`): API-040 Maven wrapper (`./mvnw`, solo script, Maven 3.9.12) y la zona horaria fija en el `pom` (ya no hace falta `-Duser.timezone`); API-042 23 tests de integración con Testcontainers + MockMvc contra PostgreSQL 16 real (migraciones, reglas por URL, dueño de carrito/direcciones/pedidos, registro → confirmar → login → logout, pedidos de invitado con envío y retiro y stock al confirmar); API-044 GitHub Actions: tests en cada push/PR y build de la imagen Docker. 102 tests en ~30 s.
+- Limpieza de código (12/11/2026, commit pendiente): API-043 fuera `STATUS`, `JpaConfig` + `AuditorAwareIMPL` (auditoría de JPA sin uso), `CarritoRequest`, `HELP.md` y el código comentado del carrito efímero; migración `V6` borra `carrito.session_id`. `CustomUserDetailsService` se queda (documentado): sin él Spring Boot crea un usuario en memoria con contraseña generada.

@@ -24,9 +24,7 @@ public class CarritoController {
 
     @GetMapping("/user/getCarrito")
     public ResponseEntity<CarritoResponse> getCarritoByUser(){
-        new Usuario();
-        Usuario usuario;
-        usuario = usuarioService.obtenerUsuarioAutenticado();
+        Usuario usuario = usuarioService.obtenerUsuarioAutenticado();
         CarritoResponse carrito = carritoService.obtenerCarritoPorUsuario(usuario.getIdUsuario());
         return ResponseEntity.ok(carrito);
     }
@@ -36,17 +34,6 @@ public class CarritoController {
         List<DetalleCarritoResponse> detalles = carritoService.obtenerDetalleCarrito(idCarrito);
         return ResponseEntity.ok(detalles);
     }
-
-    // LEGACY: Endpoints efímeros — movidos a localStorage en el frontend
-    // @GetMapping("/public/efimero/obtenerCarrito/{sessionId}")
-    // public ResponseEntity<CarritoResponse> obtenerCarritoEfimero (@PathVariable String sessionId){
-    //     return ResponseEntity.ok(carritoService.obtenerCarritoEfimero(sessionId));
-    // }
-    //
-    // @PostMapping("/public/efimero/agregarDetalle")
-    // public ResponseEntity<DetalleCarritoResponse> agregarDetalleEfimero( @RequestBody DetalleCarritoRequest detalleCarritoRequest){
-    //     return ResponseEntity.ok(carritoService.agregarDetalleCarritoEfimero(detalleCarritoRequest));
-    // }
 
     @PostMapping("/user/agregarDetalle")
     public ResponseEntity<DetalleCarritoResponse> agregarDetalle (@Valid @RequestBody DetalleCarritoRequest detalleCarritoRequest){
@@ -68,29 +55,10 @@ public class CarritoController {
         }
     }
 
-    // LEGACY: Endpoint efímero — movido a localStorage en el frontend
-    // @DeleteMapping("/public/efimero/{idDetalleCarrito}/eliminarDetalle")
-    // public ResponseEntity<Void> eliminarEfimero( @PathVariable("idDetalleCarrito") String idDetalleCarrito){
-    //     boolean isDeleted = carritoService.eliminarDeCarritoEfimero(idDetalleCarrito);
-    //     if(isDeleted){
-    //         return ResponseEntity.noContent().build();
-    //     }else{
-    //         return ResponseEntity.notFound().build();
-    //     }
-    // }
-
     @DeleteMapping("/user/{idCarrito}/empty")
     public ResponseEntity<Void> vaciarCarrito(@PathVariable("idCarrito") String idCarrito){
         carritoService.borrarCarrito(idCarrito);
         return ResponseEntity.noContent().build();
     }
-
-    // LEGACY: Merge efímero — ya no se usa, la transferencia se hace desde el frontend
-    // @PostMapping("/user/mergeEfimero/{sessionId}")
-    // public ResponseEntity<CarritoResponse> mergeEfimero(@PathVariable String sessionId){
-    //     Usuario usuario = usuarioService.obtenerUsuarioAutenticado();
-    //     CarritoResponse merged = carritoService.mergeCarritoEfimeroToUser(sessionId, usuario.getIdUsuario());
-    //     return ResponseEntity.ok(merged);
-    // }
 
 }

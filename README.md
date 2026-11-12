@@ -101,7 +101,7 @@ categoria ◄── producto ──► tag              usuario ◄── direcc
 evento          auditoria          flyway_schema_history
 ```
 
-> `carrito.session_id` es legacy: el carrito de invitados vive 100% en el `localStorage` del front.
+> El carrito de invitados vive 100% en el `localStorage` del front; en la base solo están los de usuarios registrados.
 
 ---
 
@@ -346,7 +346,7 @@ Todas las operaciones de carrito, direcciones y pedidos de usuario validan que e
 - `idDetallePedido` (Long, PK), `uuid`, `producto` (FK→Producto), `pedido` (FK→Pedido), `cantidad`, `precioUnitario` (BigDecimal), `subTotal` (BigDecimal)
 
 ### Carrito
-- `idCarrito` (Long, PK), `uuid`, `usuario` (FK→Usuario), `sessionId` (legacy), `fechaCreacion`, `detalles` (OneToMany)
+- `idCarrito` (Long, PK), `uuid`, `usuario` (FK→Usuario), `fechaCreacion`, `detalles` (OneToMany)
 
 ### DetalleCarrito
 - `idDetalleCarrito` (Long, PK), `uuid`, `carrito` (FK→Carrito), `producto` (FK→Producto), `cantidad`
@@ -497,6 +497,7 @@ El esquema lo manejan las migraciones de `src/main/resources/db/migration/`, que
 | `V3__direccion_activa.sql` | `direccion.activa`: las direcciones usadas en pedidos se ocultan en vez de borrarse |
 | `V4__auditoria_registro.sql` | `auditoria.id_registro` y `auditoria.detalle` (qué registro se tocó y un resumen), más índices por fecha y tabla |
 | `V5__auditoria_detalle_500.sql` | `auditoria.detalle` pasa a 500 caracteres (las ediciones listan cada campo cambiado) |
+| `V6__drop_carrito_session_id.sql` | Borra `carrito.session_id` (legado del carrito de invitados en la API) |
 
 - **Cambiar el esquema** (columna nueva, tipo, índice): agregar `V<n>__descripcion.sql` con el número siguiente. Nunca editar una migración ya aplicada (Flyway compara checksums y no arranca).
 - **Bases creadas antes de Flyway** (con tablas y sin historial): `baseline-on-migrate` las marca como versión 1 y les aplica de la V2 en adelante. La V2 es idempotente, así que no toca lo que ya existe.

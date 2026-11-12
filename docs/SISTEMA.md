@@ -114,7 +114,7 @@ evento          auditoria          flyway_schema_history
 | `producto` | Sellados y singles | `tipo_producto` `PRODUCTO`/`SINGLE`; `precio`, `stock`, `descuento` (%); `activo` (false = oculto en la tienda); categoría opcional en singles; `tag` = franquicia. |
 | `producto_singles` | Atributos de un single | 1:1 con producto; `atributos` jsonb con índices GIN y por rareza/set. |
 | `categoria`, `tag` | Tipo de producto y franquicia | `tag.nombre_normalizado` (minúsculas, sin acentos) para búsquedas; `tag.img_url`. |
-| `carrito`, `detallecarrito` | Carrito de usuarios registrados | Uno por usuario. `carrito.session_id` es legado (el carrito de invitados vive en el navegador). |
+| `carrito`, `detallecarrito` | Carrito de usuarios registrados | Uno por usuario. El carrito de invitados vive en el navegador (`localStorage`). |
 | `pedido`, `detallepedido` | Pedidos y sus líneas | `estado` `PENDIENTE`/`CONFIRMADO`/`RECHAZADO`; `tipo_entrega`; `telefono_contacto`; `total`; `ip_usuario`; cada línea guarda `precio_unitario` y `subtotal` del momento. |
 | `direccion` | Direcciones de un usuario | `principal` (una por usuario); `activa` (false = oculta porque la usa un pedido). |
 | `evento` | Torneos y juntadas | `estado` `PROXIMAMENTE`/`EN_CURSO`/`FINALIZADO` (calculado por fecha). |
@@ -296,7 +296,7 @@ bajo / ok, solo sellados), registros por mes, ingresos por franquicia y acciones
 - El esquema lo crean y actualizan las migraciones de `db/migration/` al arrancar la API. Hibernate está en
   `ddl-auto=validate`: **no crea ni cambia nada**, solo verifica que las entidades coincidan; si falta algo, la API no arranca.
 - Migraciones actuales: `V1` esquema inicial · `V2` columnas de cuentas y pedidos + montos `NUMERIC` · `V3`
-  `direccion.activa` · `V4` `auditoria.id_registro` y `detalle` · `V5` `detalle` a 500 caracteres.
+  `direccion.activa` · `V4` `auditoria.id_registro` y `detalle` · `V5` `detalle` a 500 caracteres · `V6` borra `carrito.session_id`.
 - `db/seed/V1_1__dev_seed.sql` carga datos de ejemplo **solo en desarrollo** y solo si no hay categorías.
 - Bases creadas antes de Flyway se toman como versión 1 (`baseline-on-migrate`).
 - **Para cambiar el esquema**: nuevo archivo `V<n+1>__descripcion.sql`. Nunca editar uno aplicado (Flyway compara

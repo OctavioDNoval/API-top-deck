@@ -12,6 +12,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * Not used to authenticate requests (JwtAuthFilter reads the user from the repository).
+ * Kept on purpose: with no UserDetailsService bean, Spring Boot would register a default
+ * in-memory user with a generated password.
+ */
 @Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {

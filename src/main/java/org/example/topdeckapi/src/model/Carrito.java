@@ -33,9 +33,6 @@ public class Carrito {
     @JoinColumn( name = "id_usuario")
     private Usuario usuario;
 
-    @Column(name = "session_id")
-    private String sessionId;
-
     @Column(name = "fecha_creacion")
     private LocalDateTime fechaCreacion;
 

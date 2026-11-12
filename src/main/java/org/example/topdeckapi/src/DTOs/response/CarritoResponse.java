@@ -22,7 +22,6 @@ public class CarritoResponse {
     //Datos resumidos del Usuario
     private String idUsuario;
     private String nombreUsuario;
-    private String sessionId;
 
 
 }
