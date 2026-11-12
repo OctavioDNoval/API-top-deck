@@ -509,7 +509,7 @@ cd API-top-deck
 ./mvnw spring-boot:run
 ```
 
-- El wrapper necesita la carpeta `.mvn/wrapper/`, que hoy no esta en el repo. Si falla, usa un Maven instalado (`mvn spring-boot:run`) o el de IntelliJ.
+- `./mvnw` (o `mvnw.cmd` en Windows) descarga Maven 3.9.12 la primera vez: no hace falta tener Maven instalado.
 - **Windows**: si la JVM toma la zona `America/Buenos_Aires`, Postgres rechaza la conexion (`invalid value for parameter "TimeZone"`). Corre con `-Duser.timezone=America/Argentina/Buenos_Aires`.
 - El perfil `local` (`application-local.properties`, ignorado por git) pisa valores para desarrollo. **No activarlo en produccion.**
 
@@ -520,7 +520,12 @@ La API corre en `http://localhost:8080`.
 ./mvnw test
 ```
 
-Tests unitarios (JUnit 5 + Mockito, sin DB) de seguridad, cuentas, usuarios, direcciones, pedidos, eventos, montos y mensajes de auditoría: la lista está en [docs/SISTEMA.md](docs/SISTEMA.md#15-tests). `TopDeckApiApplicationTests` levanta el contexto completo y solo corre si hay `DB_PASSWORD` configurado.
+- **Unitarios** (JUnit 5 + Mockito, sin base): seguridad, cuentas, usuarios, direcciones, pedidos, eventos, montos y mensajes de auditoría.
+- **Integración** (`*IntegrationTest`): la app entera contra un PostgreSQL 16 que levanta Testcontainers. **Necesitan Docker**; sin Docker se saltean (no fallan).
+- No hace falta `-Duser.timezone`: el `pom` ya fija la zona para los tests.
+- **CI**: GitHub Actions (`.github/workflows/ci.yml`) corre todos los tests y construye la imagen Docker en cada push a `main` y en cada PR.
+
+La lista de qué cubre cada clase está en [docs/SISTEMA.md](docs/SISTEMA.md#15-tests).
 
 ---
 

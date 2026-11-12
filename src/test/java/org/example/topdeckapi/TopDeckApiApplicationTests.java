@@ -1,13 +1,10 @@
 package org.example.topdeckapi;
 
+import org.example.topdeckapi.integration.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.boot.test.context.SpringBootTest;
 
-// Needs a running PostgreSQL and the app env vars; skipped otherwise.
-@SpringBootTest
-@EnabledIfEnvironmentVariable(named = "DB_PASSWORD", matches = ".+")
-class TopDeckApiApplicationTests {
+// The whole context starts and Flyway migrates an empty PostgreSQL (Hibernate validates the schema).
+class TopDeckApiApplicationTests extends AbstractIntegrationTest {
 
     @Test
     void contextLoads() {

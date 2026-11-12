@@ -319,8 +319,9 @@ La lista completa de variables está en el README. Las imprescindibles: `DB_*`, 
 
 ## 15. Tests
 
-JUnit 5 + Mockito, sin base de datos (`./mvnw test`, o el Maven local con `-Duser.timezone=America/Argentina/Buenos_Aires`
-en Windows):
+Se corren con `./mvnw test` (la zona horaria ya viene fijada en el `pom`). Hay dos tipos.
+
+**Unitarios** (JUnit 5 + Mockito, sin base de datos):
 
 | Clase | Qué cubre |
 |---|---|
@@ -333,7 +334,24 @@ en Windows):
 | `EventoServiceTest` | Edición parcial y estado por fecha |
 | `MontosTest`, `AuditMensajeTest` | Cálculo de importes y formato de los mensajes de auditoría |
 
-No hay tests de integración contra Postgres ni de reglas por URL todavía (API-042).
+**De integración** (paquete `integration`, sufijo `IntegrationTest`): `@SpringBootTest` + MockMvc contra un PostgreSQL 16
+que levanta Testcontainers. Todos heredan de `AbstractIntegrationTest`, que comparte un solo contenedor y un solo contexto de
+Spring, usa el perfil `it` (`src/test/resources/application-it.properties`, autocontenido porque `application.properties`
+no se versiona), reemplaza `EmailService` por un mock (los tests leen los tokens de los links desde las llamadas) y le da a
+cada request una IP distinta para no chocar con el rate limit. Los datos de cada test son nuevos (mails
+`claude-it-*@example.com`) y la base se descarta al terminar.
+
+| Clase | Qué cubre |
+|---|---|
+| `TopDeckApiApplicationTests` | El contexto arranca y Flyway migra una base vacía que Hibernate valida |
+| `SecurityRulesIntegrationTest` | `/admin/**`: 401 sin token, 403 como USER, 200 como ADMIN; un admin degradado pierde acceso con el mismo token; `/public` abierto |
+| `OwnershipIntegrationTest` | El usuario B no puede leer ni tocar el carrito, las direcciones ni los pedidos de A (403) |
+| `AccountFlowIntegrationTest` | Registro → login bloqueado sin confirmar → confirmar → login → logout revoca todos los tokens |
+| `GuestOrderIntegrationTest` | Pedido de invitado con envío y con retiro, total desde la base, TyC, stock; el stock baja recién al confirmar |
+
+Necesitan Docker: sin Docker se saltean. En CI (GitHub Actions, `.github/workflows/ci.yml`) se verifica que no se hayan
+salteado. `src/test/resources/docker-java.properties` fija la versión de la API de Docker porque Docker Engine 29 rechaza
+la que pide Testcontainers por defecto.
 
 ---
 
